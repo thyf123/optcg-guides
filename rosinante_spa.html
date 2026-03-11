@@ -204,7 +204,7 @@ tr.detail-row td{padding:0;border-bottom:1px solid #1e1e36}
 .star-btn{background:none;border:none;cursor:pointer;font-size:0.82rem;padding:1px 4px;opacity:0.22;transition:opacity 0.15s;line-height:1;flex-shrink:0;color:#c9a84c}
 .star-btn.starred{opacity:1}
 /* ── HOME SCREEN ── */
-#screen-home{padding:24px 16px}
+#screen-home{padding:24px 16px;position:relative}
 .home-title{font-size:1.2rem;color:#c9a84c;font-weight:700;margin-bottom:6px;text-align:center}
 .home-sub{font-size:0.72rem;color:#666;text-align:center;margin-bottom:28px}
 .leader-grid{display:flex;flex-wrap:wrap;gap:20px;justify-content:center}
@@ -256,13 +256,37 @@ tr.detail-row td{padding:0;border-bottom:1px solid #1e1e36}
 .my-date{color:#444;flex-shrink:0}
 .my-log-btn{font-size:0.7rem;padding:4px 10px;background:#1a2a3a;border:1px solid #3a5a7a;border-radius:5px;color:#80b8ff;cursor:pointer}
 
+/* ── SYNC STATUS DOT ── */
+#sync-dot{position:fixed;top:10px;right:12px;font-size:0.6rem;font-weight:700;z-index:500;pointer-events:none;transition:opacity 0.3s}
+#sync-dot.syncing{color:#d0b030}
+#sync-dot.synced{color:#50c070;opacity:0}
+#sync-dot.error{color:#e05858;opacity:1!important}
+
+/* ── SETTINGS MODAL ── */
+#sb-modal{position:fixed;inset:0;background:#000c;z-index:400;display:none;align-items:center;justify-content:center;padding:16px}
+.sb-card{background:#1e1e36;border:1px solid #c9a84c44;border-radius:12px;padding:22px;width:340px;max-width:100%}
+.sb-title{font-size:0.9rem;color:#c9a84c;font-weight:700;margin-bottom:4px}
+.sb-sub{font-size:0.67rem;color:#666;margin-bottom:18px}
+.sb-label{font-size:0.63rem;color:#888;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:5px}
+.sb-input{width:100%;background:#13132a;border:1px solid #2a2a40;border-radius:6px;color:#ccc;font-size:0.73rem;padding:7px 9px;font-family:inherit;margin-bottom:14px}
+.sb-input:focus{outline:none;border-color:#c9a84c55}
+.sb-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:4px}
+.sb-cancel{padding:6px 14px;border-radius:6px;border:1px solid #333;background:none;color:#888;cursor:pointer;font-size:0.78rem}
+.sb-save{padding:6px 14px;border-radius:6px;border:none;background:#c9a84c;color:#111;cursor:pointer;font-size:0.78rem;font-weight:700}
+.sb-status{font-size:0.67rem;margin-top:10px;min-height:16px}
+/* settings gear on home screen */
+.home-gear{position:absolute;top:16px;right:16px;background:none;border:none;color:#444;font-size:1rem;cursor:pointer;padding:4px}
+.home-gear:hover{color:#888}
+
 </style>
 </head>
 <body>
 <div id="app">
+<div id="sync-dot"></div>
 
 <!-- ════ SCREEN 0: HOME ════ -->
 <div class="screen active" id="screen-home">
+  <button class="home-gear" onclick="openSbModal()" title="Sync settings">⚙</button>
   <div class="home-title">OPTCG Matchup Guide</div>
   <div class="home-sub">Choose a leader</div>
   <div class="leader-grid" id="leader-grid"></div>
@@ -363,6 +387,23 @@ tr.detail-row td{padding:0;border-bottom:1px solid #1e1e36}
       <button class="log-cancel" onclick="closeLogModal()">Cancel</button>
       <button class="log-save" id="log-save-btn" onclick="saveLog()" disabled>Save</button>
     </div>
+  </div>
+</div>
+
+<!-- ════ SUPABASE SETTINGS MODAL ════ -->
+<div id="sb-modal" onclick="closeSbModal()">
+  <div class="sb-card" onclick="event.stopPropagation()">
+    <div class="sb-title">☁ Cloud Sync</div>
+    <div class="sb-sub">Your notes and game logs sync across devices via Supabase. Credentials stay on-device only.</div>
+    <div class="sb-label">Project URL</div>
+    <input id="sb-url-input" class="sb-input" type="text" placeholder="https://xxxx.supabase.co" spellcheck="false">
+    <div class="sb-label">Anon Key</div>
+    <input id="sb-key-input" class="sb-input" type="password" placeholder="eyJ…">
+    <div class="sb-actions">
+      <button class="sb-cancel" onclick="closeSbModal()">Cancel</button>
+      <button class="sb-save" onclick="saveSbConfig()">Save & Sync</button>
+    </div>
+    <div id="sb-status" class="sb-status"></div>
   </div>
 </div>
 </div><!-- #app -->
@@ -3244,6 +3285,7 @@ function personalRecord(lk, dk) {
 function saveNote(deckKey, text) {
   allNotes[_nk(currentLeaderKey, deckKey)] = text;
   _saveNotes();
+  syncToSupabase();
 }
 
 // ── LOG MODAL ──────────────────────────────────────────────────
@@ -3279,6 +3321,7 @@ function saveLog() {
   allGames.push({ leaderKey: currentLeaderKey, deckKey: _logDeck,
     matchupName: m ? m.name : _logDeck, go: _logGo, result: _logResult, note, ts: Date.now() });
   _saveGames();
+  syncToSupabase();
   closeLogModal();
   _refreshYouCells();
   if (document.getElementById('screen-deck').classList.contains('active')) {
@@ -3337,6 +3380,105 @@ function _refreshMySection(deckKey) {
   const el = document.getElementById('my-hist-inner');
   if (el) el.innerHTML = _buildMyHistoryHtml(deckKey);
 }
+
+// ── SUPABASE SYNC ─────────────────────────────────────────────
+let _sbUrl = '';
+let _sbKey = '';
+try { _sbUrl = localStorage.getItem('optcg-sb-url') || ''; } catch(e) {}
+try { _sbKey = localStorage.getItem('optcg-sb-key') || ''; } catch(e) {}
+
+function _sbHeaders() {
+  return {
+    'Content-Type': 'application/json',
+    'apikey': _sbKey,
+    'Authorization': 'Bearer ' + _sbKey
+  };
+}
+
+function _setSyncDot(state, text) {
+  const dot = document.getElementById('sync-dot');
+  if (!dot) return;
+  dot.className = state;
+  dot.textContent = text || (state === 'syncing' ? '☁↑' : state === 'synced' ? '☁✓' : '☁✗');
+  if (state === 'synced') setTimeout(() => { dot.style.opacity = '0'; }, 2000);
+  else dot.style.opacity = '1';
+}
+
+async function syncFromSupabase() {
+  if (!_sbUrl || !_sbKey) return;
+  _setSyncDot('syncing');
+  try {
+    const res = await fetch(_sbUrl + '/rest/v1/optcg_sync?select=*', { headers: _sbHeaders() });
+    if (!res.ok) throw new Error(res.status);
+    const rows = await res.json();
+    const gr = rows.find(r => r.id === 'games');
+    const nr = rows.find(r => r.id === 'notes');
+    if (gr && Array.isArray(gr.payload)) {
+      allGames = gr.payload;
+      try { localStorage.setItem('optcg-games', JSON.stringify(allGames)); } catch(e) {}
+    }
+    if (nr && nr.payload && typeof nr.payload === 'object') {
+      allNotes = nr.payload;
+      try { localStorage.setItem('optcg-notes', JSON.stringify(allNotes)); } catch(e) {}
+    }
+    _setSyncDot('synced');
+  } catch(e) {
+    _setSyncDot('error', '☁✗');
+    console.warn('Supabase sync failed:', e);
+  }
+}
+
+async function syncToSupabase() {
+  if (!_sbUrl || !_sbKey) return;
+  _setSyncDot('syncing');
+  try {
+    const res = await fetch(_sbUrl + '/rest/v1/optcg_sync', {
+      method: 'POST',
+      headers: { ..._sbHeaders(), 'Prefer': 'resolution=merge-duplicates' },
+      body: JSON.stringify([
+        { id: 'games', payload: allGames, updated_at: new Date().toISOString() },
+        { id: 'notes', payload: allNotes, updated_at: new Date().toISOString() }
+      ])
+    });
+    if (!res.ok) throw new Error(res.status);
+    _setSyncDot('synced');
+  } catch(e) {
+    _setSyncDot('error', '☁✗');
+    console.warn('Supabase push failed:', e);
+  }
+}
+
+// ── SETTINGS MODAL ────────────────────────────────────────────
+function openSbModal() {
+  document.getElementById('sb-url-input').value = _sbUrl;
+  document.getElementById('sb-key-input').value = _sbKey;
+  document.getElementById('sb-status').textContent = '';
+  document.getElementById('sb-modal').style.display = 'flex';
+}
+function closeSbModal() { document.getElementById('sb-modal').style.display = 'none'; }
+
+async function saveSbConfig() {
+  const url = document.getElementById('sb-url-input').value.trim().replace(/\/$/, '');
+  const key = document.getElementById('sb-key-input').value.trim();
+  const status = document.getElementById('sb-status');
+  if (!url || !key) { status.style.color = '#e05858'; status.textContent = 'Both fields required.'; return; }
+  status.style.color = '#d0b030'; status.textContent = 'Testing connection…';
+  try {
+    const res = await fetch(url + '/rest/v1/optcg_sync?select=id&limit=1', {
+      headers: { 'apikey': key, 'Authorization': 'Bearer ' + key }
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    _sbUrl = url; _sbKey = key;
+    try { localStorage.setItem('optcg-sb-url', url); localStorage.setItem('optcg-sb-key', key); } catch(e) {}
+    status.style.color = '#50c070'; status.textContent = '✓ Connected! Syncing…';
+    await syncFromSupabase();
+    closeSbModal();
+  } catch(e) {
+    status.style.color = '#e05858';
+    status.textContent = '✗ Could not connect. Check URL and key.';
+  }
+}
+
 
 // ── NAVIGATION ────────────────────────────────────────────────
 function dbg(msg) {
@@ -3864,7 +4006,14 @@ function renderDeck(d, matchup, deckKey) {
   // render history
   _refreshMySection(deckKey);
 }
+// Init: load local data first, show UI, then pull remote
 showHome();
+syncFromSupabase().then(() => {
+  // refresh you cells if matchup screen is visible after sync
+  if (document.getElementById('screen-matchup').classList.contains('active')) {
+    _refreshYouCells();
+  }
+});
 </script>
 </body>
 </html>
