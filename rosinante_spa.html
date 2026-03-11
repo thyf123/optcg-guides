@@ -278,6 +278,20 @@ tr.detail-row td{padding:0;border-bottom:1px solid #1e1e36}
 .home-gear{position:absolute;top:16px;right:16px;background:none;border:none;color:#444;font-size:1rem;cursor:pointer;padding:4px}
 .home-gear:hover{color:#888}
 
+/* ── CUSTOM TIPS ── */
+.custom-tips-section{margin-top:6px}
+.custom-tips{margin-top:4px}
+.custom-tip-item{display:flex;align-items:flex-start;justify-content:space-between;gap:6px}
+.cti-text{flex:1;color:#c0cfe8}
+.cti-del{background:none;border:none;color:#444;cursor:pointer;font-size:0.82rem;padding:0 2px;line-height:1.4;flex-shrink:0}
+.cti-del:hover{color:#e05858}
+.add-tip-btn{margin-top:7px;background:none;border:1px dashed #2a2a50;border-radius:5px;color:#555;font-size:0.68rem;padding:4px 10px;cursor:pointer;width:100%}
+.add-tip-btn:hover{border-color:#c9a84c55;color:#888}
+.add-tip-row{display:flex;gap:6px;margin-top:7px}
+.add-tip-input{flex:1;background:#13132a;border:1px solid #2a2a40;border-radius:5px;color:#ccc;font-size:0.75rem;padding:5px 8px;font-family:inherit}
+.add-tip-input:focus{outline:none;border-color:#c9a84c55}
+.add-tip-save{padding:5px 10px;border-radius:5px;border:none;background:#c9a84c;color:#111;cursor:pointer;font-size:0.73rem;font-weight:700;white-space:nowrap}
+
 </style>
 </head>
 <body>
@@ -3271,10 +3285,65 @@ function updateStarBtns() {
 // ── GAME LOG & NOTES ──────────────────────────────────────────
 let allGames = [];
 let allNotes = {};
+let allCustomTips = {};
 try { allGames = JSON.parse(localStorage.getItem('optcg-games') || '[]'); } catch(e) {}
 try { allNotes = JSON.parse(localStorage.getItem('optcg-notes') || '{}'); } catch(e) {}
+try { allCustomTips = JSON.parse(localStorage.getItem('optcg-tips') || '{}'); } catch(e) {}
 function _saveGames() { try { localStorage.setItem('optcg-games', JSON.stringify(allGames)); } catch(e) {} }
 function _saveNotes() { try { localStorage.setItem('optcg-notes', JSON.stringify(allNotes)); } catch(e) {} }
+
+function _saveTips() { try { localStorage.setItem('optcg-tips', JSON.stringify(allCustomTips)); } catch(e) {} }
+function _getCustomTips(deckKey) { return allCustomTips[_nk(currentLeaderKey, deckKey)] || []; }
+function addCustomTip(deckKey, text) {
+  text = text.trim();
+  if (!text) return;
+  const k = _nk(currentLeaderKey, deckKey);
+  if (!allCustomTips[k]) allCustomTips[k] = [];
+  allCustomTips[k].push(text);
+  _saveTips();
+  syncToSupabase();
+  _renderCustomTips(deckKey);
+}
+function deleteCustomTip(deckKey, idx) {
+  const k = _nk(currentLeaderKey, deckKey);
+  if (allCustomTips[k]) allCustomTips[k].splice(idx, 1);
+  _saveTips();
+  syncToSupabase();
+  _renderCustomTips(deckKey);
+}
+function _buildCustomTipsHtml(deckKey) {
+  const tips = _getCustomTips(deckKey);
+  const items = tips.map((t, i) =>
+    `<li class="custom-tip-item"><span class="cti-text">${t}</span><button class="cti-del" onclick="deleteCustomTip('${deckKey}',${i})" title="Remove">×</button></li>`
+  ).join('');
+  return (items ? `<ul class="mi-tips custom-tips">${items}</ul>` : '')
+    + `<div id="add-tip-area"></div>`
+    + `<button class="add-tip-btn" onclick="showAddTipInput('${deckKey}')">+ Add tip</button>`;
+}
+function _renderCustomTips(deckKey) {
+  const el = document.getElementById('custom-tips-wrap');
+  if (el) el.innerHTML = _buildCustomTipsHtml(deckKey);
+}
+function showAddTipInput(deckKey) {
+  const area = document.getElementById('add-tip-area');
+  if (!area) return;
+  area.innerHTML = `<div class="add-tip-row">
+    <input id="new-tip-input" class="add-tip-input" type="text" placeholder="Type your tip…" autofocus>
+    <button class="add-tip-save" onclick="commitTip('${deckKey}')">Add</button>
+  </div>`;
+  const inp = document.getElementById('new-tip-input');
+  if (inp) {
+    inp.focus();
+    inp.addEventListener('keydown', e => { if (e.key === 'Enter') commitTip('${deckKey}'); });
+  }
+}
+function commitTip(deckKey) {
+  const inp = document.getElementById('new-tip-input');
+  if (!inp) return;
+  const text = inp.value.trim();
+  if (text) addCustomTip(deckKey, text);
+  else _renderCustomTips(deckKey);
+}
 function _nk(lk, dk) { return lk + ':' + dk; }
 function _gamesFor(lk, dk) { return allGames.filter(g => g.leaderKey === lk && g.deckKey === dk); }
 function personalRecord(lk, dk) {
@@ -3421,6 +3490,11 @@ async function syncFromSupabase() {
       allNotes = nr.payload;
       try { localStorage.setItem('optcg-notes', JSON.stringify(allNotes)); } catch(e) {}
     }
+    const tr = rows.find(r => r.id === 'tips');
+    if (tr && tr.payload && typeof tr.payload === 'object') {
+      allCustomTips = tr.payload;
+      try { localStorage.setItem('optcg-tips', JSON.stringify(allCustomTips)); } catch(e) {}
+    }
     _setSyncDot('synced');
   } catch(e) {
     _setSyncDot('error', '☁✗');
@@ -3437,7 +3511,8 @@ async function syncToSupabase() {
       headers: { ..._sbHeaders(), 'Prefer': 'resolution=merge-duplicates' },
       body: JSON.stringify([
         { id: 'games', payload: allGames, updated_at: new Date().toISOString() },
-        { id: 'notes', payload: allNotes, updated_at: new Date().toISOString() }
+        { id: 'notes', payload: allNotes, updated_at: new Date().toISOString() },
+        { id: 'tips', payload: allCustomTips, updated_at: new Date().toISOString() }
       ])
     });
     if (!res.ok) throw new Error(res.status);
@@ -3923,6 +3998,7 @@ function renderDeck(d, matchup, deckKey) {
         </div>`
       : '';
 
+    const _ctHtml = _buildCustomTipsHtml(deckKey);
     matchupInfoHtml = `<div class="matchup-info">
       <div class="mi-header">
         <span class="mi-name">${matchup.name}${matchup.warn?' <span style="color:#e07050">⚠</span>':''}</span>
@@ -3931,6 +4007,7 @@ function renderDeck(d, matchup, deckKey) {
         <span class="mi-style">${matchup.style}</span>
       </div>
       ${essHtml}${tipsHtml}
+      <div class="custom-tips-section" id="custom-tips-wrap">${_ctHtml}</div>
     </div><hr class="mi-divider">`;
   }
 
