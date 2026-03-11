@@ -84,6 +84,8 @@ tr.detail-row td{padding:0;border-bottom:1px solid #1e1e36}
 .linfo h3{font-size:0.92rem;color:#ffd080;font-weight:700;line-height:1.2}
 .linfo .lid{font-size:0.66rem;color:#777;margin-top:2px}
 .linfo .leff{font-size:0.67rem;color:#bbb;margin-top:6px;line-height:1.55}
+.ext-link-bottom{display:block;font-size:0.65rem;color:#555;text-decoration:none;padding:10px 0 2px;margin-top:8px}
+.ext-link-bottom:hover{color:#888}
 .pip{display:inline-block;width:8px;height:8px;border-radius:50%;vertical-align:middle;margin-right:3px}
 .pr{background:#e05050}.pg{background:#50c050}.pp{background:#9060d0}.py{background:#d0b030}
 
@@ -3792,10 +3794,9 @@ function renderDeck(d, matchup, deckKey) {
 
   let html = `${matchupInfoHtml}
     <div class="deck-header">
-      <h2>${d.leaderName} — EB03 Decklist</h2>
+      <h2>${d.leaderName} — Decklist</h2>
       <div class="placement">${d.player} · ${d.placement}</div>
       <div class="meta">${d.location} · ${d.date}</div>
-      <a class="ext-link" href="${d.sourceUrl}" target="_blank">→ Source: onepiecetopdecks.com</a>
       <div class="tap-hint">Tap any card to enlarge</div>
     </div>
 
@@ -3807,7 +3808,6 @@ function renderDeck(d, matchup, deckKey) {
         onclick="openModal(this.src,'${d.leader} - ${d.leaderName}')"
         alt="${d.leader}">
       <div class="linfo">
-        <h3>${d.leaderName}</h3>
         <div class="lid">${d.leader} · ${colorPips} · ${d.leaderStats}</div>
         <div class="leff">${d.leaderEffect}</div>
       </div>
@@ -3838,6 +3838,9 @@ function renderDeck(d, matchup, deckKey) {
     <span class="tl">Total cards</span>
     <span class="tc">${total}</span>
   </div>`;
+
+  // source link at bottom
+  html += `<a class="ext-link-bottom" href="${d.sourceUrl}" target="_blank">→ Source: onepiecetopdecks.com</a>`;
 
   // append my-section
   const existingNote = allNotes[_nk(currentLeaderKey, deckKey)] || '';
