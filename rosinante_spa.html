@@ -3366,7 +3366,7 @@ function showDeck(deckKey, matchupIdx) {
   }
   const matchup = (matchupIdx !== undefined) ? getLM()[matchupIdx] : null;
   try {
-    renderDeck(data, matchup);
+    renderDeck(data, matchup, deckKey);
     dbg('renderDeck OK | deck-content length=' + dc.innerHTML.length + ' | sd.display=' + getComputedStyle(sd).display + ' | sd.opacity=' + getComputedStyle(sd).opacity);
   } catch(e) {
     dc.innerHTML = '<div style="color:red;padding:20px;font-size:14px"><b>renderDeck crashed:</b><br>' + e.message + '<br><pre>' + e.stack + '</pre></div>';
@@ -3744,7 +3744,7 @@ function selectLeader(key) {
 
 
 // ── RENDER DECK PAGE ─────────────────────────────────────────
-function renderDeck(d, matchup) {
+function renderDeck(d, matchup, deckKey) {
   const total = d.sections.reduce((a,s)=>a+s.cards.reduce((b,c)=>b+c.count,0),0);
 
   // color pips for leader
