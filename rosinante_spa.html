@@ -3455,8 +3455,9 @@ function _refreshMySection(deckKey) {
 // ── SUPABASE SYNC ─────────────────────────────────────────────
 let _sbUrl = '';
 let _sbKey = '';
-try { _sbUrl = localStorage.getItem('optcg-sb-url') || ''; } catch(e) {}
-try { _sbKey = localStorage.getItem('optcg-sb-key') || ''; } catch(e) {}
+// Railway injects window._SB_URL / window._SB_KEY at serve time; fall back to localStorage for local use
+try { _sbUrl = (window._SB_URL || '') || localStorage.getItem('optcg-sb-url') || ''; } catch(e) {}
+try { _sbKey = (window._SB_KEY || '') || localStorage.getItem('optcg-sb-key') || ''; } catch(e) {}
 
 function _sbHeaders() {
   return {
