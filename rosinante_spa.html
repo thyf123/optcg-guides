@@ -170,14 +170,16 @@ tr.detail-row td{padding:0;border-bottom:1px solid #1e1e36}
 
 /* ── MATCHUP INFO on deck page ── */
 .matchup-info{background:#1a1a30;border:1px solid #c9a84c44;border-radius:10px;padding:12px 14px;margin-bottom:16px}
-.mi-header{display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap}
+.mi-row1{margin-bottom:6px}
+.mi-row2{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:2px}
+.mi-warn{color:#e07050;margin-left:4px}
 .mi-name{font-size:1rem;font-weight:700;color:#ffd080}
 .mi-go{font-size:0.8rem;font-weight:900;padding:4px 12px;border-radius:6px;letter-spacing:0.05em}
 .mi-go.go1{background:#1a3a6a;color:#80b8ff;border:1px solid #2a5aaa}
 .mi-go.go2{background:#5a1a1a;color:#ffaaaa;border:1px solid #aa3a3a}
 .mi-wrs{display:flex;gap:5px;flex-wrap:wrap}
 .mi-wr{font-size:0.7rem;font-weight:700;padding:2px 6px;border-radius:3px}
-.mi-style{font-size:0.7rem;color:#888;margin-left:auto}
+.mi-style{font-size:0.7rem;color:#888;padding-left:4px;border-left:1px solid #333}
 .mi-section{margin-top:10px}
 .mi-section-title{font-size:0.62rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#c9a84c;margin-bottom:5px}
 .mi-tips{list-style:none;padding:0}
@@ -3986,7 +3988,7 @@ function renderDeck(d, matchup, deckKey) {
       essHtml = `<div class="mi-section">
         <div class="mi-section-title">Essential Cards</div>
         <div class="mi-ess">
-          ${matchup.essential.map(e=>`<div class="mi-ess-item"><span class="mi-ess-card">${e.card}</span><span class="mi-ess-reason">${e.reason}</span></div>`).join('')}
+          ${matchup.essential.map(e=>`<div class="mi-ess-item"><span class="mi-ess-card">${e.card}:</span> <span class="mi-ess-reason">${e.reason}</span></div>`).join('')}
         </div>
       </div>`;
     }
@@ -4000,11 +4002,13 @@ function renderDeck(d, matchup, deckKey) {
 
     const _ctHtml = _buildCustomTipsHtml(deckKey);
     matchupInfoHtml = `<div class="matchup-info">
-      <div class="mi-header">
-        <span class="mi-name">${matchup.name}${matchup.warn?' <span style="color:#e07050">⚠</span>':''}</span>
+      <div class="mi-row1">
+        <span class="mi-name">${matchup.name}${matchup.warn?' <span class="mi-warn">⚠</span>':''}</span>
+      </div>
+      <div class="mi-row2">
         <span class="mi-go ${matchup.go==='1st'?'go1':'go2'}">GO ${matchup.go}</span>
-        <div class="mi-wrs">${wrHtml}</div>
-        <span class="mi-style">${matchup.style}</span>
+        ${wrHtml}
+        ${matchup.style && matchup.style !== '—' ? `<span class="mi-style">${matchup.style}</span>` : ''}
       </div>
       ${essHtml}${tipsHtml}
       <div class="custom-tips-section" id="custom-tips-wrap">${_ctHtml}</div>
