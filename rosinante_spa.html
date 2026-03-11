@@ -212,6 +212,48 @@ tr.detail-row td{padding:0;border-bottom:1px solid #1e1e36}
 .lc-name{font-size:0.75rem;color:#ccc;font-weight:600}
 .lc-id{font-size:0.6rem;color:#666;margin-top:2px}
 
+/* ── LOG MODAL ── */
+#log-modal{position:fixed;inset:0;background:#000c;z-index:300;display:none;align-items:center;justify-content:center;padding:16px}
+.log-card{background:#1e1e36;border:1px solid #c9a84c44;border-radius:12px;padding:20px;width:310px;max-width:100%}
+.log-title{font-size:0.88rem;color:#c9a84c;font-weight:700;margin-bottom:16px}
+.log-section{margin-bottom:12px}
+.log-lbl{font-size:0.63rem;color:#888;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.06em}
+.log-row{display:flex;gap:8px}
+.log-toggle{flex:1;padding:8px 0;border-radius:6px;border:1px solid #2a2a40;background:#13132a;color:#666;cursor:pointer;font-size:0.8rem;font-weight:600;transition:all 0.15s}
+.log-toggle:hover{border-color:#555;color:#aaa}
+.log-toggle.active[data-go="1st"]{border-color:#4a7a10;background:#1a3010;color:#c8ff80}
+.log-toggle.active[data-go="2nd"]{border-color:#7a3c00;background:#301808;color:#ffb870}
+.log-toggle.active[data-result="W"]{border-color:#1c6b30;background:#0e3018;color:#8fffaa}
+.log-toggle.active[data-result="L"]{border-color:#7a1515;background:#300e0e;color:#ff9090}
+.log-note-area{width:100%;height:64px;background:#13132a;border:1px solid #2a2a40;border-radius:6px;color:#ccc;font-size:0.75rem;padding:7px 9px;resize:none;font-family:inherit}
+.log-note-area:focus{outline:none;border-color:#c9a84c55}
+.log-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}
+.log-cancel{padding:6px 14px;border-radius:6px;border:1px solid #333;background:none;color:#888;cursor:pointer;font-size:0.78rem}
+.log-save{padding:6px 14px;border-radius:6px;border:none;background:#c9a84c;color:#111;cursor:pointer;font-size:0.78rem;font-weight:700}
+.log-save:disabled{background:#2a2a1a;color:#555;cursor:not-allowed}
+/* ── LOG BUTTON IN TABLE ── */
+.log-btn{background:none;border:none;cursor:pointer;font-size:0.78rem;padding:1px 3px;opacity:0.3;transition:opacity 0.15s;color:#80b8ff;line-height:1}
+.log-btn:hover{opacity:1}
+/* ── YOU COLUMN ── */
+.you-badge{font-size:0.68rem;font-weight:700;white-space:nowrap}
+.you-w{color:#8fffaa}.you-l{color:#888}
+/* ── MY SECTION (deck page) ── */
+.my-section{margin-top:20px;border-top:1px solid #252535;padding-top:16px}
+.my-section-title{font-size:0.68rem;color:#c9a84c;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;margin-bottom:8px}
+.my-notes-area{width:100%;min-height:76px;background:#13132a;border:1px solid #252545;border-radius:7px;color:#c0c8e0;font-size:0.76rem;padding:8px 10px;resize:vertical;font-family:inherit;line-height:1.5}
+.my-notes-area:focus{outline:none;border-color:#c9a84c44}
+.my-record-row{display:flex;align-items:center;gap:12px;margin-bottom:8px}
+.my-record-num{font-size:0.85rem;font-weight:700}
+.my-record-w{color:#8fffaa}.my-record-l{color:#ff9090}
+.my-record-pct{font-size:0.7rem;color:#888}
+.my-history-item{font-size:0.68rem;padding:5px 0;border-bottom:1px solid #1a1a2a;display:flex;gap:8px;align-items:baseline}
+.my-res-w{color:#8fffaa;font-weight:700;min-width:16px}
+.my-res-l{color:#ff9090;font-weight:700;min-width:16px}
+.my-go{color:#999;min-width:28px}
+.my-note-text{color:#aaa;flex:1;word-break:break-word}
+.my-date{color:#444;flex-shrink:0}
+.my-log-btn{font-size:0.7rem;padding:4px 10px;background:#1a2a3a;border:1px solid #3a5a7a;border-radius:5px;color:#80b8ff;cursor:pointer}
+
 </style>
 </head>
 <body>
@@ -276,6 +318,7 @@ tr.detail-row td{padding:0;border-bottom:1px solid #1e1e36}
         <th>1st</th>
         <th>2nd</th>
         <th>Style</th>
+        <th style="text-align:center">You</th>
         <th></th>
       </tr>
     </thead>
@@ -291,6 +334,35 @@ tr.detail-row td{padding:0;border-bottom:1px solid #1e1e36}
   <div id="deck-content"></div>
 </div>
 
+
+<!-- ════ LOG GAME MODAL ════ -->
+<div id="log-modal" onclick="closeLogModal()">
+  <div class="log-card" onclick="event.stopPropagation()">
+    <div id="log-modal-title" class="log-title"></div>
+    <div class="log-section">
+      <div class="log-lbl">Go Order</div>
+      <div class="log-row">
+        <button class="log-toggle" data-go="1st" onclick="setLogGo('1st')">1st</button>
+        <button class="log-toggle" data-go="2nd" onclick="setLogGo('2nd')">2nd</button>
+      </div>
+    </div>
+    <div class="log-section">
+      <div class="log-lbl">Result</div>
+      <div class="log-row">
+        <button class="log-toggle" data-result="W" onclick="setLogResult('W')">Win ✓</button>
+        <button class="log-toggle" data-result="L" onclick="setLogResult('L')">Loss ✗</button>
+      </div>
+    </div>
+    <div class="log-section">
+      <div class="log-lbl">Note (optional)</div>
+      <textarea id="log-note" class="log-note-area" placeholder="What happened? Key plays, mistakes…"></textarea>
+    </div>
+    <div class="log-actions">
+      <button class="log-cancel" onclick="closeLogModal()">Cancel</button>
+      <button class="log-save" id="log-save-btn" onclick="saveLog()" disabled>Save</button>
+    </div>
+  </div>
+</div>
 </div><!-- #app -->
 
 <!-- Modal -->
@@ -3153,6 +3225,117 @@ function updateStarBtns() {
   });
 }
 
+// ── GAME LOG & NOTES ──────────────────────────────────────────
+let allGames = [];
+let allNotes = {};
+try { allGames = JSON.parse(localStorage.getItem('optcg-games') || '[]'); } catch(e) {}
+try { allNotes = JSON.parse(localStorage.getItem('optcg-notes') || '{}'); } catch(e) {}
+function _saveGames() { try { localStorage.setItem('optcg-games', JSON.stringify(allGames)); } catch(e) {} }
+function _saveNotes() { try { localStorage.setItem('optcg-notes', JSON.stringify(allNotes)); } catch(e) {} }
+function _nk(lk, dk) { return lk + ':' + dk; }
+function _gamesFor(lk, dk) { return allGames.filter(g => g.leaderKey === lk && g.deckKey === dk); }
+function personalRecord(lk, dk) {
+  const gs = _gamesFor(lk, dk);
+  const w = gs.filter(g => g.result === 'W').length;
+  return { w, l: gs.length - w, total: gs.length };
+}
+function saveNote(deckKey, text) {
+  allNotes[_nk(currentLeaderKey, deckKey)] = text;
+  _saveNotes();
+}
+
+// ── LOG MODAL ──────────────────────────────────────────────────
+let _logDeck = null, _logGo = null, _logResult = null;
+
+function openLogModal(deckKey, matchupName, event) {
+  if (event) event.stopPropagation();
+  _logDeck = deckKey; _logGo = null; _logResult = null;
+  document.getElementById('log-modal-title').textContent = matchupName + ' — Log Game';
+  document.getElementById('log-note').value = '';
+  document.querySelectorAll('#log-modal .log-toggle').forEach(b => b.classList.remove('active'));
+  document.getElementById('log-save-btn').disabled = true;
+  document.getElementById('log-modal').style.display = 'flex';
+}
+function closeLogModal() { document.getElementById('log-modal').style.display = 'none'; }
+
+function setLogGo(go) {
+  _logGo = go;
+  document.querySelectorAll('#log-modal [data-go]').forEach(b => b.classList.toggle('active', b.dataset.go === go));
+  _chkLogSave();
+}
+function setLogResult(r) {
+  _logResult = r;
+  document.querySelectorAll('#log-modal [data-result]').forEach(b => b.classList.toggle('active', b.dataset.result === r));
+  _chkLogSave();
+}
+function _chkLogSave() { document.getElementById('log-save-btn').disabled = !(_logGo && _logResult); }
+
+function saveLog() {
+  if (!_logGo || !_logResult || !_logDeck) return;
+  const note = (document.getElementById('log-note').value || '').trim();
+  const m = getLM().find(m => m.deck === _logDeck);
+  allGames.push({ leaderKey: currentLeaderKey, deckKey: _logDeck,
+    matchupName: m ? m.name : _logDeck, go: _logGo, result: _logResult, note, ts: Date.now() });
+  _saveGames();
+  closeLogModal();
+  _refreshYouCells();
+  if (document.getElementById('screen-deck').classList.contains('active')) {
+    _refreshMySection(_logDeck);
+  }
+}
+
+// ── PERSONAL STATS HELPERS ────────────────────────────────────
+function _youCellHtml(i, deckKey) {
+  const rec = personalRecord(currentLeaderKey, deckKey || '');
+  const inner = rec.total > 0
+    ? `<span class="you-badge"><span class="you-w">${rec.w}W</span><span class="you-l"> ${rec.l}L</span></span>`
+    : '<span style="color:#252535">—</span>';
+  return `<td id="you-${i}" style="text-align:center;padding:5px 6px">${inner}</td>`;
+}
+
+function _refreshYouCells() {
+  getLM().forEach((m, i) => {
+    const cell = document.getElementById('you-' + i);
+    if (!cell) return;
+    const rec = personalRecord(currentLeaderKey, m.deck || '');
+    cell.innerHTML = rec.total > 0
+      ? `<span class="you-badge"><span class="you-w">${rec.w}W</span><span class="you-l"> ${rec.l}L</span></span>`
+      : '<span style="color:#252535">—</span>';
+  });
+}
+
+function _buildMyHistoryHtml(deckKey) {
+  const rec = personalRecord(currentLeaderKey, deckKey);
+  const games = _gamesFor(currentLeaderKey, deckKey).slice().reverse();
+  let recHtml = '';
+  if (rec.total > 0) {
+    const pct = Math.round(rec.w / rec.total * 100);
+    recHtml = `<div class="my-record-row">
+      <span class="my-record-num my-record-w">${rec.w}W</span>
+      <span class="my-record-num my-record-l">${rec.l}L</span>
+      <span class="my-record-pct">${pct}% personal WR (${rec.total} games)</span>
+    </div>`;
+  } else {
+    recHtml = '<div style="font-size:0.7rem;color:#444;margin-bottom:8px">No games logged yet</div>';
+  }
+  const rows = games.slice(0, 12).map(g => {
+    const d = new Date(g.ts);
+    const ds = (d.getMonth()+1) + '/' + d.getDate();
+    return `<div class="my-history-item">
+      <span class="${g.result==='W'?'my-res-w':'my-res-l'}">${g.result}</span>
+      <span class="my-go">${g.go}</span>
+      ${g.note ? `<span class="my-note-text">${g.note}</span>` : '<span class="my-note-text" style="color:#333">—</span>'}
+      <span class="my-date">${ds}</span>
+    </div>`;
+  }).join('');
+  return recHtml + (rows ? `<div style="margin-top:6px">${rows}</div>` : '');
+}
+
+function _refreshMySection(deckKey) {
+  const el = document.getElementById('my-hist-inner');
+  if (el) el.innerHTML = _buildMyHistoryHtml(deckKey);
+}
+
 // ── NAVIGATION ────────────────────────────────────────────────
 function dbg(msg) {
   const el = document.getElementById('dbg');
@@ -3197,7 +3380,7 @@ function goBack() {
   _sd.style.display = 'none';
   _sm.className = 'screen active';
   _sm.style.display = 'block';
-  requestAnimationFrame(() => { _sm.scrollTop = savedScroll; });
+  requestAnimationFrame(() => { _sm.scrollTop = savedScroll; _refreshYouCells(); });
 }
 
 // ── MODAL ─────────────────────────────────────────────────────
@@ -3453,8 +3636,10 @@ getLM().forEach((m, i) => {
     ? `<td><button class="deck-btn" data-deck="${m.deck}">📋</button></td>`
     : `<td style="color:#2a2a2a;font-size:0.6rem;padding:5px 10px">—</td>`;
 
+  const rec = personalRecord(currentLeaderKey, m.deck || '');
+  const youCell = _youCellHtml(i, m.deck);
   const starCell = m.deck
-    ? `<td style="padding:2px 4px;text-align:center"><button class="star-btn" data-deck="${m.deck}" onclick="event.stopPropagation();toggleFav('${m.deck}')" title="Favourite">★</button></td>`
+    ? `<td style="padding:2px 4px;text-align:center;white-space:nowrap"><button class="star-btn" data-deck="${m.deck}" onclick="event.stopPropagation();toggleFav('${m.deck}')" title="Favourite">★</button><button class="log-btn" onclick="event.stopPropagation();openLogModal('${m.deck}','${m.name.replace(/'/g,"\'")}',event)" title="Log game">📋</button></td>`
     : `<td></td>`;
 
   const tr = document.createElement('tr');
@@ -3466,12 +3651,13 @@ getLM().forEach((m, i) => {
     <td><span class="wr ${wrCls(m.wr1)}">${wrLbl(m.wr1)}</span></td>
     <td><span class="wr ${wrCls(m.wr2)}">${wrLbl(m.wr2)}</span></td>
     <td class="sty">${m.style}</td>
+    ${youCell}
     ${starCell}`;
   tbody.appendChild(tr);
 
   const dr = document.createElement('tr');
   dr.className = 'detail-row';
-  dr.innerHTML = `<td colspan="6"><div class="detail-panel" id="panel-${i}">${essHtml}${tipsHtml}</div></td>`;
+  dr.innerHTML = `<td colspan="7"><div class="detail-panel" id="panel-${i}">${essHtml}${tipsHtml}</div></td>`;
   tbody.appendChild(dr);
 });
 
@@ -3653,7 +3839,27 @@ function renderDeck(d, matchup) {
     <span class="tc">${total}</span>
   </div>`;
 
+  // append my-section
+  const existingNote = allNotes[_nk(currentLeaderKey, deckKey)] || '';
+  const _mName = (matchup ? matchup.name : deckKey).replace(/'/g, '&#39;');
+  html += `
+  <div class="my-section">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <div class="my-section-title" style="margin-bottom:0">📝 My Notes</div>
+    </div>
+    <textarea id="my-notes-ta" class="my-notes-area" placeholder="Your observations, what to remember next time…" oninput="saveNote('${deckKey}', this.value)"></textarea>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin:14px 0 6px">
+      <div class="my-section-title" style="margin-bottom:0">📊 My Record</div>
+      <button class="my-log-btn" onclick="openLogModal('${deckKey}','${_mName}',event)">+ Log Game</button>
+    </div>
+    <div id="my-hist-inner"></div>
+  </div>`;
   document.getElementById('deck-content').innerHTML = html;
+  // set textarea value after innerHTML (avoids HTML-encoding issues)
+  const ta = document.getElementById('my-notes-ta');
+  if (ta) ta.value = existingNote;
+  // render history
+  _refreshMySection(deckKey);
 }
 showHome();
 </script>
