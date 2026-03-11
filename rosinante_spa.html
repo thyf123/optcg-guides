@@ -1,0 +1,2143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>OP12-061 Rosinante — Guide</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden}
+body{font-family:'Segoe UI',Arial,sans-serif;background:#16162a;color:#ddd}
+
+/* ── APP SHELL ── */
+#app{position:fixed;inset:0;overflow:hidden}
+
+/* ── SCREENS ── */
+.screen{
+  display:none;
+  position:absolute;inset:0;
+  overflow-y:auto;overflow-x:hidden;
+  padding:16px;
+  }
+.screen.active{display:block;position:absolute;inset:0;z-index:10;}
+
+/* ── MATCHUP SCREEN ── */
+#screen-matchup h1{font-size:1rem;color:#c9a84c;font-weight:700}
+#screen-matchup .sub{font-size:0.7rem;color:#666;margin:2px 0 12px}
+
+.legend{display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap;align-items:center}
+.leg{display:flex;align-items:center;gap:4px;font-size:0.67rem;color:#999}
+.sw{width:11px;height:11px;border-radius:2px;display:inline-block;flex-shrink:0}
+
+table{border-collapse:collapse;width:100%;font-size:0.78rem}
+th{background:#1e1e36;color:#c9a84c;padding:6px 10px;text-align:left;font-size:0.63rem;letter-spacing:0.08em;text-transform:uppercase;border-bottom:2px solid #c9a84c44;white-space:nowrap}
+tr.data-row{cursor:pointer}
+tr.data-row td{padding:5px 10px;border-bottom:1px solid #1e1e36;transition:background 0.1s}
+tr.data-row:hover td{background:#22223a}
+tr.data-row.active td{background:#252545}
+
+.mname{font-weight:600;white-space:nowrap}
+.warn{color:#e07050;margin-left:3px;font-size:0.72rem}
+.wr{font-size:0.7rem;font-weight:700;padding:2px 5px;border-radius:3px;display:inline-block;min-width:38px;text-align:center;white-space:nowrap}
+.wg{background:#1c6b30;color:#8fffaa}
+.wl{background:#4a7a10;color:#c8ff80}
+.wy{background:#7a6200;color:#ffe680}
+.wo{background:#7a3c00;color:#ffb870}
+.wr2{background:#7a1515;color:#ff9090}
+.wn{background:#2a2a2a;color:#555}
+.go{font-size:0.68rem;font-weight:700;padding:2px 6px;border-radius:3px;white-space:nowrap}
+.go1{background:#1a3a6a;color:#80b8ff}
+.go2{background:#3a1a1a;color:#ff9090}
+.sty{font-size:0.67rem;color:#888;white-space:nowrap}
+
+.deck-btn{display:inline-flex;align-items:center;gap:3px;font-size:0.63rem;font-weight:700;background:#1a3a2a;color:#60d090;border:1px solid #30803050;border-radius:4px;padding:2px 6px;cursor:pointer;white-space:nowrap;border:none;outline:none}
+.deck-btn:active{background:#1f4a32}
+
+/* detail panel */
+tr.detail-row td{padding:0;border-bottom:1px solid #1e1e36}
+.detail-panel{display:none;padding:10px 14px 12px 18px;background:#1a1a30;border-left:3px solid #c9a84c55}
+.detail-panel.open{display:block}
+.dl{font-size:0.62rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#c9a84c;margin-bottom:3px}
+.ei{display:flex;gap:6px;margin-bottom:3px}
+.ec{font-weight:700;color:#ffd080;white-space:nowrap;flex-shrink:0;font-size:0.72rem}
+.er{color:#c8b878;font-size:0.7rem;line-height:1.45}
+.tips-list{list-style:none;padding:0}
+.tips-list li{font-size:0.72rem;color:#bbb;padding:2px 0 2px 11px;position:relative;line-height:1.5}
+.tips-list li::before{content:"·";position:absolute;left:3px;color:#c9a84c}
+.ds{margin-bottom:8px}
+
+/* ── DECK SCREEN ── */
+#screen-deck{background:#16162a}
+
+.back-btn{display:inline-flex;align-items:center;gap:6px;font-size:0.8rem;font-weight:700;color:#c9a84c;background:#1e1e38;border:1px solid #c9a84c44;border-radius:7px;padding:6px 14px;cursor:pointer;margin-bottom:14px;border:none;outline:none;-webkit-tap-highlight-color:transparent}
+.back-btn:active{background:#252545}
+
+.deck-header{margin-bottom:14px}
+.deck-header h2{font-size:1rem;color:#c9a84c;font-weight:700}
+.deck-header .placement{font-size:0.75rem;color:#ffd080;margin-top:4px;font-weight:600}
+.deck-header .meta{font-size:0.7rem;color:#888;margin-top:2px}
+.deck-header .ext-link{display:inline-block;margin-top:5px;font-size:0.67rem;color:#6fa8dc;text-decoration:none;border-bottom:1px solid #6fa8dc44}
+.deck-header .tap-hint{font-size:0.62rem;color:#555;margin-top:3px}
+
+.leader-wrap{display:flex;align-items:flex-start;gap:12px;background:#1e1e38;border:1px solid #c9a84c55;border-radius:10px;padding:10px 12px;margin-bottom:18px}
+.leader-img{width:88px;border-radius:7px;flex-shrink:0;cursor:pointer;display:block;transition:opacity 0.2s;opacity:0;background:#1a1a2e;min-height:62px}
+.linfo h3{font-size:0.92rem;color:#ffd080;font-weight:700;line-height:1.2}
+.linfo .lid{font-size:0.66rem;color:#777;margin-top:2px}
+.linfo .leff{font-size:0.67rem;color:#bbb;margin-top:6px;line-height:1.55}
+.pip{display:inline-block;width:8px;height:8px;border-radius:50%;vertical-align:middle;margin-right:3px}
+.pr{background:#e05050}.pg{background:#50c050}.pp{background:#9060d0}.py{background:#d0b030}
+
+.sec-wrap{margin-bottom:18px}
+.sec-hdr{display:flex;justify-content:space-between;align-items:baseline;border-bottom:1px solid #2a2a4a;padding-bottom:4px;margin-bottom:8px}
+.sec-title{font-size:0.68rem;font-weight:700;letter-spacing:0.09em;text-transform:uppercase;color:#c9a84c}
+.sec-cnt{font-size:0.65rem;color:#666}
+
+.card-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
+.card-item{position:relative;border-radius:8px;overflow:hidden;background:#1a1a30;cursor:pointer;aspect-ratio:0.715}
+.card-item img{width:100%;height:100%;object-fit:cover;display:block;border-radius:8px;transition:opacity 0.2s;opacity:0}
+.card-item img.loaded{opacity:1}
+.b-count{position:absolute;top:4px;left:4px;background:rgba(0,0,0,0.85);color:#ffd080;font-size:0.85rem;font-weight:900;border-radius:4px;padding:1px 6px;border:1px solid #c9a84c55;pointer-events:none;line-height:1.5}
+.b-name{position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,0.78);color:#bbb;font-size:0.57rem;text-align:center;padding:2px 2px 3px;pointer-events:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+.total-bar{background:#1e1e38;border:1px solid #c9a84c22;border-radius:8px;padding:8px 14px;display:flex;justify-content:space-between;align-items:center;margin-top:4px;margin-bottom:20px}
+.total-bar .tl{font-size:0.72rem;color:#888}
+.total-bar .tc{font-size:1rem;font-weight:700;color:#ffd080}
+
+/* modal */
+.modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.93);z-index:999;justify-content:center;align-items:center;flex-direction:column;gap:10px}
+.modal.open{display:flex}
+.modal img{max-width:90vw;max-height:78vh;border-radius:12px;box-shadow:0 0 40px rgba(0,0,0,0.95);transition:opacity 0.2s;opacity:0}
+.modal-lbl{background:rgba(0,0,0,0.88);color:#ffd080;padding:5px 18px;border-radius:20px;font-size:0.76rem;font-weight:700;text-align:center;max-width:80vw}
+.modal-spinner{width:36px;height:36px;border:3px solid #333;border-top:3px solid #c9a84c;border-radius:50%;animation:spin 0.8s linear infinite;position:absolute}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── SEARCH / FILTER BAR ── */
+.search-bar{display:flex;gap:6px;margin-bottom:10px;align-items:center;flex-wrap:wrap}
+.search-input{flex:1;min-width:120px;background:#1e1e36;border:1px solid #3a3a5a;border-radius:7px;color:#ddd;font-size:0.8rem;padding:6px 10px;outline:none}
+.search-input:focus{border-color:#c9a84c88}
+.search-input::placeholder{color:#555}
+.filter-btns{display:flex;gap:4px;flex-wrap:wrap}
+.fbtn{font-size:0.65rem;font-weight:700;border:none;border-radius:5px;padding:4px 8px;cursor:pointer;opacity:0.5;transition:opacity 0.15s}
+.fbtn.active{opacity:1}
+.fbtn-all{background:#333;color:#ddd}
+.fbtn-r{background:#7a2020;color:#ffaaaa}
+.fbtn-g{background:#1a5a1a;color:#aaffaa}
+.fbtn-b{background:#1a2a7a;color:#aaaaff}
+.fbtn-p{background:#4a1a7a;color:#ddaaff}
+.fbtn-y{background:#7a6200;color:#ffe680}
+.fbtn-bk{background:#2a2a2a;color:#aaaaaa}
+.fbtn-warn{background:#5a2a10;color:#ffbb88}
+
+/* ── MODE TOGGLE ── */
+.mode-bar{display:flex;gap:6px;margin-bottom:10px;align-items:center}
+.mode-btn{font-size:0.68rem;font-weight:700;border:1px solid #3a3a5a;border-radius:6px;padding:4px 10px;cursor:pointer;background:#1e1e36;color:#888;transition:all 0.15s}
+.mode-btn.active{background:#c9a84c;color:#16162a;border-color:#c9a84c}
+.mode-label{font-size:0.65rem;color:#555;margin-left:auto}
+
+/* ── QUICK REF CARDS ── */
+#qref-container{display:none}
+#qref-container.visible{display:block}
+#table-container.hidden{display:none}
+
+.qref-card{background:#1e1e36;border:1px solid #2a2a4a;border-radius:10px;margin-bottom:8px;overflow:hidden;cursor:pointer;transition:border-color 0.15s}
+.qref-card:hover{border-color:#c9a84c55}
+.qref-card.open{border-color:#c9a84c88}
+.qref-card.hidden{display:none}
+
+.qref-header{display:flex;align-items:center;gap:8px;padding:10px 12px}
+.qref-name{font-size:0.9rem;font-weight:700;color:#ddd;flex:1}
+.qref-warn{color:#e07050;font-size:0.8rem}
+.qref-go{font-size:0.75rem;font-weight:900;padding:3px 9px;border-radius:5px;white-space:nowrap;letter-spacing:0.05em}
+.qref-go.go1{background:#1a3a6a;color:#80b8ff;border:1px solid #2a5aaa}
+.qref-go.go2{background:#5a1a1a;color:#ffaaaa;border:1px solid #aa3a3a}
+.qref-wrs{display:flex;gap:4px}
+.qref-wr{font-size:0.65rem;font-weight:700;padding:2px 5px;border-radius:3px;white-space:nowrap}
+.qref-deck{font-size:0.7rem;background:#1a3a2a;color:#60d090;border:1px solid #30803050;border-radius:4px;padding:2px 7px;cursor:pointer;font-weight:700}
+
+.qref-body{display:none;padding:0 12px 12px}
+.qref-card.open .qref-body{display:block}
+.qref-section{margin-top:10px}
+.qref-section-title{font-size:0.6rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#c9a84c;margin-bottom:5px}
+.qref-tips{list-style:none;padding:0}
+.qref-tips li{font-size:0.75rem;color:#bbb;padding:2px 0 2px 12px;position:relative;line-height:1.5}
+.qref-tips li::before{content:"·";position:absolute;left:3px;color:#c9a84c}
+.qref-ess{display:flex;flex-direction:column;gap:4px}
+.qref-ess-item{display:flex;gap:6px;align-items:flex-start}
+.qref-ess-card{font-size:0.72rem;font-weight:700;color:#ffd080;white-space:nowrap;flex-shrink:0}
+.qref-ess-reason{font-size:0.7rem;color:#c8b878;line-height:1.4}
+
+/* ── MATCHUP INFO on deck page ── */
+.matchup-info{background:#1a1a30;border:1px solid #c9a84c44;border-radius:10px;padding:12px 14px;margin-bottom:16px}
+.mi-header{display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap}
+.mi-name{font-size:1rem;font-weight:700;color:#ffd080}
+.mi-go{font-size:0.8rem;font-weight:900;padding:4px 12px;border-radius:6px;letter-spacing:0.05em}
+.mi-go.go1{background:#1a3a6a;color:#80b8ff;border:1px solid #2a5aaa}
+.mi-go.go2{background:#5a1a1a;color:#ffaaaa;border:1px solid #aa3a3a}
+.mi-wrs{display:flex;gap:5px;flex-wrap:wrap}
+.mi-wr{font-size:0.7rem;font-weight:700;padding:2px 6px;border-radius:3px}
+.mi-style{font-size:0.7rem;color:#888;margin-left:auto}
+.mi-section{margin-top:10px}
+.mi-section-title{font-size:0.62rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#c9a84c;margin-bottom:5px}
+.mi-tips{list-style:none;padding:0}
+.mi-tips li{font-size:0.76rem;color:#bbb;padding:3px 0 3px 12px;position:relative;line-height:1.5;border-bottom:1px solid #2a2a3a}
+.mi-tips li:last-child{border-bottom:none}
+.mi-tips li::before{content:"·";position:absolute;left:3px;color:#c9a84c;font-size:1rem}
+.mi-ess{display:flex;flex-direction:column;gap:5px}
+.mi-ess-item{display:flex;gap:8px;align-items:flex-start;background:#16162a;border-radius:6px;padding:5px 8px}
+.mi-ess-card{font-size:0.73rem;font-weight:700;color:#ffd080;white-space:nowrap;flex-shrink:0}
+.mi-ess-reason{font-size:0.71rem;color:#c8b878;line-height:1.45}
+.mi-divider{border:none;border-top:1px solid #2a2a4a;margin:14px 0}
+
+/* ── FAVOURITES ── */
+.fav-section{margin-bottom:14px;display:none}
+.fav-title{font-size:0.67rem;font-weight:700;letter-spacing:0.09em;text-transform:uppercase;color:#c9a84c;margin-bottom:8px}
+.fav-grid{display:flex;gap:8px;flex-wrap:wrap}
+.fav-card{position:relative;width:58px;cursor:pointer;flex-shrink:0}
+.fav-card img{width:58px;border-radius:6px;display:block;opacity:0;transition:opacity 0.2s;border:1px solid #c9a84c44;background:#1a1a2e;min-height:40px}
+.fav-card img.loaded{opacity:1}
+.fav-card:hover img{border-color:#c9a84c88}
+.fav-label{font-size:0.52rem;color:#888;text-align:center;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:58px}
+.fav-rm{position:absolute;top:-5px;right:-5px;background:#7a1515;color:#fff;border:none;border-radius:50%;width:15px;height:15px;font-size:0.72rem;line-height:15px;text-align:center;cursor:pointer;opacity:0;transition:opacity 0.15s;padding:0}
+.fav-card:hover .fav-rm{opacity:1}
+.star-btn{background:none;border:none;cursor:pointer;font-size:0.82rem;padding:1px 4px;opacity:0.22;transition:opacity 0.15s;line-height:1;flex-shrink:0;color:#c9a84c}
+.star-btn.starred{opacity:1}
+</style>
+</head>
+<body>
+<div id="app">
+
+<!-- ════ SCREEN 1: MATCHUP TABLE ════ -->
+<div class="screen active" id="screen-matchup">
+  <h1>OP12-061 Donquixote Rosinante</h1>
+  <p class="sub">TCGMatchMaking.com · 25,255 games · 55.0% WR · EB03</p>
+
+  <!-- Favourites -->
+  <div id="fav-section" class="fav-section"></div>
+
+  <!-- Mode toggle -->
+  <div class="mode-bar">
+    <button class="mode-btn active" id="btn-table" onclick="setMode('table')">Table</button>
+    <button class="mode-btn" id="btn-qref" onclick="setMode('qref')">⚡ Quick Ref</button>
+    <span class="mode-label">Quick Ref = pre-match cheat sheet</span>
+  </div>
+
+  <!-- Search + filter -->
+  <div class="search-bar">
+    <input class="search-input" id="search-input" type="text" placeholder="Search matchup…" oninput="applyFilters()">
+    <div class="filter-btns">
+      <button class="fbtn fbtn-all active" data-color="all" onclick="setColor(this)">All</button>
+      <button class="fbtn fbtn-r" data-color="red" onclick="setColor(this)">Red</button>
+      <button class="fbtn fbtn-g" data-color="green" onclick="setColor(this)">Green</button>
+      <button class="fbtn fbtn-b" data-color="blue" onclick="setColor(this)">Blue</button>
+      <button class="fbtn fbtn-p" data-color="purple" onclick="setColor(this)">Purple</button>
+      <button class="fbtn fbtn-y" data-color="yellow" onclick="setColor(this)">Yellow</button>
+      <button class="fbtn fbtn-bk" data-color="black" onclick="setColor(this)">Black</button>
+      <button class="fbtn fbtn-warn" data-color="warn" onclick="setColor(this)">⚠ Hard</button>
+    </div>
+  </div>
+
+  <div class="legend">
+    <span style="font-size:0.67rem;color:#666">WR:</span>
+    <div class="leg"><span class="sw" style="background:#1c6b30"></span>≥60%</div>
+    <div class="leg"><span class="sw" style="background:#4a7a10"></span>55–60%</div>
+    <div class="leg"><span class="sw" style="background:#7a6200"></span>50–55%</div>
+    <div class="leg"><span class="sw" style="background:#7a3c00"></span>40–50%</div>
+    <div class="leg"><span class="sw" style="background:#7a1515"></span>&lt;40%</div>
+  </div>
+
+  <!-- Quick Ref cards -->
+  <div id="qref-container"></div>
+
+  <!-- Table view -->
+  <div id="table-container">
+  <table>
+    <thead>
+      <tr>
+        <th>Matchup</th>
+        <th>Go</th>
+        <th>1st</th>
+        <th>2nd</th>
+        <th>Style</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody id="tbody"></tbody>
+  </table>
+</div>
+<div id="no-results" style="display:none;text-align:center;padding:28px 16px;color:#555;font-size:0.82rem">No matchups match your filter</div>
+</div><!-- /screen-matchup -->
+
+<!-- ════ SCREEN 2: DECKLIST ════ -->
+<div class="screen" id="screen-deck">
+  <button class="back-btn" onclick="goBack()">← Matchup Guide</button>
+  <div id="deck-content"></div>
+</div>
+
+</div><!-- #app -->
+
+<!-- Modal -->
+<div class="modal" id="modal" onclick="closeModal()">
+  <div class="modal-spinner" id="modal-spinner"></div>
+  <img id="modal-img" src="" alt="">
+  <div class="modal-lbl" id="modal-lbl"></div>
+</div>
+
+<script>
+function cardImg(id){
+  if(!id) return '';
+  return `https://en.onepiece-cardgame.com/images/cardlist/card/${id}.png`;
+}
+
+
+const MATCHUPS = [
+  { name:"OP01 Law", warn:false, go:"1st", wr1:71.3, wr2:51.9, style:"Attrition · Tall",
+    deck:"op01_law",
+    essential:[],
+    tips:["Establish your Law engine before he sets up","Leader effect keeps your Laws alive through his removal; keep one on board at all times","4-cost Law (P-088) hand-trash to narrow his counter options late"]
+  },
+  { name:"OP07 Bonney", warn:true, go:"1st", wr1:57.1, wr2:46.8, style:"Aggressive · Wide",
+    deck:"op7bonney",
+    essential:[{card:"Gamma Knife",reason:"Only clean answer to 8-cost Kid before the fortress completes; without it the blocker wall becomes nearly unbreakable."},{card:"Sugar",reason:"Need multiple search activations to build the wide board required to overwhelm her one-rest-per-turn ceiling."}],
+    tips:["Go wide with Sugar searches — one rest per turn can't lock down multiple simultaneous attackers","Attack cheapest unit first to bait the rest, then swing key units through clean","Gamma Knife 8-cost Kid immediately — Kid + Rosinante blocker fortress is nearly unbreakable once up","At 9+ Don expect 10-cost Doflamingo — hold counters specifically for that turn","Kill Baby 5 and 1-cost Bonney searcher on sight","7-cost Law board buff makes your units too expensive to profitably rest one-by-one"]
+  },
+  { name:"OP08 Carrot", warn:false, go:"1st", wr1:68.9, wr2:48.8, style:"Aggressive · Wide",
+    deck:"op8carrot",
+    essential:[{card:"Sugar",reason:"Going wide is the only way to outpace a one-rest-per-turn ceiling."},{card:"Uso-Hachi",reason:"Resting her Minks characters shuts off the leader effect entirely."}],
+    tips:["Kill Wanda and cheap Minks searchers early","Her rest hits cost-5 or less only — EB04-038 and 7-cost Law are immune","Go wide so she can't lock your whole board","Watch for 10-cost Doflamingo — hold counters going into her peak Don turns"]
+  },
+  { name:"OP08 Sabo", warn:false, go:"1st", wr1:null, wr2:null, style:"Aggressive",
+    deck:"op8sabo", essential:[],
+    tips:["Force early counters with 5k–6k swings","Don't drive life to 0 — Roger threat at 0 life"]
+  },
+  { name:"OP09 Shanks", warn:true, go:"1st", wr1:null, wr2:null, style:"Attrition · Tall",
+    deck:"op9shanks", essential:[],
+    tips:["Bepo neutralises his power-minus effect","Stay at 1 life and counter out","7-cost Law is sticky and threatens Jozu (7k)"]
+  },
+  { name:"OP09 Teach", warn:false, go:"1st", wr1:76.8, wr2:66.0, style:"Aggressive · Wide",
+    deck:"op9teach", essential:[],
+    tips:["His leader stops On Play effects — Sugar's Activate:Main still works","Go wide with multiple moderate attackers","Gamma Knife handles threats he cheats out"]
+  },
+  { name:"OP09 Lim", warn:false, go:"1st", wr1:75.7, wr2:52.0, style:"Attrition · Tall",
+    deck:"op9lim",
+    essential:[{card:"Vergo (via Sugar)",reason:"She runs bounce removal that bypasses combat; Vergo survives the bounce engine."},{card:"Uso-Hachi",reason:"Tech against her bottom-deck manipulation tools."}],
+    tips:["Vergo is essential — sticky body that resists bounce/removal effects","Use Uso-Hachi to rest key attackers","Build tall with high-cost Laws"]
+  },
+  { name:"OP09 Robin", warn:false, go:"1st", wr1:78.1, wr2:63.2, style:"Aggressive · Tall",
+    deck:"op9robin", essential:[],
+    tips:["Highly favourable — push hard early before her draw engine establishes","Tall Law units apply consistent pressure","4-cost Law (P-088) hand-trash when she builds a large hand"]
+  },
+  { name:"OP11 GP Luffy", warn:true, go:"1st", wr1:55.2, wr2:41.1, style:"Aggressive · Wide",
+    deck:"op11luffy",
+    essential:[{card:"Uso-Hachi (via Purple Law)",reason:"Resting his searchers (Koushirou, Tashigi, Kuina) cuts his consistency engine."},{card:"7-cost Law (OP12-073)",reason:"+1,000 board-wide buff pushes all your units above the power threshold his restand events need."}],
+    tips:["Don't overload Don onto single characters — restand triggers at 3+ Don attached","Prioritise killing Koushirou, Tashigi, and Kuina","Watch for 3 open Don — likely a restand event","Dead Man's Game rests two of your Don — plan defensive turns around this"]
+  },
+  { name:"OP11 Nami", warn:true, go:"1st", wr1:51.4, wr2:37.9, style:"Attrition · Wide",
+    deck:"op11nami",
+    essential:[{card:"Gamma Knife",reason:"Kuma generates up to 2 extra life cards; Gamma Knife before the +2 cost modifier is often the only clean answer."},{card:"Vergo (via Sugar)",reason:"Protects from Red Rock and Gravity Blade — her primary board control tools."},{card:"8-cost Law (EB03-062)",reason:"Her entire gameplan is life attrition; the heal loop is the single most important card."}],
+    tips:["Stay healthy early — outlast her; 8-cost Law heal loop is your backbone","Gamma Knife Kuma before he generates double life value (must draw)","Go wide with Sugar searches to overload her blocker count late","Don't kill Thriller Bark Robin carelessly — free character on KO"]
+  },
+  { name:"OP11 BP Luffy", warn:false, go:"1st", wr1:null, wr2:null, style:"Aggressive · Tall",
+    deck:"st13luffy", essential:[],
+    tips:["4-cost Law hand-trash aggressively at 7+ cards","Kill Bon Clay and Nami (Don accelerators)","Be ahead on board before 9 Don"]
+  },
+  { name:"OP11 Shirahoshi", warn:false, go:"1st", wr1:50.0, wr2:46.1, style:"Attrition · Tall",
+    deck:"op11shirahoshi", essential:[],
+    tips:["Coin flip matchup — don't overcommit","Establish a tall protected Law board and trade efficiently"]
+  },
+  { name:"OP11 Koby", warn:false, go:"2nd", wr1:70.7, wr2:91.7, style:"Attrition · Tall",
+    deck:"op11koby", essential:[],
+    tips:["Rare case where going second is clearly correct","Build tall with protected Laws — leader effect answers his KO effects","Extra Don going 2nd lets your Law engine outpace his removal curve"]
+  },
+  { name:"OP12 Rayleigh", warn:true, go:"1st", wr1:null, wr2:null, style:"Attrition · Tall",
+    deck:"op12rayleigh2",
+    essential:[{card:"EB04-038 (6-cost Rosi & Law)",reason:"The blocker package forces him to over-commit attackers."},{card:"7-cost Law (OP12-073)",reason:"Board-wide +1,000 buff pushes all your units above his boosted 4k characters."}],
+    tips:["Don't race him — build a tall blocker wall","Establish EB04-038 blocker before his closing rush window (Don 7+)","'To Never Doubt!' is unblockable — stack multiple tall defenders"]
+  },
+  { name:"OP12 Sanji", warn:true, go:"1st", wr1:49.3, wr2:33.1, style:"Aggressive · Tall",
+    deck:"op12sanji",
+    essential:[{card:"Vergo (via Sugar)",reason:"Red Rock and Gravity Blade will pick off your Laws without Vergo's protection."}],
+    tips:["Always go first — strongly negative going 2nd","Attack tall and early before his Don engine ramps","Poke for 5,000 — awkward number to counter","Watch for 9-cost Sanji combo at 9+ Don"]
+  },
+  { name:"OP12 Mirror", warn:false, go:"1st", wr1:60.4, wr2:39.6, style:"Attrition · Tall",
+    deck:"op12mirror",
+    essential:[{card:"Sugar",reason:"Resource war is decided by who gets more searches; extra Sugar activation = extra Law body."},{card:"Gamma Knife",reason:"Opponent's Laws are your primary threat; Gamma Knife is the only efficient answer."}],
+    tips:["First EB04-038 blocker down dictates pace — the taller wall wins","Kill opponent's Sugar immediately — player who gets more searches wins","Vergo and Gamma Knife are MVPs"]
+  },
+  { name:"OP12 Kuzan", warn:false, go:"1st", wr1:54.0, wr2:43.5, style:"Attrition · Tall",
+    deck:"op12kuzan", essential:[],
+    tips:["Establish a tall Law board before his bounce/removal disrupts","Vergo (fetch with Sugar) protects from bounce","Gamma Knife handles high-cost threats"]
+  },
+  { name:"OP13 Ace", warn:true, go:"2nd", wr1:35.7, wr2:40.3, style:"Aggressive · Tall",
+    deck:"op13ace",
+    essential:[{card:"7-cost Law (OP12-073)",reason:"Jozu bounce is his primary tool; 7-cost Law is sticky and threatens to KO Jozu (7k) in combat."}],
+    tips:["Worst matchup — don't play attrition; apply constant pressure","7-cost Law threatens to KO Jozu (7k)","Drain his hand; punish with 8,000+ pokes late"]
+  },
+  { name:"OP13 Imu", warn:true, go:"2nd", wr1:44.9, wr2:72.0, style:"Aggressive · Wide",
+    deck:"op13imu",
+    essential:[{card:"Vergo (via Sugar)",reason:"Her effect-based removal cannot cleanly remove Vergo, giving you a persistent body through her sweeps."},{card:"Sugar",reason:"Going wide requires volume of bodies to make her board wipes cost-inefficient."}],
+    tips:["+27% swing — strongly correct to go 2nd","Go wide — spread threat so no single wipe ends your turn","Leader effect converts Law KOs into life-to-hand, countering her win condition","Hold counters for her Five Elders swing turn"]
+  },
+  { name:"OP13 BP Luffy", warn:true, go:"1st", wr1:49.5, wr2:37.4, style:"Aggressive · Tall",
+    deck:"op13luffy",
+    essential:[{card:"4-cost Law (P-088)",reason:"His combo turn requires a large hand; hand-trash must be used proactively at 7+ cards before his 9-cost Sanji turn."}],
+    tips:["Attack tall and early; deplete his hand before the 9-cost Sanji combo turn","4-cost Law hand-trash aggressively at 7+ cards","Kill Don accelerators (Bon Clay, Nami) with rested attacks"]
+  },
+  { name:"OP13 Sabo", warn:false, go:"2nd", wr1:61.1, wr2:68.4, style:"Attrition · Tall",
+    deck:"op13sabo", essential:[],
+    tips:["Favourable either way; 2nd slightly better","Build tall with protected Laws","Don't drive life to 0 unless you can close — Roger is a threat at 0 life"]
+  },
+  { name:"OP13 Roger", warn:false, go:"1st", wr1:67.0, wr2:43.0, style:"Aggressive · Tall",
+    deck:"op13roger", essential:[],
+    tips:["Apply aggressive early pressure — don't let him set up","Don't drive life to 0 unless you can close — Roger effect is the real threat"]
+  },
+  { name:"OP13 Bonney", warn:false, go:"1st", wr1:75.9, wr2:69.8, style:"Attrition · Tall",
+    deck:"op13bonney",
+    essential:[{card:"8-cost Law (EB03-062)",reason:"Her entire gameplan revolves around life manipulation; the heal loop directly counters."},{card:"Gamma Knife",reason:"Kuma appears in most builds; Gamma Knife him before the +2 cost modifier resolves."}],
+    tips:["Highly favourable — 8-cost Law heal loop outlasts her life manipulation","No board removal — a buffed Law board simply stalls her","4-cost Law hand-trash to break her counter cycle"]
+  },
+  { name:"OP14 Mihawk", warn:false, go:"1st", wr1:70.8, wr2:52.7, style:"Aggressive · Wide",
+    deck:"op14mihawk",
+    essential:[{card:"Sugar",reason:"Going wide is the gameplan; Sugar generates the bodies needed to spread his removal thin."},{card:"Gamma Knife",reason:"His high-cost boss units are sticky; Gamma Knife is the cleanest removal answer."}],
+    tips:["Kill Perona on sight — losing her degrades his consistency","Go wide to spread his removal thin","Build wide before 9-cost Mihawk arrives"]
+  },
+  { name:"OP14 Jinbe", warn:false, go:"2nd", wr1:46.2, wr2:52.9, style:"Attrition · Tall",
+    deck:"op14jinbe", essential:[],
+    tips:["8-cost Law heal loop as primary win condition","Attack at 7,000 consistently"]
+  },
+  { name:"OP14 Hancock", warn:true, go:"1st", wr1:62.2, wr2:51.2, style:"Aggressive · Tall",
+    deck:"op14boa",
+    essential:[{card:"Gamma Knife",reason:"Kuma gains +2 cost after on-play; Gamma Knife before modifier resolves is often your only window."},{card:"Vergo (via Sugar)",reason:"Protects your Laws from her On Play removal tools."},{card:"4-cost Law (P-088)",reason:"Her defensive cycle relies on a large hand; stripping counters converts board states into wins."}],
+    tips:["Be aggressive early before her healing loops establish","Gamma Knife Kuma before his +2 cost modifier (must draw)","Rayleigh (OP14 builds) draws 4 — time hand-trash around this"]
+  },
+  { name:"OP14 Doflamingo", warn:false, go:"1st", wr1:68.4, wr2:57.8, style:"Attrition · Tall",
+    deck:"op14doffy",
+    essential:[{card:"Vergo (via Sugar)",reason:"His cost-based removal is the primary threat; Vergo's protection means he survives effects that would otherwise clear your Laws."}],
+    tips:["Play Vergo ASAP (fetch with Sugar)","Build tall with protected Laws","Gamma Knife handles his blocker units cleanly"]
+  },
+  { name:"OP14 Crocodile", warn:false, go:"1st", wr1:74.8, wr2:68.1, style:"—",
+    deck:"op14crocodile", essential:[],
+    tips:["Favourable both ways — strong matchup overall"]
+  },
+  { name:"OP14 Moria", warn:false, go:"1st", wr1:null, wr2:null, style:"Attrition · Tall",
+    deck:"op14moria", essential:[],
+    tips:["Don't aggro to 0 life; target face-up life cards aggressively","Gamma Knife Kuzan immediately","Blocker wall + 7-cost Law board buff prevents clean trades"]
+  },
+  { name:"EB02 Life Luffy", warn:false, go:"1st", wr1:54.4, wr2:41.1, style:"Attrition · Wide→Tall",
+    deck:"eb2luffy",
+    essential:[{card:"Gamma Knife",reason:"Kuzan reduces costs enabling cheap KOs on your Laws; Gamma Knife is the only reliable way to remove him."},{card:"7-cost Law (OP12-073)",reason:"Board-wide +1,000 buff prevents his adult brothers from cleanly trading through your units."}],
+    tips:["Start wide turns 1–3, then consolidate into a tall buffed Law board","Do NOT aggro to 0 life — keep him at 1–2 and attack the board","Kill Kuzan on sight — Gamma Knife immediately"]
+  },
+  { name:"EB03 Vivi", warn:false, go:"1st", wr1:69.7, wr2:55.9, style:"Aggressive · Tall",
+    deck:"eb3vivi",
+    essential:[{card:"Vergo (via Sugar)",reason:"Her leader grants Rush each activation; Vergo's protection keeps your key blocker alive."},{card:"Gamma Knife",reason:"She runs Shanks who KOs characters at 10k or less on play."}],
+    tips:["She only has 4 life — attack tall and early","Kill OP13-012 Vivi searcher and EB03-006 Nami on sight","Don't over-invest in a single large unit — Shanks KOs ≤10k on play"]
+  },
+  { name:"EB04 Sanji", warn:false, go:"1st", wr1:null, wr2:null, style:"Aggressive · Tall",
+    deck:"eb04sanji",
+    essential:[{card:"Vergo (via Sugar)",reason:"Red Rock/Gravity Blade pick off Laws without Vergo's Once Per Turn protection."}],
+    tips:["Vergo ASAP","Poke for 5,000 — awkward number to counter","Watch for 9-cost Sanji combo at 9+ Don"]
+  },
+  { name:"ST29 Luffy", warn:false, go:"1st", wr1:67.1, wr2:55.3, style:"Attrition · Tall",
+    deck:"st29luffy",
+    essential:[{card:"8-cost Law (EB03-062)",reason:"Their only win condition is volume attrition; the heal loop is a direct hard counter."},{card:"Gamma Knife",reason:"Kuma appears in most ST29 builds; allowing him to generate extra life turns a win into a grind."}],
+    tips:["No removal, no combo — out-tall him and let the heal loop do the work","Attack at 7,000 consistently","Don't push to ≤2 life unless you can close","Watch for ST29-016 Kizaru (Unblockable) at 0 life"]
+  },
+  { name:"P-117 Nami", warn:true, go:"1st", wr1:null, wr2:null, style:"Attrition · Wide",
+    deck:"p117nami",
+    essential:[{card:"Gamma Knife",reason:"Same as OP11 Nami — Kuma must be removed before his +2 cost modifier resolves."},{card:"Vergo (via Sugar)",reason:"Protects from Red Rock and Gravity Blade."}],
+    tips:["Treat as OP11 Nami — equally difficult","Gamma Knife Kuma immediately (must draw)","8-cost Law heal loop as backbone","Go wide with Sugar to brute-force through multiple blockers late"]
+  }
+];
+
+
+const DECKLISTS = {
+  op01_law: {
+    leader: "OP01-002",
+    leaderName: "Trafalgar Law",
+    leaderColors: "Red / Green",
+    leaderStats: "5 Life · 5000 Power",
+    leaderEffect: "[Activate: Main] [Once Per Turn] Give up to 1 of your Characters −1 cost this turn. Then, if you have 6 or more DON!! on your field, give up to 1 of your Characters Rush this turn.",
+    player: "ScreechTCG",
+    placement: "1st Place Standard Battle (4-0)",
+    location: "South Africa",
+    date: "March 2026",
+    sourceUrl: "https://onepiecetopdecks.com/deck-list/english-eb-03-deck-list-one-piece-heroines-edition/",
+    sections: [
+      { title: "Character", cards: [
+        { count:4, id:"OP01-006", name:"Otama" },
+        { count:2, id:"OP14-005", name:"Nami" },
+        { count:4, id:"OP14-013", name:"Roronoa Zoro" },
+        { count:4, id:"OP14-016", name:"Tony Tony Chopper" },
+        { count:3, id:"ST02-007", name:"Jewelry Bonney" },
+        { count:4, id:"EB01-015", name:"Mr.2 Bon Kurei" },
+        { count:4, id:"OP12-034", name:"Roronoa Zoro" },
+        { count:1, id:"OP01-039", name:"Vista" },
+        { count:4, id:"ST24-002", name:"Roronoa Zoro" },
+        { count:3, id:"ST02-009", name:"Trafalgar Law" },
+        { count:4, id:"EB01-012", name:"Zoro Juurou" },
+        { count:4, id:"OP12-118", name:"Trafalgar Law" },
+        { count:2, id:"ST24-005", name:"Eustass Kid" },
+        { count:2, id:"OP01-051", name:"Portgas D. Ace" }
+      ]},
+      { title: "Event", cards: [
+        { count:1, id:"OP01-027", name:"Round Table" },
+        { count:2, id:"OP07-035", name:"One Piece" },
+        { count:2, id:"OP12-037", name:"Slash of Conviction" }
+      ]}
+    ]
+  },
+  op7bonney: {
+    leader: "OP07-019",
+    leaderName: "Jewelry Bonney",
+    leaderColors: "Green",
+    leaderStats: "5 Life · 5000 Power",
+    leaderEffect: "[Activate: Main] [Once Per Turn] Give up to 1 of your opponent's Characters -1 cost until the end of your opponent's next turn.",
+    player: "Joe",
+    placement: "1st Place HeroinesCup",
+    location: "UK",
+    date: "March 2026",
+    sourceUrl: "https://onepiecetopdecks.com/deck-list/english-eb-03-deck-list-one-piece-heroines-edition/",
+    sections: [
+          { title: "Character", cards: [
+        { count:4, id:"ST02-007", name:"Jewelry Bonney" },
+        { count:4, id:"EB01-015", name:"Scratchmen Apoo" },
+        { count:2, id:"OP05-030", name:"Donquixote Rosinante" },
+        { count:3, id:"ST24-002", name:"Kid & Killer" },
+        { count:4, id:"OP10-032", name:"Tashigi" },
+        { count:3, id:"PRB02-004", name:"Jewelry Bonney" },
+        { count:2, id:"PRB02-006", name:"Roronoa Zoro" },
+        { count:4, id:"EB01-012", name:"Cavendish" },
+        { count:4, id:"OP08-023", name:"Carrot" },
+        { count:2, id:"OP10-030", name:"Smoker" },
+        { count:4, id:"OP12-118", name:"Jewelry Bonney" },
+        { count:1, id:"ST24-005", name:"X.Drake" },
+        { count:3, id:"OP13-031", name:"Trafalgar Law" },
+        { count:2, id:"OP06-035", name:"Hody Jones" },
+        { count:2, id:"OP01-051", name:"Eustass Kid" },
+        { count:3, id:"OP12-030", name:"Dracule Mihawk" },
+        { count:3, id:"OP04-031", name:"Donquixote Doflamingo" }
+      ]}
+    ]
+  },
+  op11nami: {
+    leader: "OP11-041",
+    leaderName: "Nami",
+    leaderColors: "Blue / Yellow",
+    leaderStats: "4 Life · 5000 Power",
+    leaderEffect: "[Activate: Main] [Once Per Turn] You may rest 1 DON!!: Your opponent adds 1 card from the top of their Life to their hand.",
+    player: "TrappiTCG",
+    placement: "1st Place HeroinesCup (4-0)",
+    location: "Germany",
+    date: "March 2026",
+    sourceUrl: "https://onepiecetopdecks.com/deck-list/english-eb-03-deck-list-one-piece-heroines-edition/",
+    sections: [
+          { title: "Character", cards: [
+        { count:4, id:"OP14-102", name:"Kumacy" },
+        { count:4, id:"OP06-106", name:"Kouzuki Hiyori" },
+        { count:4, id:"OP06-104", name:"Kikunojo" },
+        { count:4, id:"OP12-112", name:"Baby 5" },
+        { count:4, id:"OP14-110", name:"Dr. Hogback" },
+        { count:2, id:"OP14-111", name:"Perona" },
+        { count:4, id:"EB03-053", name:"Nami" },
+        { count:4, id:"EB03-055", name:"Nico Robin" },
+        { count:2, id:"OP10-112", name:"Eustass Kid" },
+        { count:4, id:"OP14-104", name:"Gecko Moria" },
+        { count:2, id:"OP03-048", name:"Nojiko" },
+        { count:4, id:"P-096", name:"Nami" },
+        { count:2, id:"OP06-047", name:"Charlotte Pudding" }
+      ]},
+          { title: "Event / Stage", cards: [
+        { count:3, id:"EB03-060", name:"Will You Be My Servant?" },
+        { count:2, id:"OP04-056", name:"Gum-Gum Red Roc" },
+        { count:1, id:"OP06-058", name:"Gravity Blade Raging Tiger" }
+      ]}
+    ]
+  },
+  op14boa: {
+    leader: "OP14-041",
+    leaderName: "Boa Hancock",
+    leaderColors: "Blue / Yellow",
+    leaderStats: "5 Life · 5000 Power",
+    leaderEffect: "[Activate: Main] [Once Per Turn] You may rest 2 DON!!: If you have 3 or more Life cards, your opponent adds 1 card from the top of their Life to their hand. Then, K.O. up to 1 of your opponent's Characters with 3000 power or less.",
+    player: "Linlin",
+    placement: "1st Place HeroinesCup (4-0)",
+    location: "Spain",
+    date: "March 2026",
+    sourceUrl: "https://onepiecetopdecks.com/deck-list/english-eb-03-deck-list-one-piece-heroines-edition/",
+    sections: [
+          { title: "Character", cards: [
+        { count:4, id:"OP06-106", name:"Kouzuki Hiyori" },
+        { count:2, id:"OP11-106", name:"Zeus" },
+        { count:4, id:"OP14-113", name:"Marguerite" },
+        { count:4, id:"OP14-114", name:"Ran" },
+        { count:2, id:"EB03-053", name:"Nami" },
+        { count:4, id:"OP12-119", name:"Bartholomew Kuma" },
+        { count:4, id:"OP14-105", name:"Gorgon Sisters" },
+        { count:4, id:"OP14-107", name:"Shakuyaku" },
+        { count:4, id:"OP14-112", name:"Boa Hancock" },
+        { count:2, id:"OP07-046", name:"Sengoku" },
+        { count:1, id:"ST03-013", name:"Boa Hancock" },
+        { count:2, id:"OP06-047", name:"Charlotte Pudding" },
+        { count:4, id:"ST17-004", name:"Boa Hancock" },
+        { count:2, id:"OP06-115", name:"You're the One Who Should Disappear" },
+        { count:2, id:"OP14-118", name:"You'll Frighten Me..." },
+        { count:1, id:"OP07-056", name:"Slave Arrow" },
+        { count:2, id:"OP07-057", name:"Perfume Femur" }
+      ]},
+          { title: "Event / Stage", cards: [
+        { count:1, id:"OP04-056", name:"Gum-Gum Red Roc" },
+        { count:1, id:"OP06-058", name:"Gravity Blade Raging Tiger" }
+      ]}
+    ]
+  },
+  op13ace: {
+    leader: "OP13-002",
+    leaderName: "Portgas D. Ace",
+    leaderColors: "Red / Blue",
+    leaderStats: "5 Life · 5000 Power",
+    leaderEffect: "[Activate: Main] [Once Per Turn] If your opponent has 2 or less Life cards, give up to 1 of your Characters +2000 power and Rush this turn.",
+    player: "JP ODonnell",
+    placement: "1st Place ShopEvent (6-0)",
+    location: "USA",
+    date: "March 2026",
+    sourceUrl: "https://onepiecetopdecks.com/deck-list/english-eb-03-deck-list-one-piece-heroines-edition/",
+    sections: [
+          { title: "Character", cards: [
+        { count:4, id:"ST22-002", name:"Izo" },
+        { count:4, id:"OP13-043", name:"Otama" },
+        { count:1, id:"OP06-047", name:"Charlotte Pudding" },
+        { count:2, id:"OP08-040", name:"Atmos" },
+        { count:3, id:"OP10-045", name:"Cavendish" },
+        { count:3, id:"PRB02-008", name:"Marco" },
+        { count:4, id:"OP13-054", name:"Yamato" },
+        { count:4, id:"OP08-047", name:"Jozu" },
+        { count:2, id:"OP13-046", name:"Vista" },
+        { count:4, id:"OP13-042", name:"Edward.Newgate" },
+        { count:4, id:"OP13-016", name:"Monkey.D.Garp" },
+        { count:1, id:"OP13-007", name:"Ace & Sabo & Luffy" },
+        { count:1, id:"OP02-008", name:"Jozu" },
+        { count:2, id:"ST23-001", name:"Uta" }
+      ]},
+          { title: "Event / Stage", cards: [
+        { count:2, id:"OP02-004", name:"Edward.Newgate" },
+        { count:1, id:"OP09-118", name:"Gol.D.Roger" },
+        { count:2, id:"OP04-056", name:"Gum-Gum Red Roc" },
+        { count:4, id:"ST22-015", name:"I Am Whitebeard!!" },
+        { count:2, id:"OP01-027", name:"Round Table" }
+      ]}
+    ]
+  },
+  eb3vivi: {
+    leader: "EB03-001",
+    leaderName: "Nefertari Vivi",
+    leaderColors: "Red",
+    leaderStats: "5 Life · 5000 Power",
+    leaderEffect: "[Activate: Main] [Once Per Turn] You may trash 1 card from your hand: Look at the top 3 cards of your deck; reveal up to 1 {Alabasta} type card and add it to your hand. Then, place the rest at the bottom of your deck in any order.",
+    player: "SkepasG",
+    placement: "1st Place HeroinesCup (5-0)",
+    location: "Europe",
+    date: "March 2026",
+    sourceUrl: "https://onepiecetopdecks.com/deck-list/english-eb-03-deck-list-one-piece-heroines-edition/",
+    sections: [
+          { title: "Character", cards: [
+        { count:4, id:"OP13-012", name:"Nefeltari Vivi" },
+        { count:4, id:"OP04-002", name:"Igaram" },
+        { count:3, id:"OP10-005", name:"Sanji" },
+        { count:4, id:"OP10-011", name:"Tony Tony.Chopper" },
+        { count:2, id:"OP13-011", name:"Nefeltari Cobra" },
+        { count:4, id:"EB03-006", name:"Nami" },
+        { count:4, id:"OP09-009", name:"Benn.Beckman" },
+        { count:4, id:"EB04-024", name:"Terracotta" },
+        { count:2, id:"OP06-047", name:"Charlotte Pudding" },
+        { count:4, id:"OP11-054", name:"Nami" },
+        { count:4, id:"EB03-024", name:"Nefeltari Vivi" },
+        { count:4, id:"EB04-025", name:"Nefeltari Vivi" },
+        { count:4, id:"EB04-023", name:"Chaka & Pell" }
+      ]},
+          { title: "Event / Stage", cards: [
+        { count:2, id:"EB03-011", name:"But If We Ever See Each Other Again... Will You Call Me Your Shipmate?!!" },
+        { count:1, id:"OP06-058", name:"Gravity Blade Raging Tiger" }
+      ]}
+    ]
+  },
+  op13imu: {
+    leader: "OP13-079",
+    leaderName: "Imu",
+    leaderColors: "Black",
+    leaderStats: "5 Life · 5000 Power",
+    leaderEffect: "[Activate: Main] [Once Per Turn] You may rest 2 DON!!: K.O. up to 1 of your opponent's Characters with 3000 power or less.",
+    player: "NatsuPham",
+    placement: "T4 Redbull | The Booster Box (64)",
+    location: "USA",
+    date: "March 2026",
+    sourceUrl: "https://onepiecetopdecks.com/deck-list/english-eb-03-deck-list-one-piece-heroines-edition/",
+    sections: [
+          { title: "Character", cards: [
+        { count:4, id:"OP13-086", name:"Saint Shalria" },
+        { count:4, id:"OP13-092", name:"Saint Mjosgard" },
+        { count:4, id:"OP13-083", name:"St. Jaygarcia Saturn" },
+        { count:4, id:"OP13-089", name:"St. Topman Warcury" },
+        { count:4, id:"OP13-080", name:"St. Ethanbaron V. Nusjuro" },
+        { count:4, id:"OP13-091", name:"St. Marcus Mars" },
+        { count:4, id:"OP13-084", name:"St. Shepherd Ju Peter" },
+        { count:4, id:"OP13-082", name:"Five Elders" },
+        { count:4, id:"OP13-096", name:"The Five Elders Are at Your Service!!!" },
+        { count:4, id:"OP13-097", name:"The World's Equilibrium Cannot Be Maintained Forever" },
+        { count:4, id:"OP13-098", name:"Never Existed... in the First Place..." },
+        { count:4, id:"OP14-096", name:"Ground Death" },
+        { count:1, id:"OP05-097", name:"Mary Geoise" }
+      ]},
+          { title: "Event / Stage", cards: [
+        { count:1, id:"OP13-099", name:"The Empty Throne" }
+      ]}
+    ]
+  },
+  op11shirahoshi: {
+    leader: "OP11-022",
+    leaderName: "Shirahoshi",
+    leaderColors: "Green / Yellow",
+    leaderStats: "5 Life · 5000 Power",
+    leaderEffect: "[On Play] If your opponent has 3 or more Life cards, your opponent adds 1 card from the top of their Life to their hand. [Activate: Main] [Once Per Turn] You may rest 1 DON!!: Give up to 1 of your {Fish-Man Island} type Characters +1000 power until the end of your opponent's next turn.",
+    player: "KZ",
+    placement: "1st Place Redbull | The Booster Box (64)",
+    location: "USA",
+    date: "March 2026",
+    sourceUrl: "https://onepiecetopdecks.com/deck-list/english-eb-03-deck-list-one-piece-heroines-edition/",
+    sections: [
+          { title: "Character", cards: [
+        { count:4, id:"OP11-030", name:"Shirahoshi" },
+        { count:4, id:"OP11-036", name:"Spotted Neptunian" },
+        { count:3, id:"EB04-018", name:"Megalo" },
+        { count:4, id:"EB04-016", name:"Bird Neptunian" },
+        { count:3, id:"OP06-035", name:"Hody Jones" },
+        { count:4, id:"EB04-011", name:"Scaled Neptunian" },
+        { count:2, id:"ST16-004", name:"ST16-004" },
+        { count:3, id:"OP11-100", name:"Otohime" },
+        { count:2, id:"EB01-056", name:"Charlotte Flampe" },
+        { count:4, id:"OP12-102", name:"Shirahoshi" },
+        { count:4, id:"EB03-052", name:"Shirahoshi" },
+        { count:4, id:"OP11-107", name:"Topknot Neptunian" },
+        { count:2, id:"OP11-037", name:"Ancient Weapon Poseidon" },
+        { count:1, id:"OP08-036", name:"Electrical Luna" },
+        { count:4, id:"OP11-115", name:"You're Just Not My Type!" }
+      ]}
+    ]
+  },
+  op14doffy: {
+    leader: "OP14-060",
+    leaderName: "Donquixote Doflamingo",
+    leaderColors: "Purple",
+    leaderStats: "5 Life · 5000 Power",
+    leaderEffect: "[Activate: Main] [Once Per Turn] You may trash 1 card from your hand and rest 1 DON!!: Give up to 1 of your {Donquixote Pirates} Characters +2000 power until the end of your opponent's next turn.",
+    player: "Andy Rodriguez",
+    placement: "1st Place SB (4-0)",
+    location: "USA",
+    date: "March 2026",
+    sourceUrl: "https://onepiecetopdecks.com/deck-list/english-eb-03-deck-list-one-piece-heroines-edition/",
+    sections: [
+          { title: "Character", cards: [
+        { count:4, id:"OP10-065", name:"Sugar" },
+        { count:4, id:"OP14-067", name:"Dellinger" },
+        { count:2, id:"ST18-001", name:"Uso-Hachi (ST18-001)" },
+        { count:4, id:"OP14-063", name:"Sugar" },
+        { count:2, id:"OP14-072", name:"Baby 5" },
+        { count:4, id:"OP10-072", name:"Donquixote Rosinante" },
+        { count:3, id:"OP14-061", name:"Vergo" },
+        { count:4, id:"OP14-068", name:"Trebol" },
+        { count:4, id:"OP14-074", name:"Monet" },
+        { count:4, id:"OP10-071", name:"Donquixote Doflamingo" },
+        { count:3, id:"OP14-069", name:"Donquixote Doflamingo" },
+        { count:4, id:"OP13-076", name:"Divine Departure" },
+        { count:2, id:"OP10-078", name:"I Do Not Forgive Those Who Laugh at My Family!!!" },
+        { count:4, id:"OP07-076", name:"Slow-Slow Beam Sword" },
+        { count:2, id:"OP14-078", name:"Bullet String" }
+      ]}
+    ]
+  },
+  op11luffy: {
+    leader: "OP11-040",
+    leaderName: "Monkey D. Luffy",
+    leaderColors: "Purple",
+    leaderStats: "5 Life · 5000 Power",
+    leaderEffect: "[Activate: Main] [Once Per Turn] DON!!-1: Give up to 1 of your {Straw Hat Crew} Characters Rush until the start of your next turn.",
+    player: "mynameisjapes",
+    placement: "1st Place OPTCGsim (64)",
+    location: "USA",
+    date: "March 2026",
+    sourceUrl: "https://onepiecetopdecks.com/deck-list/english-eb-03-deck-list-one-piece-heroines-edition/",
+    sections: [
+          { title: "Character", cards: [
+        { count:4, id:"OP05-067", name:"Zoro-Juurou" },
+        { count:4, id:"ST18-001", name:"Uso-Hachi (ST18-001)" },
+        { count:4, id:"EB01-061", name:"Mr.2.Bon.Kurei (Bentham)" },
+        { count:1, id:"OP07-064", name:"Sanji" },
+        { count:3, id:"EB03-034", name:"Charlotte Linlin" },
+        { count:4, id:"P-107", name:"Monkey D. Luffy" },
+        { count:4, id:"OP13-043", name:"Otama" },
+        { count:1, id:"OP06-047", name:"Charlotte Pudding" },
+        { count:4, id:"OP11-054", name:"Nami" },
+        { count:3, id:"OP08-076", name:"It's to Die For" }
+      ]},
+          { title: "Event / Stage", cards: [
+        { count:4, id:"OP01-070", name:"Dracule Mihawk" },
+        { count:4, id:"OP06-119", name:"Sanji" },
+        { count:4, id:"OP09-078", name:"Gum-Gum Giant" },
+        { count:4, id:"OP11-080", name:"Gear Two" },
+        { count:2, id:"OP04-056", name:"Gum-Gum Red Roc" }
+      ]}
+    ]
+  },
+  op13sabo: {
+    leader: "OP13-004",
+    leaderName: "Sabo",
+    leaderColors: "Red / Black",
+    leaderStats: "5 Life · 5000 Power",
+    leaderEffect: "[Activate: Main] [Once Per Turn] Give up to 1 of your Characters +1000 power until the end of your opponent's next turn. Then, if you have 2 or less Life cards, give that Character Rush this turn.",
+    player: "Seniru",
+    placement: "1st Place SB (4-0)",
+    location: "Australia",
+    date: "March 2026",
+    sourceUrl: "https://onepiecetopdecks.com/deck-list/english-eb-03-deck-list-one-piece-heroines-edition/",
+    sections: [
+          { title: "Character", cards: [
+        { count:4, id:"OP12-086", name:"Koala" },
+        { count:4, id:"OP12-093", name:"Morley" },
+        { count:3, id:"P-105", name:"Sabo" },
+        { count:4, id:"EB03-042", name:"Koala" },
+        { count:4, id:"PRB02-014", name:"Sabo" },
+        { count:4, id:"OP13-120", name:"Sabo" },
+        { count:3, id:"OP12-094", name:"Monkey.D.Dragon" },
+        { count:2, id:"OP07-085", name:"Stussy" },
+        { count:4, id:"OP05-015", name:"Belo Betty" },
+        { count:3, id:"OP13-016", name:"Monkey.D.Garp" },
+        { count:1, id:"OP13-017", name:"Monkey.D.Dragon" },
+        { count:3, id:"OP07-002", name:"Ain" },
+        { count:2, id:"OP07-015", name:"Monkey.D.Dragon" }
+      ]},
+          { title: "Event / Stage", cards: [
+        { count:1, id:"OP09-118", name:"Gol.D.Roger" },
+        { count:4, id:"OP12-098", name:"Hair Removal Fist" },
+        { count:4, id:"OP05-021", name:"Revolutionary Army HQ" }
+      ]}
+    ]
+  },
+  eb2luffy: {
+    leader: "EB02-010",
+    leaderName: "Monkey D. Luffy",
+    leaderColors: "Green / Purple",
+    leaderStats: "5 Life · 5000 Power",
+    leaderEffect: "[Activate: Main] [Once Per Turn] You may rest 2 DON!!: Add up to 1 card from the top of your Life to your hand. Then, add up to 1 card from the top of your deck to the top of your Life face-down.",
+    player: "ZunaaaaY",
+    placement: "2nd Place ShopEvent (4-1)",
+    location: "Italy",
+    date: "March 2026",
+    sourceUrl: "https://onepiecetopdecks.com/deck-list/english-eb-03-deck-list-one-piece-heroines-edition/",
+    sections: [
+          { title: "Character", cards: [
+        { count:4, id:"PRB02-012", name:"Nami" },
+        { count:4, id:"ST18-001", name:"Uso-Hachi (ST18-001)" },
+        { count:4, id:"ST18-004", name:"ST18-004" },
+        { count:4, id:"EB02-035", name:"Sanji & Pudding" },
+        { count:3, id:"EB02-061", name:"Monkey.D.Luffy" },
+        { count:4, id:"OP07-064", name:"Sanji" },
+        { count:1, id:"ST18-005", name:"ST18-005" },
+        { count:4, id:"EB02-017", name:"Nami" },
+        { count:4, id:"P-111", name:"Monkey D. Luffy" },
+        { count:2, id:"PRB02-005", name:"Monkey.D.Luffy" },
+        { count:3, id:"OP14-031", name:"OP14-031" },
+        { count:1, id:"OP13-076", name:"Divine Departure" }
+      ]},
+          { title: "Event / Stage", cards: [
+        { count:4, id:"OP09-078", name:"Gum-Gum Giant" },
+        { count:3, id:"OP12-037", name:"OP12-037" },
+        { count:3, id:"OP13-040", name:"OP13-040" },
+        { count:2, id:"EB02-021", name:"Gum-Gum Giant Pistol" }
+      ]}
+    ]
+  },
+  p117nami: {
+    leader: "P-117",
+    leaderName: "Nami",
+    leaderColors: "Blue",
+    leaderStats: "5 Life · 5000 Power",
+    leaderEffect: "[Activate: Main] [Once Per Turn] You may return 1 of your Characters to your hand: Your opponent adds 1 card from the top of their Life to their hand.",
+    player: "Angelo T",
+    placement: "1st Place HeroinesCup (4-0)",
+    location: "Europe",
+    date: "March 2026",
+    sourceUrl: "https://onepiecetopdecks.com/deck-list/english-eb-03-deck-list-one-piece-heroines-edition/",
+    sections: [
+          { title: "Character", cards: [
+        { count:4, id:"OP03-044", name:"Kaya" },
+        { count:4, id:"OP04-041", name:"Apis" },
+        { count:4, id:"OP09-050", name:"Nami" },
+        { count:4, id:"OP03-048", name:"Nojiko" },
+        { count:4, id:"OP03-050", name:"Boodle (Dash Pack)" },
+        { count:4, id:"OP04-050", name:"Hanger" },
+        { count:1, id:"EB03-023", name:"Kaya" },
+        { count:4, id:"EB03-028", name:"Yu" },
+        { count:4, id:"OP03-047", name:"Zeff" },
+        { count:4, id:"OP03-054", name:"Usopp's Rubber Band of Doom!!!" },
+        { count:4, id:"OP03-055", name:"Gum-Gum Giant Gavel" }
+      ]},
+          { title: "Event / Stage", cards: [
+        { count:4, id:"EB01-029", name:"Sorry. I'm a Goner." },
+        { count:4, id:"OP03-056", name:"Sanji's Pilaf" },
+        { count:1, id:"OP03-057", name:"Three Thousand Worlds" }
+      ]}
+    ]
+  },
+  op8carrot: {
+    leader: "OP08-021",
+    leaderName: "Carrot",
+    leaderColors: "Green",
+    leaderStats: "5 Life · 5000 Power",
+    leaderEffect: "[Activate: Main] [Once Per Turn] You may rest 1 DON!!: Until the end of your opponent's next turn, 1 of your characters with the {Mink Tribe} type gets +1000 power.",
+    player: "MerryTCG",
+    placement: "1st Place HeroinesCup (5-0)",
+    location: "Europe",
+    date: "March 2026",
+    sourceUrl: "https://onepiecetopdecks.com/deck-list/english-eb-03-deck-list-one-piece-heroines-edition/",
+    sections: [
+          { title: "Character", cards: [
+        { count:4, id:"EB02-013", name:"EB02-013" },
+        { count:4, id:"OP08-034", name:"OP08-034" },
+        { count:2, id:"ST24-001", name:"ST24-001" },
+        { count:4, id:"OP08-032", name:"OP08-032" },
+        { count:4, id:"OP10-032", name:"Tashigi" },
+        { count:2, id:"PRB02-006", name:"Roronoa Zoro" },
+        { count:4, id:"OP08-023", name:"Carrot" },
+        { count:2, id:"OP10-030", name:"Smoker" },
+        { count:2, id:"OP12-118", name:"Jewelry Bonney" },
+        { count:2, id:"OP14-033", name:"OP14-033" },
+        { count:4, id:"EB03-013", name:"EB03-013" },
+        { count:2, id:"OP06-035", name:"Hody Jones" },
+        { count:3, id:"OP01-051", name:"Eustass Kid" },
+        { count:3, id:"EB04-013", name:"EB04-013" },
+        { count:3, id:"OP04-031", name:"Donquixote Doflamingo" },
+        { count:2, id:"ST24-004", name:"ST24-004" },
+        { count:3, id:"OP08-039", name:"OP08-039" }
+      ]}
+    ]
+  },
+  op12sanji: {
+    leader: "OP12-041",
+    leaderName: "Sanji",
+    leaderColors: "Blue / Purple",
+    leaderStats: "5 Life · 5000 Power",
+    leaderEffect: "[Activate: Main] [Once Per Turn] DON!!-1: Give up to 1 of your {Vinsmoke Family} Characters +2000 power until the end of your opponent's next turn.",
+    player: "StrawHatsRCool",
+    placement: "T2 Redbull (7-1)",
+    location: "USA",
+    date: "Feb 2026",
+    sourceUrl: "https://onepiecetopdecks.com/deck-list/english-eb-03-deck-list-one-piece-heroines-edition/",
+    sections: [
+          { title: "Character", cards: [
+        { count:2, id:"OP12-071", name:"OP12-071" },
+        { count:4, id:"OP12-070", name:"OP12-070" },
+        { count:2, id:"OP12-063", name:"OP12-063" },
+        { count:4, id:"EB03-031", name:"EB03-031" },
+        { count:4, id:"OP07-064", name:"Sanji" },
+        { count:4, id:"OP13-043", name:"Otama" },
+        { count:4, id:"OP12-079", name:"OP12-079" },
+        { count:1, id:"OP12-078", name:"OP12-078" },
+        { count:4, id:"EB04-041", name:"EB04-041" },
+        { count:2, id:"OP11-060", name:"OP11-060" },
+        { count:2, id:"OP12-059", name:"OP12-059" },
+        { count:4, id:"EB04-029", name:"EB04-029" },
+        { count:4, id:"OP12-060", name:"OP12-060" }
+      ]},
+          { title: "Event / Stage", cards: [
+        { count:1, id:"OP13-076", name:"Divine Departure" },
+        { count:4, id:"OP09-078", name:"Gum-Gum Giant" },
+        { count:2, id:"OP04-056", name:"Gum-Gum Red Roc" },
+        { count:2, id:"OP06-058", name:"Gravity Blade Raging Tiger" }
+      ]}
+    ]
+  },
+  op13bonney: {
+    leader: "OP13-100",
+    leaderName: "Jewelry Bonney",
+    leaderColors: "Yellow",
+    leaderStats: "5 Life · 5000 Power",
+    leaderEffect: "[DON!!×1] [When Attacking] You may trash 1 card from your hand: Add up to 1 card from the top of your Life to your hand. Then, play up to 1 {Jewelry Bonney} with a cost equal to the cost of the trashed card from your hand.",
+    player: "Chaospaul",
+    placement: "1st Place HeroinesCup (27)",
+    location: "USA",
+    date: "Feb 2026",
+    sourceUrl: "https://onepiecetopdecks.com/deck-list/english-eb-03-deck-list-one-piece-heroines-edition/",
+    sections: [
+          { title: "Character", cards: [
+        { count:4, id:"OP07-099", name:"OP07-099" },
+        { count:4, id:"OP13-113", name:"OP13-113" },
+        { count:4, id:"OP06-101", name:"OP06-101" },
+        { count:2, id:"OP07-104", name:"OP07-104" },
+        { count:4, id:"OP06-104", name:"Kikunojo" },
+        { count:4, id:"OP07-107", name:"OP07-107" },
+        { count:2, id:"OP10-109", name:"OP10-109" },
+        { count:4, id:"ST29-004", name:"ST29-004" },
+        { count:4, id:"EB03-053", name:"Nami" },
+        { count:4, id:"OP07-113", name:"OP07-113" },
+        { count:3, id:"OP08-106", name:"OP08-106" },
+        { count:4, id:"OP12-119", name:"Bartholomew Kuma" },
+        { count:2, id:"OP13-110", name:"OP13-110" },
+        { count:4, id:"OP13-108", name:"OP13-108" },
+        { count:1, id:"OP06-115", name:"Youre the One Who Should Disappear" }
+      ]}
+    ]
+  },
+  op14crocodile: {
+    leader: "OP14-079",
+    leaderName: "Crocodile",
+    leaderColors: "Black",
+    leaderStats: "5 Life · 5000 Power",
+    leaderEffect: "[Activate: Main] [Once Per Turn] You may trash 1 card from your hand: K.O. up to 1 of your opponent's Characters with 3000 power or less.",
+    player: "Juli Luque",
+    placement: "1st Place SB (5-0)",
+    location: "Argentina",
+    date: "Feb 2026",
+    sourceUrl: "https://onepiecetopdecks.com/deck-list/english-eb-03-deck-list-one-piece-heroines-edition/",
+    sections: [
+          { title: "Character", cards: [
+        { count:4, id:"OP14-083", name:"OP14-083" },
+        { count:2, id:"OP14-085", name:"OP14-085" },
+        { count:4, id:"OP14-087", name:"OP14-087" },
+        { count:4, id:"OP14-088", name:"OP14-088" },
+        { count:4, id:"OP14-091", name:"OP14-091" },
+        { count:2, id:"OP14-093", name:"OP14-093" },
+        { count:3, id:"OP14-086", name:"OP14-086" },
+        { count:4, id:"OP14-090", name:"OP14-090" },
+        { count:3, id:"OP14-094", name:"OP14-094" },
+        { count:4, id:"OP14-084", name:"OP14-084" },
+        { count:4, id:"OP14-120", name:"OP14-120" },
+        { count:4, id:"OP14-096", name:"Ground Death" }
+      ]},
+          { title: "Event / Stage", cards: [
+        { count:4, id:"OP05-094", name:"OP05-094" },
+        { count:4, id:"OP14-099", name:"OP14-099" }
+      ]}
+    ]
+  },
+  st29luffy: {
+    leader: "ST29-001",
+    leaderName: "Monkey D. Luffy",
+    leaderColors: "Yellow",
+    leaderStats: "4 Life · 5000 Power",
+    leaderEffect: "[Activate: Main] [Once Per Turn] You may rest 1 DON!!: If you have 0 Life cards, your opponent adds 1 card from the top of their Life to their hand. Then, look at the top 3 cards of your deck; add up to 1 to your hand and place the rest at the bottom.",
+    player: "Giancarlo Abreu Fuentes",
+    placement: "1st Place Redbull Level 7 Games (64)",
+    location: "USA",
+    date: "Feb 2026",
+    sourceUrl: "https://onepiecetopdecks.com/deck-list/english-eb-03-deck-list-one-piece-heroines-edition/",
+    sections: [
+          { title: "Character", cards: [
+        { count:4, id:"OP07-099", name:"OP07-099" },
+        { count:4, id:"OP06-104", name:"Kikunojo" },
+        { count:2, id:"OP13-114", name:"OP13-114" },
+        { count:4, id:"ST29-004", name:"ST29-004" },
+        { count:4, id:"ST29-009", name:"ST29-009" },
+        { count:4, id:"EB03-053", name:"Nami" },
+        { count:2, id:"OP08-106", name:"OP08-106" },
+        { count:2, id:"OP09-107", name:"OP09-107" },
+        { count:3, id:"OP12-119", name:"Bartholomew Kuma" },
+        { count:4, id:"ST29-005", name:"ST29-005" },
+        { count:4, id:"EB03-055", name:"Nico Robin" },
+        { count:3, id:"OP10-112", name:"Eustass Kid" },
+        { count:3, id:"OP13-108", name:"OP13-108" },
+        { count:2, id:"OP06-115", name:"Youre the One Who Should Disappear" },
+        { count:2, id:"ST29-016", name:"ST29-016" },
+        { count:3, id:"ST13-017", name:"ST13-017" }
+      ]}
+    ]
+  },
+  op14mihawk: {
+    leader: "OP14-020",
+    leaderName: "Dracule Mihawk",
+    leaderColors: "Green",
+    leaderStats: "5 Life · 5000 Power",
+    leaderEffect: "[Activate: Main] [Once Per Turn] You may rest 2 DON!!: Your opponent adds 1 card from the top of their Life to their hand. Then, look at the top 3 cards of your deck; reveal up to 1 Character card with a cost of 6 or more and add it to your hand. Place the rest at the bottom in any order.",
+    player: "elijah quinby",
+    placement: "T8 Nationals",
+    location: "USA",
+    date: "Feb 2026",
+    sourceUrl: "https://onepiecetopdecks.com/deck-list/english-op-14-eb-04-deck-list-the-azure-sea-seven/",
+    sections: [
+          { title: "Character", cards: [
+        { count:3, id:"EB01-015", name:"Scratchmen Apoo" },
+        { count:4, id:"OP12-034", name:"OP12-034" },
+        { count:4, id:"ST24-002", name:"Kid & Killer" },
+        { count:3, id:"PRB02-006", name:"Roronoa Zoro" },
+        { count:3, id:"OP07-026", name:"OP07-026" },
+        { count:3, id:"OP12-118", name:"Jewelry Bonney" },
+        { count:4, id:"OP14-029", name:"OP14-029" },
+        { count:3, id:"OP13-031", name:"Trafalgar Law" },
+        { count:4, id:"OP14-027", name:"OP14-027" },
+        { count:1, id:"ST16-004", name:"ST16-004" },
+        { count:4, id:"ST24-004", name:"ST24-004" },
+        { count:1, id:"OP01-057", name:"OP01-057" },
+        { count:1, id:"OP04-035", name:"OP04-035" }
+      ]},
+          { title: "Event / Stage", cards: [
+        { count:4, id:"OP06-038", name:"OP06-038" },
+        { count:2, id:"OP12-037", name:"OP12-037" },
+        { count:2, id:"OP13-040", name:"OP13-040" },
+        { count:4, id:"OP14-039", name:"OP14-039" }
+      ]}
+    ]
+  },
+  op14jinbe: {
+    leader: "OP14-040",
+    leaderName: "Jinbe",
+    leaderColors: "Yellow / Black",
+    leaderStats: "5 Life · 5000 Power",
+    leaderEffect: "[Activate: Main] [Once Per Turn] You may rest 2 DON!!: If your opponent has 4 or more Life cards, K.O. up to 1 of your opponent's Characters with 5000 power or less.",
+    player: "Lucas Belmonte",
+    placement: "1st Place ShopEvent",
+    location: "Argentina",
+    date: "Feb 2026",
+    sourceUrl: "https://onepiecetopdecks.com/deck-list/english-op-14-eb-04-deck-list-the-azure-sea-seven/",
+    sections: [
+          { title: "Character", cards: [
+        { count:2, id:"OP03-044", name:"Kaya" },
+        { count:4, id:"OP14-042", name:"OP14-042" },
+        { count:4, id:"OP14-050", name:"OP14-050" },
+        { count:4, id:"OP14-051", name:"OP14-051" },
+        { count:4, id:"OP14-046", name:"OP14-046" },
+        { count:1, id:"P-048", name:"P-048" },
+        { count:4, id:"OP14-056", name:"OP14-056" },
+        { count:3, id:"OP06-047", name:"Charlotte Pudding" },
+        { count:3, id:"ST17-002", name:"ST17-002" },
+        { count:4, id:"OP14-043", name:"OP14-043" },
+        { count:2, id:"OP14-047", name:"OP14-047" },
+        { count:3, id:"OP08-047", name:"Jozu" },
+        { count:4, id:"OP14-054", name:"OP14-054" },
+        { count:4, id:"OP14-049", name:"OP14-049" },
+        { count:2, id:"OP07-057", name:"Perfume Femur" }
+      ]},
+          { title: "Event / Stage", cards: [
+        { count:3, id:"OP04-056", name:"Gum-Gum Red Roc" }
+      ]}
+    ]
+  },
+  op14moria: {
+    leader: "OP14-080",
+    leaderName: "Gecko Moria",
+    leaderColors: "Black / Yellow",
+    leaderStats: "5 Life · 5000 Power",
+    leaderEffect: "[When Attacking] You may trash 3 cards from your hand: Add up to 1 card from the top of your deck to the top of your Life face-down. [DON!!×1] [Activate: Main] [Once Per Turn] You may K.O. 1 of your own Characters: Give all of your Characters and your Leader +1000 power until end of turn.",
+    player: "Shelledalf",
+    placement: "T16 Nationals",
+    location: "USA",
+    date: "Feb 2026",
+    sourceUrl: "https://onepiecetopdecks.com/deck-list/english-op-14-eb-04-deck-list-the-azure-sea-seven/",
+    sections: [
+          { title: "Character", cards: [
+        { count:4, id:"OP06-091", name:"OP06-091" },
+        { count:2, id:"OP14-089", name:"OP14-089" },
+        { count:2, id:"OP06-090", name:"OP06-090" },
+        { count:4, id:"PRB02-013", name:"PRB02-013" },
+        { count:4, id:"OP13-113", name:"OP13-113" },
+        { count:4, id:"OP14-102", name:"Kumacy" },
+        { count:4, id:"OP14-100", name:"OP14-100" },
+        { count:2, id:"OP14-109", name:"OP14-109" },
+        { count:2, id:"OP06-104", name:"Kikunojo" },
+        { count:4, id:"OP14-110", name:"Dr. Hogback" },
+        { count:4, id:"OP14-111", name:"Perona" },
+        { count:4, id:"OP14-104", name:"Gecko Moria" },
+        { count:4, id:"OP14-112", name:"Boa Hancock" },
+        { count:4, id:"OP14-097", name:"OP14-097" },
+        { count:1, id:"OP07-116", name:"OP07-116" },
+        { count:1, id:"OP14-117", name:"OP14-117" }
+      ]}
+    ]
+  },
+  op13roger: {
+    leader: "OP13-003",
+    leaderName: "Gol D. Roger",
+    leaderColors: "Purple",
+    leaderStats: "5 Life · 5000 Power",
+    leaderEffect: "[Activate: Main] [Once Per Turn] DON!!-1: Give up to 1 of your Characters Rush this turn. Then, if you have 2 or less Life cards, draw 1 card.",
+    player: "Katokaari",
+    placement: "4th Place ShopEvent (Oberonn)",
+    location: "Belgium",
+    date: "Feb 2026",
+    sourceUrl: "https://onepiecetopdecks.com/deck-list/english-op-14-eb-04-deck-list-the-azure-sea-seven/",
+    sections: [
+          { title: "Character", cards: [
+        { count:4, id:"OP13-065", name:"OP13-065" },
+        { count:4, id:"OP13-072", name:"OP13-072" },
+        { count:4, id:"OP13-068", name:"OP13-068" },
+        { count:4, id:"EB01-061", name:"Mr.2.Bon.Kurei (Bentham)" },
+        { count:4, id:"OP13-067", name:"OP13-067" },
+        { count:4, id:"P-107", name:"Monkey D. Luffy" },
+        { count:4, id:"OP13-066", name:"OP13-066" },
+        { count:4, id:"ST21-003", name:"ST21-003" },
+        { count:4, id:"ST23-001", name:"Uta" },
+        { count:4, id:"OP09-004", name:"OP09-004" }
+      ]},
+          { title: "Event / Stage", cards: [
+        { count:2, id:"OP09-118", name:"Gol.D.Roger" },
+        { count:4, id:"OP13-076", name:"Divine Departure" },
+        { count:4, id:"OP13-075", name:"OP13-075" }
+      ]}
+    ]
+  },
+  op12kuzan: {
+    leader: "OP12-040",
+    leaderName: "Kuzan",
+    leaderColors: "Blue / Purple",
+    leaderStats: "5 Life · 5000 Power",
+    leaderEffect: "[Activate: Main] [Once Per Turn] You may rest 2 DON!!: Return up to 1 of your opponent's Characters with 5000 power or less to the owner's hand.",
+    player: "KeyLlua",
+    placement: "1st Place SB (4-0)",
+    location: "Australia",
+    date: "Feb 2026",
+    sourceUrl: "https://onepiecetopdecks.com/deck-list/english-op-14-eb-04-deck-list-the-azure-sea-seven/",
+    sections: [
+          { title: "Character", cards: [
+        { count:4, id:"OP06-050", name:"OP06-050" },
+        { count:2, id:"OP12-048", name:"OP12-048" },
+        { count:4, id:"OP12-047", name:"OP12-047" },
+        { count:4, id:"OP12-051", name:"OP12-051" },
+        { count:2, id:"OP06-047", name:"Charlotte Pudding" },
+        { count:3, id:"EB04-026", name:"EB04-026" },
+        { count:2, id:"OP06-051", name:"OP06-051" },
+        { count:4, id:"OP12-046", name:"OP12-046" },
+        { count:4, id:"EB04-022", name:"EB04-022" },
+        { count:4, id:"OP12-043", name:"OP12-043" },
+        { count:3, id:"OP12-044", name:"OP12-044" },
+        { count:4, id:"OP12-056", name:"OP12-056" },
+        { count:4, id:"OP12-057", name:"OP12-057" },
+        { count:2, id:"EB04-028", name:"EB04-028" }
+      ]},
+          { title: "Event / Stage", cards: [
+        { count:2, id:"OP04-056", name:"Gum-Gum Red Roc" },
+        { count:2, id:"OP06-058", name:"Gravity Blade Raging Tiger" }
+      ]}
+    ]
+  },
+  op9robin: {
+    leader: "OP09-062",
+    leaderName: "Nico Robin",
+    leaderColors: "Blue / Purple",
+    leaderStats: "5 Life · 5000 Power",
+    leaderEffect: "[Activate: Main] [Once Per Turn] You may rest 2 DON!!: Look at the top 3 cards of your deck; reveal up to 1 Character card and add it to your hand. Then, place the rest at the bottom of your deck in any order.",
+    player: "Wesley",
+    placement: "1st Place SB (4-0)",
+    location: "USA",
+    date: "Feb 2026",
+    sourceUrl: "https://onepiecetopdecks.com/deck-list/english-eb-03-deck-list-one-piece-heroines-edition/",
+    sections: [
+          { title: "Character", cards: [
+        { count:3, id:"OP09-106", name:"OP09-106" },
+        { count:4, id:"OP13-113", name:"OP13-113" },
+        { count:4, id:"OP14-102", name:"Kumacy" },
+        { count:4, id:"OP14-100", name:"OP14-100" },
+        { count:2, id:"OP14-109", name:"OP14-109" },
+        { count:3, id:"OP06-104", name:"Kikunojo" },
+        { count:4, id:"OP14-110", name:"Dr. Hogback" },
+        { count:4, id:"OP14-111", name:"Perona" },
+        { count:4, id:"EB03-053", name:"Nami" },
+        { count:3, id:"OP12-119", name:"Bartholomew Kuma" },
+        { count:4, id:"EB03-055", name:"Nico Robin" },
+        { count:4, id:"OP14-104", name:"Gecko Moria" },
+        { count:3, id:"ST18-001", name:"Uso-Hachi (ST18-001)" }
+      ]},
+          { title: "Event / Stage", cards: [
+        { count:4, id:"OP09-078", name:"Gum-Gum Giant" }
+      ]}
+    ]
+  },
+  st13luffy: {
+    leader: "ST13-003",
+    leaderName: "Monkey D. Luffy",
+    leaderColors: "Black / Yellow",
+    leaderStats: "5 Life · 5000 Power",
+    leaderEffect: "[Activate: Main] [Once Per Turn] You may return 1 of your Characters to your hand: Your Leader gains +1000 power until end of turn. If you have 0 Life cards, instead give your Leader +2000 power.",
+    player: "LeoTCG",
+    placement: "1st Place SB (4-0)",
+    location: "France",
+    date: "Feb 2026",
+    sourceUrl: "https://onepiecetopdecks.com/deck-list/english-op-14-eb-04-deck-list-the-azure-sea-seven/",
+    sections: [
+          { title: "Character", cards: [
+        { count:4, id:"ST13-013", name:"ST13-013" },
+        { count:4, id:"EB01-056", name:"Charlotte Flampe" },
+        { count:4, id:"OP06-106", name:"Kouzuki Hiyori" },
+        { count:4, id:"ST13-007", name:"ST13-007" },
+        { count:4, id:"ST13-010", name:"ST13-010" },
+        { count:4, id:"ST13-014", name:"ST13-014" },
+        { count:4, id:"OP11-106", name:"Zeus" },
+        { count:2, id:"ST13-011", name:"ST13-011" },
+        { count:4, id:"ST13-015", name:"ST13-015" },
+        { count:2, id:"OP07-109", name:"OP07-109" },
+        { count:4, id:"OP12-100", name:"OP12-100" },
+        { count:4, id:"PRP02-018", name:"PRP02-018" },
+        { count:2, id:"OP04-083", name:"OP04-083" },
+        { count:2, id:"ST13-019", name:"ST13-019" },
+        { count:2, id:"ST29-016", name:"ST29-016" }
+      ]}
+    ]
+  },
+  op9lim: {
+    leader: "OP09-022",
+    leaderName: "Lim",
+    leaderColors: "Green",
+    leaderStats: "5 Life · 5000 Power",
+    leaderEffect: "[Activate: Main] [Once Per Turn] You may rest 2 DON!!: Rest up to 1 of your opponent's Characters with a cost of 4 or less.",
+    player: "Sainto D Christo",
+    placement: "1st Place ShopEvent",
+    location: "Argentina",
+    date: "March 2026",
+    sourceUrl: "https://onepiecetopdecks.com/deck-list/english-eb-03-deck-list-one-piece-heroines-edition/",
+    sections: [
+          { title: "Character", cards: [
+        { count:4, id:"OP10-037", name:"Trafalgar Law" },
+        { count:4, id:"OP14-023", name:"Cavendish" },
+        { count:2, id:"OP10-033", name:"Urouge" },
+        { count:4, id:"OP09-037", name:"Killer" },
+        { count:4, id:"OP09-027", name:"Trafalgar Law" },
+        { count:4, id:"OP09-031", name:"Basil Hawkins" },
+        { count:3, id:"OP09-035", name:"Scratchmen Apoo" },
+        { count:4, id:"OP10-025", name:"Capone Bege" },
+        { count:4, id:"OP10-029", name:"Jewelry Bonney" },
+        { count:2, id:"OP13-027", name:"Trafalgar Law" },
+        { count:3, id:"OP14-033", name:"Trafalgar Law" },
+        { count:1, id:"OP09-023", name:"X.Drake" },
+        { count:3, id:"OP13-028", name:"Killer" },
+        { count:2, id:"EB03-037", name:"Urouge" },
+        { count:2, id:"OP09-041", name:"Urouge" },
+        { count:1, id:"OP02-089", name:"Whitebeard Pirates Bounties" },
+        { count:1, id:"OP07-076", name:"Slow-Slow Beam Sword" }
+      ]},
+          { title: "Event / Stage", cards: [
+        { count:2, id:"OP12-037", name:"OP12-037" }
+      ]}
+    ]
+  },
+  op13luffy: {
+    leader: "OP13-001",
+    leaderName: "Monkey D. Luffy",
+    leaderColors: "Red / Green",
+    leaderStats: "5 Life · 5000 Power",
+    leaderEffect: "[Activate: Main] [Once Per Turn] DON!!-1: Give up to 1 of your {Straw Hat Crew} Characters Rush and +1000 power until the start of your next turn.",
+    player: "Ric",
+    placement: "T4 Nationals (11-3)",
+    location: "USA",
+    date: "February 2026",
+    sourceUrl: "https://onepiecetopdecks.com/deck-list/english-eb-03-deck-list-one-piece-heroines-edition/",
+    sections: [
+          { title: "Character", cards: [
+        { count:4, id:"OP01-016", name:"Nami" },
+        { count:1, id:"ST01-006", name:"Coby" },
+        { count:2, id:"ST01-007", name:"ST01-007" },
+        { count:4, id:"OP13-016", name:"Monkey.D.Garp" },
+        { count:1, id:"OP10-011", name:"Tony Tony.Chopper" },
+        { count:2, id:"OP10-032", name:"Tashigi" },
+        { count:4, id:"OP14-034", name:"Monkey D. Luffy" },
+        { count:2, id:"OP13-037", name:"Usopp" },
+        { count:4, id:"OP14-022", name:"Uta" },
+        { count:4, id:"OP14-031", name:"Monkey D. Luffy" },
+        { count:4, id:"OP13-027", name:"Trafalgar Law" },
+        { count:4, id:"OP13-118", name:"Thousand Sunny" },
+        { count:1, id:"OP06-118", name:"Flame Emperor" },
+        { count:4, id:"OP01-030", name:"Gum-Gum Red Hawk" },
+        { count:4, id:"OP05-038", name:"Gum-Gum Thor Elephant Pistol" }
+      ]},
+          { title: "Event / Stage", cards: [
+        { count:4, id:"OP01-027", name:"Round Table" },
+        { count:1, id:"OP12-037", name:"OP12-037" }
+      ]}
+    ]
+  },
+  op12rayleigh: {
+    leader: "OP12-001",
+    leaderName: "Silvers Rayleigh",
+    leaderColors: "Red",
+    leaderStats: "5 Life · 5000 Power",
+    leaderEffect: "[Activate: Main] [Once Per Turn] You may discard 1 card: Give up to 1 of your Characters Rush this turn. Then, if that Character has the {Slash} attribute, give it +2000 power until the end of your opponent's next turn.",
+    player: "OPTCG Community",
+    placement: "Meta Build",
+    location: "Global",
+    date: "2026",
+    sourceUrl: "https://onepiecetopdecks.com/deck-list/english-eb-03-deck-list-one-piece-heroines-edition/",
+    sections: [
+          { title: "Character", cards: [
+        { count:4, id:"OP01-016", name:"Nami" },
+        { count:4, id:"OP12-034", name:"Roronoa Zoro" },
+        { count:4, id:"OP14-023", name:"Cavendish" },
+        { count:4, id:"OP10-032", name:"Tashigi" },
+        { count:4, id:"OP07-026", name:"OP07-026" },
+        { count:4, id:"OP08-023", name:"Carrot" },
+        { count:4, id:"OP14-029", name:"Dracule Mihawk" },
+        { count:4, id:"OP14-033", name:"Trafalgar Law" },
+        { count:4, id:"OP14-027", name:"Roronoa Zoro" },
+        { count:2, id:"ST16-004", name:"ST16-004" },
+        { count:2, id:"OP14-119", name:"Haki Imbued Slash" },
+        { count:4, id:"ST24-004", name:"Roronoa Zoro" }
+      ]},
+          { title: "Event / Stage", cards: [
+        { count:4, id:"OP06-038", name:"OP06-038" },
+        { count:2, id:"OP12-037", name:"OP12-037" },
+        { count:2, id:"OP13-040", name:"OP13-040" },
+        { count:4, id:"OP14-039", name:"One Piece" }
+      ]}
+    ]
+  },
+  op12mirror: {
+    leader: "OP12-061",
+    leaderName: "Donquixote Rosinante",
+    leaderColors: "Purple / Yellow",
+    leaderStats: "5 Life · 5000 Power",
+    leaderEffect: "[On Play] You may trash 1 card from your hand: Add up to 1 card from the top of your Life to your hand. Then play up to 1 cost 7 or lower [Trafalgar Law] from your hand. [Activate: Main] [Once Per Turn] You may rest 1 DON!! attached to one of your Characters: Give your Leader or 1 of your Characters +2000 power until the end of your opponent's next turn.",
+    player: "plasticbeachx",
+    placement: "1st Place Redbull | The Dugout (64)",
+    location: "USA",
+    date: "March 2026",
+    sourceUrl: "https://onepiecetopdecks.com/deck-list/english-eb-03-deck-list-one-piece-heroines-edition/",
+    sections: [
+          { title: "Character", cards: [
+        { count:4, id:"OP09-069", name:"OP09-069" },
+        { count:4, id:"OP10-065", name:"Sugar" },
+        { count:3, id:"ST18-001", name:"Uso-Hachi (ST18-001)" },
+        { count:3, id:"ST10-010", name:"ST10-010" },
+        { count:4, id:"P-093", name:"P-093" },
+        { count:4, id:"EB04-038", name:"EB04-038" },
+        { count:4, id:"OP12-073", name:"OP12-073" },
+        { count:4, id:"OP12-108", name:"OP12-108" },
+        { count:4, id:"P-088", name:"P-088" },
+        { count:4, id:"OP12-112", name:"Baby 5" },
+        { count:4, id:"EB03-062", name:"EB03-062" },
+        { count:1, id:"OP13-076", name:"Divine Departure" },
+        { count:1, id:"OP05-077", name:"OP05-077" },
+        { count:2, id:"OP14-078", name:"Heavenly Yaksha" },
+        { count:4, id:"OP12-115", name:"OP12-115" }
+      ]}
+    ]
+  },
+  op8sabo: {
+    leader: "OP08-058",
+    leaderName: "Charlotte Pudding",
+    leaderColors: "Purple",
+    leaderStats: "5 Life · 5000 Power",
+    leaderEffect: "[Activate: Main] [Once Per Turn] You may discard 1 card from your hand: Look at the top 4 cards of your deck; reveal up to 1 {Big Mom Pirates} or {Three-Eye Tribe} type card and add it to your hand. Then, place the rest at the bottom of your deck in any order.",
+    player: "Haver",
+    placement: "1st Place HeroinesCup (4-0)",
+    location: "USA",
+    date: "March 2026",
+    sourceUrl: "https://onepiecetopdecks.com/deck-list/english-eb-03-deck-list-one-piece-heroines-edition/",
+    sections: [
+          { title: "Character", cards: [
+        { count:4, id:"OP11-070", name:"Charlotte Smoothie" },
+        { count:4, id:"OP08-062", name:"Charlotte Amande" },
+        { count:3, id:"EB01-061", name:"Mr.2.Bon.Kurei (Bentham)" },
+        { count:4, id:"OP08-063", name:"Charlotte Galette" },
+        { count:4, id:"PRB02-010", name:"Charlotte Linlin" },
+        { count:4, id:"OP11-067", name:"Charlotte Katakuri" },
+        { count:2, id:"OP08-069", name:"Charlotte Linlin" },
+        { count:4, id:"EB01-056", name:"Charlotte Flampe" },
+        { count:2, id:"OP11-106", name:"Zeus" },
+        { count:2, id:"EB01-052", name:"Vergo" },
+        { count:4, id:"OP04-100", name:"OP04-100" },
+        { count:2, id:"OP03-123", name:"Prometheus" },
+        { count:4, id:"OP03-114", name:"Big Mom Pirates" },
+        { count:4, id:"OP07-077", name:"Zeus" },
+        { count:3, id:"OP06-115", name:"You're the One Who Should Disappear" }
+      ]}
+    ]
+  },
+  op9shanks: {
+    leader: "OP09-001",
+    leaderName: "Shanks",
+    leaderColors: "Red",
+    leaderStats: "5 Life · 5000 Power",
+    leaderEffect: "[Activate: Main] [Once Per Turn] You may rest 1 DON!! attached to one of your Characters: Give your Leader +1000 power until the end of your opponent's next turn.",
+    player: "Multiple Players",
+    placement: "Meta Build",
+    location: "Global",
+    date: "2026",
+    sourceUrl: "https://onepiecetopdecks.com/deck-list/english-eb-03-deck-list-one-piece-heroines-edition/",
+    sections: [
+          { title: "Character", cards: [
+        { count:4, id:"OP01-016", name:"Nami" },
+        { count:4, id:"OP09-007", name:"Lucky Roux" },
+        { count:4, id:"OP09-011", name:"Shanks" },
+        { count:4, id:"OP09-014", name:"Shanks" },
+        { count:4, id:"OP09-015", name:"Red Hair Pirates" },
+        { count:4, id:"OP09-018", name:"Shanks" },
+        { count:4, id:"OP09-020", name:"Conquerors Haki" },
+        { count:4, id:"OP09-004", name:"Shanks" },
+        { count:4, id:"OP06-024", name:"OP06-024" },
+        { count:4, id:"OP09-005", name:"Ben Beckman" },
+        { count:3, id:"OP09-003", name:"Yasopp" },
+        { count:4, id:"OP09-030", name:"Divine Departure" },
+        { count:4, id:"OP09-029", name:"Haki Clash" }
+      ]},
+          { title: "Event / Stage", cards: [
+        { count:2, id:"OP12-037", name:"OP12-037" }
+      ]}
+    ]
+  },
+  op9teach: {
+    leader: "OP09-081",
+    leaderName: "Marshall D. Teach",
+    leaderColors: "Black",
+    leaderStats: "5 Life · 6000 Power",
+    leaderEffect: "[Your Turn] Your opponent's Characters' [On Play] effects don't activate. [Activate: Main] [Once Per Turn] You may rest 3 DON!!: Play up to 1 cost 10 or lower Character from your opponent's trash.",
+    player: "Multiple Players",
+    placement: "Meta Build",
+    location: "Global",
+    date: "2026",
+    sourceUrl: "https://onepiecetopdecks.com/deck-list/english-eb-03-deck-list-one-piece-heroines-edition/",
+    sections: [
+          { title: "Character", cards: [
+        { count:4, id:"OP09-083", name:"Van Augur" },
+        { count:4, id:"OP09-086", name:"Catarina Devon" },
+        { count:4, id:"OP09-088", name:"Doc Q" },
+        { count:4, id:"OP09-089", name:"Jesus Burgess" },
+        { count:4, id:"OP09-092", name:"Shiryu" },
+        { count:4, id:"OP09-093", name:"Sanjuan Wolf" },
+        { count:4, id:"OP09-094", name:"Vasco Shot" },
+        { count:4, id:"OP09-095", name:"Laffitte" },
+        { count:4, id:"OP09-097", name:"Black Vortex" },
+        { count:4, id:"OP09-098", name:"Darkness Darkness Fruit" },
+        { count:4, id:"OP09-100", name:"Avalo Pizarro" },
+        { count:4, id:"OP09-101", name:"Marshall D. Teach" },
+        { count:4, id:"OP09-103", name:"Darkness Quake" },
+        { count:4, id:"OP09-113", name:"Blackbeard Stage" }
+      ]}
+    ]
+  },
+  op11koby: {
+    leader: "OP11-001",
+    leaderName: "Koby",
+    leaderColors: "Red / Black",
+    leaderStats: "5 Life · 5000 Power",
+    leaderEffect: "[Activate: Main] [Once Per Turn] You may rest 2 DON!!: Give up to 1 of your {Navy} type Characters +2000 power until the end of your opponent's next turn.",
+    player: "Zukku",
+    placement: "1st Place FS (64)",
+    location: "Japan",
+    date: "November 2025",
+    sourceUrl: "https://onepiecetopdecks.com/deck-list/japan-eb-03-deck-list-one-piece-heroines-edition/",
+    sections: [
+          { title: "Character", cards: [
+        { count:2, id:"ST19-002", name:"Helmeppo" },
+        { count:4, id:"OP11-082", name:"Tashigi" },
+        { count:4, id:"OP11-096", name:"X.Drake" },
+        { count:4, id:"EB03-041", name:"Tashigi" },
+        { count:1, id:"EB01-049", name:"Kuzan" },
+        { count:3, id:"OP11-092", name:"Smoker" },
+        { count:3, id:"OP11-119", name:"Marine Battleship" },
+        { count:4, id:"OP05-015", name:"Belo Betty" },
+        { count:1, id:"OP11-013", name:"Helmeppo" },
+        { count:4, id:"OP13-007", name:"Ace & Sabo & Luffy" },
+        { count:2, id:"OP07-005", name:"Helmeppo" },
+        { count:4, id:"PRB02-001", name:"Monkey D. Luffy" },
+        { count:4, id:"OP11-010", name:"Monkey D. Garp" },
+        { count:4, id:"OP11-099", name:"Aegis of Justice" }
+      ]},
+          { title: "Event / Stage", cards: [
+        { count:2, id:"OP01-029", name:"OP01-029" },
+        { count:4, id:"OP01-027", name:"Round Table" }
+      ]}
+    ]
+  },
+  eb04sanji: {
+    leader: "OP12-041",
+    leaderName: "Sanji",
+    leaderColors: "Blue / Purple",
+    leaderStats: "5 Life · 5000 Power",
+    leaderEffect: "[Activate: Main] [Once Per Turn] DON!!-1: Look at the top 4 cards of your deck; reveal up to 1 [Sanji] or event card and add it to your hand. Then, place the rest at the bottom in any order.",
+    player: "Chris C",
+    placement: "1st Place SB",
+    location: "Argentina",
+    date: "February 2026",
+    sourceUrl: "https://onepiecetopdecks.com/deck-list/english-eb-03-deck-list-one-piece-heroines-edition/",
+    sections: [
+          { title: "Character", cards: [
+        { count:2, id:"ST18-001", name:"Uso-Hachi (ST18-001)" },
+        { count:4, id:"OP12-070", name:"Sanji" },
+        { count:4, id:"OP07-064", name:"Sanji" },
+        { count:3, id:"EB04-038", name:"EB04-038" },
+        { count:2, id:"OP13-043", name:"Otama" },
+        { count:2, id:"OP13-076", name:"Divine Departure" },
+        { count:4, id:"OP12-079", name:"Diable Jambe" },
+        { count:1, id:"OP12-078", name:"Black Leg Style" },
+        { count:3, id:"EB04-041", name:"Diable Jambe" },
+        { count:4, id:"OP11-060", name:"Sanji" },
+        { count:4, id:"OP12-059", name:"Concasser" },
+        { count:4, id:"EB04-029", name:"Raid Sanji" },
+        { count:2, id:"OP11-061", name:"Sanji" },
+        { count:4, id:"OP12-060", name:"Ifrit Jambe" }
+      ]},
+          { title: "Event / Stage", cards: [
+        { count:4, id:"OP09-078", name:"Gum-Gum Giant" },
+        { count:2, id:"OP04-056", name:"Gum-Gum Red Roc" },
+        { count:1, id:"OP06-058", name:"Gravity Blade Raging Tiger" }
+      ]}
+    ]
+  },
+  op12rayleigh2: {
+    leader: "OP12-001",
+    leaderName: "Silvers Rayleigh",
+    leaderColors: "Red",
+    leaderStats: "5 Life · 5000 Power",
+    leaderEffect: "[Activate: Main] [Once Per Turn] You may discard 1 card: Give up to 1 of your Characters Rush this turn. Then, if that Character has the {Slash} attribute, give it +2000 power until end of opponent's next turn.",
+    player: "Rego",
+    placement: "T16 Area Qualifier",
+    location: "Japan",
+    date: "November 2025",
+    sourceUrl: "https://onepiecetopdecks.com/deck-list/japan-eb-03-deck-list-one-piece-heroines-edition/",
+    sections: [
+          { title: "Character", cards: [
+        { count:4, id:"OP01-016", name:"Nami" },
+        { count:4, id:"OP03-008", name:"Tashigi" },
+        { count:4, id:"OP12-006", name:"Scopper Gaban" },
+        { count:3, id:"OP13-012", name:"Nefeltari Vivi" },
+        { count:1, id:"OP01-024", name:"Silvers Rayleigh" },
+        { count:4, id:"OP12-014", name:"Monkey D. Luffy" },
+        { count:2, id:"OP01-025", name:"Gaban" },
+        { count:2, id:"P-006", name:"P-006" },
+        { count:4, id:"OP10-005", name:"Sanji" },
+        { count:1, id:"EB01-003", name:"EB01-003" },
+        { count:4, id:"OP12-015", name:"Roronoa Zoro" },
+        { count:4, id:"OP12-016", name:"Nami" },
+        { count:3, id:"OP12-017", name:"Usopp" },
+        { count:3, id:"OP12-019", name:"Sanji" },
+        { count:2, id:"OP06-018", name:"Tashigi" },
+        { count:1, id:"ST21-017", name:"Gum-Gum Pistol" }
+      ]},
+          { title: "Event / Stage", cards: [
+        { count:4, id:"OP12-018", name:"Yasopp" }
+      ]}
+    ]
+  },
+  op13luffy: {
+    leader: "OP13-001",
+    leaderName: "Monkey D. Luffy",
+    leaderColors: "Red / Green",
+    leaderStats: "5 Life · 5000 Power",
+    leaderEffect: "[Activate: Main] [Once Per Turn] DON!!-1: Give up to 1 of your {Straw Hat Crew} Characters Rush and +1000 power until the start of your next turn.",
+    player: "Ric",
+    placement: "T4 Nationals (11-3)",
+    location: "USA",
+    date: "February 2026",
+    sourceUrl: "https://onepiecetopdecks.com/deck-list/english-op-14-eb-04-deck-list-the-azure-sea-seven/",
+    sections: [
+          { title: "Character", cards: [
+        { count:4, id:"OP01-016", name:"Nami" },
+        { count:1, id:"ST01-006", name:"Coby" },
+        { count:2, id:"ST01-007", name:"ST01-007" },
+        { count:4, id:"OP13-016", name:"Monkey.D.Garp" },
+        { count:1, id:"OP10-011", name:"Tony Tony.Chopper" },
+        { count:2, id:"OP10-032", name:"Tashigi" },
+        { count:4, id:"OP14-034", name:"Monkey D. Luffy" },
+        { count:2, id:"OP13-037", name:"Usopp" },
+        { count:4, id:"OP14-022", name:"Uta" },
+        { count:4, id:"OP14-031", name:"Monkey D. Luffy" },
+        { count:4, id:"OP13-027", name:"Trafalgar Law" },
+        { count:4, id:"OP13-118", name:"Thousand Sunny" },
+        { count:4, id:"OP01-030", name:"Gum-Gum Red Hawk" }
+      ]},
+          { title: "Event / Stage", cards: [
+        { count:1, id:"OP06-118", name:"Flame Emperor" },
+        { count:4, id:"OP01-027", name:"Round Table" },
+        { count:1, id:"OP12-037", name:"OP12-037" },
+        { count:4, id:"OP05-038", name:"Gum-Gum Thor Elephant Pistol" }
+      ]}
+    ]
+  }
+};
+
+
+// ── FAVOURITES ────────────────────────────────────────────────
+let favs = [];
+try { favs = JSON.parse(localStorage.getItem('rosi-favs') || '[]'); } catch(e) {}
+
+function saveFavs() {
+  try { localStorage.setItem('rosi-favs', JSON.stringify(favs)); } catch(e) {}
+}
+
+function toggleFav(key) {
+  const idx = favs.indexOf(key);
+  if (idx >= 0) favs.splice(idx, 1);
+  else favs.push(key);
+  saveFavs();
+  renderFavs();
+  updateStarBtns();
+}
+
+function renderFavs() {
+  const sec = document.getElementById('fav-section');
+  if (!favs.length) { sec.style.display = 'none'; return; }
+  sec.style.display = 'block';
+  let html = '<div class="fav-title">★ Favourites</div><div class="fav-grid">';
+  favs.forEach(key => {
+    const d = DECKLISTS[key];
+    if (!d) return;
+    const mi = MATCHUPS.findIndex(m => m.deck === key);
+    const mName = mi >= 0 ? MATCHUPS[mi].name : d.leaderName;
+    html += `<div class="fav-card" onclick="showDeck('${key}',${mi})">
+      <img src="${cardImg(d.leader)}"
+        onload="this.classList.add('loaded')"
+        onerror="this.onerror=null;"
+        alt="${d.leaderName}">
+      <div class="fav-label">${mName}</div>
+      <button class="fav-rm" onclick="event.stopPropagation();toggleFav('${key}')" title="Remove">×</button>
+    </div>`;
+  });
+  html += '</div>';
+  sec.innerHTML = html;
+}
+
+function updateStarBtns() {
+  document.querySelectorAll('.star-btn').forEach(btn => {
+    const active = favs.includes(btn.dataset.deck);
+    btn.classList.toggle('starred', active);
+    btn.title = active ? 'Remove favourite' : 'Add to favourites';
+  });
+}
+
+// ── NAVIGATION ────────────────────────────────────────────────
+function dbg(msg) {
+  const el = document.getElementById('dbg');
+  if(el) el.textContent = msg;
+}
+
+let savedScroll = 0;
+
+function showDeck(deckKey, matchupIdx) {
+  dbg('showDeck called: ' + deckKey);
+  savedScroll = document.getElementById('screen-matchup').scrollTop;
+  const data = DECKLISTS[deckKey];
+  const dc = document.getElementById('deck-content');
+  const sm = document.getElementById('screen-matchup');
+  const sd = document.getElementById('screen-deck');
+
+  sm.className = 'screen';
+  sm.style.display = 'none';
+  sd.className = 'screen active';
+  sd.style.display = 'block';
+  sd.scrollTop = 0;
+  dbg('screens switched | sd.class=' + sd.className + ' | sd.offsetHeight=' + sd.offsetHeight);
+
+  if (!data) {
+    dc.innerHTML = '<div style="color:red;padding:20px;font-size:18px">ERROR: no DECKLISTS entry for key: <b>' + deckKey + '</b></div>';
+    dbg('ERROR: no data for ' + deckKey);
+    return;
+  }
+  const matchup = (matchupIdx !== undefined) ? MATCHUPS[matchupIdx] : null;
+  try {
+    renderDeck(data, matchup);
+    dbg('renderDeck OK | deck-content length=' + dc.innerHTML.length + ' | sd.display=' + getComputedStyle(sd).display + ' | sd.opacity=' + getComputedStyle(sd).opacity);
+  } catch(e) {
+    dc.innerHTML = '<div style="color:red;padding:20px;font-size:14px"><b>renderDeck crashed:</b><br>' + e.message + '<br><pre>' + e.stack + '</pre></div>';
+    dbg('renderDeck ERROR: ' + e.message);
+  }
+}
+function goBack() {
+  const _sd = document.getElementById('screen-deck');
+  const _sm = document.getElementById('screen-matchup');
+  _sd.className = 'screen';
+  _sd.style.display = 'none';
+  _sm.className = 'screen active';
+  _sm.style.display = 'block';
+  requestAnimationFrame(() => { _sm.scrollTop = savedScroll; });
+}
+
+// ── MODAL ─────────────────────────────────────────────────────
+// Image cache - avoid re-fetching same URL
+const imgCache = new Map();
+
+function loadImg(el, src, isLeader) {
+  if(!src) return;
+
+  function applyLoaded(finalSrc) {
+    imgCache.set(finalSrc, true);
+    el.src = finalSrc;
+    el.style.opacity = isLeader ? '1' : '';
+    if(!isLeader) el.classList.add('loaded');
+    el.dataset.loaded = '1';
+  }
+
+  function tryFallback() {
+    // Try official Bandai site when optcgapi fails
+    const m = src.match(/Card_Images\/(.+)\.jpg/);
+    if(m) {
+      const fb = `https://en.onepiece-cardgame.com/images/cardlist/card/${m[1]}.png`;
+      el.onload = () => applyLoaded(fb);
+      el.onerror = () => { if(!isLeader) el.classList.add('err'); el.dataset.loaded = '1'; };
+      el.src = fb;
+    } else {
+      if(!isLeader) el.classList.add('err');
+      el.dataset.loaded = '1';
+    }
+  }
+
+  if(imgCache.has(src)){
+    applyLoaded(src);
+    return;
+  }
+
+  el.onload = () => applyLoaded(src);
+  el.onerror = tryFallback;
+  el.src = src;
+}
+
+function openModal(src, lbl) {
+  if (!src) return;
+  const modal = document.getElementById('modal');
+  const img = document.getElementById('modal-img');
+  const lbl_el = document.getElementById('modal-lbl');
+  const spinner = document.getElementById('modal-spinner');
+  img.style.opacity = '0';
+  img.src = '';
+  lbl_el.textContent = lbl;
+  spinner.style.display = 'block';
+  modal.classList.add('open');
+  if(imgCache.has(src)){
+    img.src = src;
+    img.style.opacity = '1';
+    spinner.style.display = 'none';
+  } else {
+    img.onload = () => { img.style.opacity = '1'; spinner.style.display = 'none'; imgCache.set(src, true); };
+    img.onerror = () => { img.style.opacity = '0.3'; spinner.style.display = 'none'; };
+    img.src = src;
+  }
+}
+function closeModal() {
+  document.getElementById('modal').classList.remove('open');
+}
+
+// ── WR HELPERS ────────────────────────────────────────────────
+function wrCls(v) {
+  if (v===null) return 'wn';
+  if (v>=60) return 'wg'; if (v>=55) return 'wl';
+  if (v>=50) return 'wy'; if (v>=40) return 'wo';
+  return 'wr2';
+}
+function wrLbl(v) { return v===null ? '—' : v.toFixed(1)+'%'; }
+
+// ── RENDER MATCHUP TABLE ──────────────────────────────────────
+const tbody = document.getElementById('tbody');
+
+
+// ── COLOR MAP for filtering ──
+const MATCHUP_COLORS = {
+  "OP01 Law":       ["red","green"],
+  "OP07 Bonney":    ["green"],
+  "OP08 Carrot":    ["green"],
+  "OP08 Sabo":      ["red","black"],
+  "OP09 Shanks":    ["red"],
+  "OP09 Teach":     ["black"],
+  "OP09 Lim":       ["green","purple"],
+  "OP09 Robin":     ["blue","purple"],
+  "OP11 GP Luffy":  ["purple"],
+  "OP11 Nami":      ["blue","yellow"],
+  "OP11 BP Luffy":  ["blue","yellow"],
+  "OP11 Shirahoshi":["green","yellow"],
+  "OP11 Koby":      ["red","black"],
+  "OP12 Rayleigh":  ["red"],
+  "OP12 Sanji":     ["blue","purple"],
+  "OP12 Mirror":    ["purple","yellow"],
+  "OP12 Kuzan":     ["blue"],
+  "OP13 Ace":       ["red","blue"],
+  "OP13 Imu":       ["black"],
+  "OP13 BP Luffy":  ["red","green"],
+  "OP13 Sabo":      ["red","black"],
+  "OP13 Roger":     ["purple"],
+  "OP13 Bonney":    ["yellow"],
+  "OP14 Mihawk":    ["green"],
+  "OP14 Jinbe":     ["blue","yellow"],
+  "OP14 Hancock":   ["blue","yellow"],
+  "OP14 Doflamingo":["purple"],
+  "OP14 Crocodile": ["black"],
+  "OP14 Moria":     ["black","yellow"],
+  "EB02 Life Luffy":["purple"],
+  "EB03 Vivi":      ["red","blue"],
+  "EB04 Sanji":     ["blue","purple"],
+  "ST29 Luffy":     ["yellow"],
+  "P-117 Nami":     ["blue"],
+};
+
+let currentMode = 'table';
+let currentColor = 'all';
+
+const COLOR_HEX = {red:'#e05858',green:'#50c070',blue:'#5090e0',purple:'#9060d0',yellow:'#d0b030',black:'#888'};
+function colorDots(name) {
+  return (MATCHUP_COLORS[name]||[]).map(c=>`<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${COLOR_HEX[c]||'#888'};margin-left:3px;vertical-align:middle"></span>`).join('');
+}
+
+function setMode(mode) {
+  currentMode = mode;
+  document.getElementById('btn-table').classList.toggle('active', mode === 'table');
+  document.getElementById('btn-qref').classList.toggle('active', mode === 'qref');
+  document.getElementById('table-container').classList.toggle('hidden', mode === 'qref');
+  document.getElementById('qref-container').classList.toggle('visible', mode === 'qref');
+  applyFilters();
+}
+
+function setColor(btn) {
+  document.querySelectorAll('.fbtn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  currentColor = btn.dataset.color;
+  applyFilters();
+}
+
+function matchVisible(m) {
+  const query = (document.getElementById('search-input').value || '').toLowerCase();
+  const nameMatch = !query || m.name.toLowerCase().includes(query);
+  let colorMatch = true;
+  if (currentColor === 'warn') {
+    colorMatch = m.warn;
+  } else if (currentColor !== 'all') {
+    const cols = MATCHUP_COLORS[m.name] || [];
+    colorMatch = cols.includes(currentColor);
+  }
+  return nameMatch && colorMatch;
+}
+
+function applyFilters() {
+  let anyVisible = false;
+  MATCHUPS.forEach((m, i) => {
+    const visible = matchVisible(m);
+    if (visible) anyVisible = true;
+    // Table rows
+    const dataRow = document.querySelector(`tr.data-row[data-idx="${i}"]`);
+    const detailRow = dataRow ? dataRow.nextSibling : null;
+    if (dataRow) dataRow.style.display = visible ? '' : 'none';
+    if (detailRow && detailRow.classList.contains('detail-row')) {
+      detailRow.style.display = visible ? '' : 'none';
+    }
+    // Qref cards
+    const qcard = document.getElementById('qref-' + i);
+    if (qcard) qcard.classList.toggle('hidden', !visible);
+  });
+  const noRes = document.getElementById('no-results');
+  if (noRes) noRes.style.display = anyVisible ? 'none' : 'block';
+}
+
+function buildQrefCards() {
+  const container = document.getElementById('qref-container');
+  container.innerHTML = '';
+  MATCHUPS.forEach((m, i) => {
+    const wrHtml = [
+      m.wr1 != null ? `<span class="qref-wr ${wrCls(m.wr1)}">${m.wr1}% 1st</span>` : '',
+      m.wr2 != null ? `<span class="qref-wr ${wrCls(m.wr2)}">${m.wr2}% 2nd</span>` : '',
+    ].filter(Boolean).join('');
+
+    const deckBtn = m.deck
+      ? `<button class="qref-deck" data-deck="${m.deck}" onclick="event.stopPropagation();showDeck('${m.deck}',${i})">📋</button>`
+      : '';
+    const starBtn = m.deck
+      ? `<button class="star-btn" data-deck="${m.deck}" onclick="event.stopPropagation();toggleFav('${m.deck}')" title="Favourite">★</button>`
+      : '';
+
+    let essHtml = '';
+    if (m.essential && m.essential.length) {
+      essHtml = `<div class="qref-section">
+        <div class="qref-section-title">Essential Cards</div>
+        <div class="qref-ess">
+          ${m.essential.map(e=>`<div class="qref-ess-item"><span class="qref-ess-card">${e.card}:</span><span class="qref-ess-reason">${e.reason}</span></div>`).join('')}
+        </div>
+      </div>`;
+    }
+
+    const tipsHtml = m.tips && m.tips.length ? `<div class="qref-section">
+      <div class="qref-section-title">Key Tips</div>
+      <ul class="qref-tips">${m.tips.map(t=>`<li>${t}</li>`).join('')}</ul>
+    </div>` : '';
+
+    const div = document.createElement('div');
+    div.className = 'qref-card';
+    div.id = 'qref-' + i;
+    div.innerHTML = `
+      <div class="qref-header">
+        <span class="qref-name">${m.name}${m.warn ? '<span class="qref-warn"> ⚠</span>' : ''}</span>
+        <div class="qref-wrs">${wrHtml}</div>
+        <span class="qref-go ${m.go==='1st'?'go1':'go2'}">GO ${m.go}</span>
+        ${starBtn}
+        ${deckBtn}
+      </div>
+      <div class="qref-body">${essHtml}${tipsHtml}</div>`;
+    div.addEventListener('click', (e) => {
+      if (e.target.classList.contains('qref-deck') || e.target.closest('.qref-deck')) return;
+      if (e.target.classList.contains('star-btn') || e.target.closest('.star-btn')) return;
+      const wasOpen = div.classList.contains('open');
+      document.querySelectorAll('.qref-card.open').forEach(d => d.classList.remove('open'));
+      if (!wasOpen) div.classList.add('open');
+    });
+    container.appendChild(div);
+  });
+}
+
+MATCHUPS.forEach((m, i) => {
+  // essential
+  let essHtml = '';
+  if (m.essential.length) {
+    essHtml = '<div class="ds"><div class="dl">Essential</div>'
+      + m.essential.map(e=>`<div class="ei"><span class="ec">${e.card}:</span><span class="er">${e.reason}</span></div>`).join('')
+      + '</div>';
+  }
+  // tips
+  const tipsHtml = '<div class="ds"><div class="dl">Tips</div><ul class="tips-list">'
+    + m.tips.map(t=>`<li>${t}</li>`).join('')
+    + '</ul></div>';
+
+  // deck cell
+  const deckCell = m.deck
+    ? `<td><button class="deck-btn" data-deck="${m.deck}">📋</button></td>`
+    : `<td style="color:#2a2a2a;font-size:0.6rem;padding:5px 10px">—</td>`;
+
+  const starCell = m.deck
+    ? `<td style="padding:2px 4px;text-align:center"><button class="star-btn" data-deck="${m.deck}" onclick="event.stopPropagation();toggleFav('${m.deck}')" title="Favourite">★</button></td>`
+    : `<td></td>`;
+
+  const tr = document.createElement('tr');
+  tr.className = 'data-row';
+  tr.dataset.idx = i;
+  tr.innerHTML = `
+    <td><span class="mname">${m.name}</span>${colorDots(m.name)}${m.warn?'<span class="warn">⚠</span>':''}</td>
+    <td><span class="go ${m.go==='1st'?'go1':'go2'}">${m.go}</span></td>
+    <td><span class="wr ${wrCls(m.wr1)}">${wrLbl(m.wr1)}</span></td>
+    <td><span class="wr ${wrCls(m.wr2)}">${wrLbl(m.wr2)}</span></td>
+    <td class="sty">${m.style}</td>
+    ${starCell}`;
+  tbody.appendChild(tr);
+
+  const dr = document.createElement('tr');
+  dr.className = 'detail-row';
+  dr.innerHTML = `<td colspan="6"><div class="detail-panel" id="panel-${i}">${essHtml}${tipsHtml}</div></td>`;
+  tbody.appendChild(dr);
+});
+
+buildQrefCards();
+renderFavs();
+updateStarBtns();
+
+// row click → open deck page
+tbody.addEventListener('mouseover', e => {
+  const row = e.target.closest('tr.data-row');
+  if (!row) return;
+  const m = MATCHUPS[parseInt(row.dataset.idx)];
+});
+
+tbody.addEventListener('click', e => {
+  const row = e.target.closest('tr.data-row');
+  if (!row) return;
+  const idx = parseInt(row.dataset.idx);
+  const m = MATCHUPS[idx];
+  if (m && m.deck) {
+    showDeck(m.deck, idx);
+  } else if (m) {
+    // No deck yet — still show tips panel inline as fallback
+    const panel = document.getElementById('panel-'+idx);
+    const open = panel.classList.contains('open');
+    document.querySelectorAll('.detail-panel.open').forEach(p=>p.classList.remove('open'));
+    document.querySelectorAll('tr.data-row.active').forEach(r=>r.classList.remove('active'));
+    if (!open) { panel.classList.add('open'); row.classList.add('active'); }
+  }
+});
+
+// ── RENDER DECK PAGE ─────────────────────────────────────────
+function renderDeck(d, matchup) {
+  const total = d.sections.reduce((a,s)=>a+s.cards.reduce((b,c)=>b+c.count,0),0);
+
+  // color pips for leader
+  const colorPips = d.leaderColors.split('/').map(c=>{
+    c = c.trim().toLowerCase();
+    const cls = c==='red'?'pr':c==='green'?'pg':c==='purple'?'pp':c==='yellow'?'py':'pr';
+    return `<span class="pip ${cls}"></span>${c.charAt(0).toUpperCase()+c.slice(1)}`;
+  }).join(' / ');
+
+  // Build matchup info panel if we have matchup data
+  let matchupInfoHtml = '';
+  if (matchup) {
+    const wrHtml = [
+      matchup.wr1 != null ? `<span class="mi-wr ${wrCls(matchup.wr1)}">${matchup.wr1}% 1st</span>` : '',
+      matchup.wr2 != null ? `<span class="mi-wr ${wrCls(matchup.wr2)}">${matchup.wr2}% 2nd</span>` : '',
+    ].filter(Boolean).join('');
+
+    let essHtml = '';
+    if (matchup.essential && matchup.essential.length) {
+      essHtml = `<div class="mi-section">
+        <div class="mi-section-title">Essential Cards</div>
+        <div class="mi-ess">
+          ${matchup.essential.map(e=>`<div class="mi-ess-item"><span class="mi-ess-card">${e.card}</span><span class="mi-ess-reason">${e.reason}</span></div>`).join('')}
+        </div>
+      </div>`;
+    }
+
+    const tipsHtml = matchup.tips && matchup.tips.length
+      ? `<div class="mi-section">
+          <div class="mi-section-title">Key Tips</div>
+          <ul class="mi-tips">${matchup.tips.map(t=>`<li>${t}</li>`).join('')}</ul>
+        </div>`
+      : '';
+
+    matchupInfoHtml = `<div class="matchup-info">
+      <div class="mi-header">
+        <span class="mi-name">${matchup.name}${matchup.warn?' <span style="color:#e07050">⚠</span>':''}</span>
+        <span class="mi-go ${matchup.go==='1st'?'go1':'go2'}">GO ${matchup.go}</span>
+        <div class="mi-wrs">${wrHtml}</div>
+        <span class="mi-style">${matchup.style}</span>
+      </div>
+      ${essHtml}${tipsHtml}
+    </div><hr class="mi-divider">`;
+  }
+
+  let html = `${matchupInfoHtml}
+    <div class="deck-header">
+      <h2>${d.leaderName} — EB03 Decklist</h2>
+      <div class="placement">${d.player} · ${d.placement}</div>
+      <div class="meta">${d.location} · ${d.date}</div>
+      <a class="ext-link" href="${d.sourceUrl}" target="_blank">→ Source: onepiecetopdecks.com</a>
+      <div class="tap-hint">Tap any card to enlarge</div>
+    </div>
+
+    <div class="leader-wrap">
+      <img class="leader-img" id="leader-card"
+        src="${cardImg(d.leader)}"
+        onload="this.style.opacity='1'"
+        onerror="console.error('IMG FAIL (leader):', this.src); this.onerror=null;"
+        onclick="openModal(this.src,'${d.leader} - ${d.leaderName}')"
+        alt="${d.leader}">
+      <div class="linfo">
+        <h3>${d.leaderName}</h3>
+        <div class="lid">${d.leader} · ${colorPips} · ${d.leaderStats}</div>
+        <div class="leff">${d.leaderEffect}</div>
+      </div>
+    </div>`;
+
+  d.sections.forEach(sec => {
+    const sTotal = sec.cards.reduce((a,c)=>a+c.count,0);
+    html += `<div class="sec-wrap">
+      <div class="sec-hdr">
+        <span class="sec-title">${sec.title}</span>
+        <span class="sec-cnt">×${sTotal}</span>
+      </div>
+      <div class="card-grid">`;
+    sec.cards.forEach(card => {
+      const src = cardImg(card.id);
+      html += `<div class="card-item" onclick="openModal(this.querySelector('img').src,'${card.id}')">
+        <img src="${src}"
+          onload="this.classList.add('loaded')"
+          onerror="console.error('IMG FAIL (card):', this.src); this.onerror=null;"
+          alt="${card.name}">
+        <div class="b-count">×${card.count}</div>
+        <div class="b-name">${card.name}</div>
+      </div>`;
+    });
+    html += `</div></div>`;
+  });
+
+  html += `<div class="total-bar">
+    <span class="tl">Total cards</span>
+    <span class="tc">${total}</span>
+  </div>`;
+
+  document.getElementById('deck-content').innerHTML = html;
+}
+</script>
+</body>
+</html>
