@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>OP12-061 Rosinante — Guide</title>
+<title>OPTCG Matchup Guide</title>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%;overflow:hidden}
@@ -96,7 +96,7 @@ tr.detail-row td{padding:0;border-bottom:1px solid #1e1e36}
 .card-item{position:relative;border-radius:8px;overflow:hidden;background:#1a1a30;cursor:pointer;aspect-ratio:0.715}
 .card-item img{width:100%;height:100%;object-fit:cover;display:block;border-radius:8px;transition:opacity 0.2s;opacity:0}
 .card-item img.loaded{opacity:1}
-.b-count{position:absolute;top:4px;left:4px;background:rgba(0,0,0,0.85);color:#ffd080;font-size:0.85rem;font-weight:900;border-radius:4px;padding:1px 6px;border:1px solid #c9a84c55;pointer-events:none;line-height:1.5}
+.b-count{position:absolute;bottom:4px;left:4px;background:rgba(0,0,0,0.85);color:#ffd080;font-size:0.85rem;font-weight:900;border-radius:4px;padding:1px 6px;border:1px solid #c9a84c55;pointer-events:none;line-height:1.5}
 .b-name{position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,0.78);color:#bbb;font-size:0.57rem;text-align:center;padding:2px 2px 3px;pointer-events:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
 .total-bar{background:#1e1e38;border:1px solid #c9a84c22;border-radius:8px;padding:8px 14px;display:flex;justify-content:space-between;align-items:center;margin-top:4px;margin-bottom:20px}
@@ -201,15 +201,33 @@ tr.detail-row td{padding:0;border-bottom:1px solid #1e1e36}
 .fav-card:hover .fav-rm{opacity:1}
 .star-btn{background:none;border:none;cursor:pointer;font-size:0.82rem;padding:1px 4px;opacity:0.22;transition:opacity 0.15s;line-height:1;flex-shrink:0;color:#c9a84c}
 .star-btn.starred{opacity:1}
+/* ── HOME SCREEN ── */
+#screen-home{padding:24px 16px}
+.home-title{font-size:1.2rem;color:#c9a84c;font-weight:700;margin-bottom:6px;text-align:center}
+.home-sub{font-size:0.72rem;color:#666;text-align:center;margin-bottom:28px}
+.leader-grid{display:flex;flex-wrap:wrap;gap:20px;justify-content:center}
+.leader-card{background:#1e1e36;border:2px solid #2a2a50;border-radius:10px;padding:12px;cursor:pointer;width:150px;text-align:center;transition:border-color 0.18s,background 0.18s;}
+.leader-card:hover{border-color:#c9a84c;background:#252545}
+.leader-card img{width:100%;border-radius:6px;display:block;margin-bottom:8px}
+.lc-name{font-size:0.75rem;color:#ccc;font-weight:600}
+.lc-id{font-size:0.6rem;color:#666;margin-top:2px}
+
 </style>
 </head>
 <body>
 <div id="app">
 
+<!-- ════ SCREEN 0: HOME ════ -->
+<div class="screen active" id="screen-home">
+  <div class="home-title">OPTCG Matchup Guide</div>
+  <div class="home-sub">Choose a leader</div>
+  <div class="leader-grid" id="leader-grid"></div>
+</div>
+
 <!-- ════ SCREEN 1: MATCHUP TABLE ════ -->
-<div class="screen active" id="screen-matchup">
-  <h1>OP12-061 Donquixote Rosinante</h1>
-  <p class="sub">TCGMatchMaking.com · 25,255 games · 55.0% WR · EB03</p>
+<div class="screen" id="screen-matchup">
+  <h1 id="matchup-title">OP12-061 Donquixote Rosinante</h1>
+  <p class="sub" id="matchup-sub">TCGMatchMaking.com · 25,255 games · 55.0% WR · EB03</p>
 
   <!-- Favourites -->
   <div id="fav-section" class="fav-section"></div>
@@ -269,7 +287,7 @@ tr.detail-row td{padding:0;border-bottom:1px solid #1e1e36}
 
 <!-- ════ SCREEN 2: DECKLIST ════ -->
 <div class="screen" id="screen-deck">
-  <button class="back-btn" onclick="goBack()">← Matchup Guide</button>
+  <button class="back-btn" onclick="goBack()">← Back</button>
   <div id="deck-content"></div>
 </div>
 
@@ -289,7 +307,13 @@ function cardImg(id){
 }
 
 
-const MATCHUPS = [
+const LEADERS = {
+  rosinante: {
+    cardId: "OP12-061",
+    name: "Donquixote Rosinante",
+    title: "OP12-061 Donquixote Rosinante",
+    sub: "TCGMatchMaking.com · 25,255 games · 55.0% WR · EB03",
+    matchups: [
   { name:"OP01 Law", warn:false, go:"1st", wr1:71.3, wr2:51.9, style:"Attrition · Tall",
     deck:"op01_law",
     essential:[],
@@ -447,7 +471,18 @@ const MATCHUPS = [
     essential:[{card:"Gamma Knife",reason:"Same as OP11 Nami — Kuma must be removed before his +2 cost modifier resolves."},{card:"Vergo (via Sugar)",reason:"Protects from Red Rock and Gravity Blade."}],
     tips:["Treat as OP11 Nami — equally difficult","Gamma Knife Kuma immediately (must draw)","8-cost Law heal loop as backbone","Go wide with Sugar to brute-force through multiple blockers late"]
   }
-];
+    ],
+    colorMap: null
+  },
+  boa: {
+    cardId: "OP14-041",
+    name: "Boa Hancock",
+    title: "OP14-041 Boa Hancock",
+    sub: "Matchup data coming soon",
+    matchups: [],
+    colorMap: null
+  }
+};
 
 
 const DECKLISTS = {
@@ -469,15 +504,15 @@ const DECKLISTS = {
         { count:4, id:"OP14-013", name:"Roronoa Zoro" },
         { count:4, id:"OP14-016", name:"Tony Tony Chopper" },
         { count:3, id:"ST02-007", name:"Jewelry Bonney" },
-        { count:4, id:"EB01-015", name:"Mr.2 Bon Kurei" },
+        { count:4, id:"EB01-015", name:"Scratchmen Apoo" },
         { count:4, id:"OP12-034", name:"Roronoa Zoro" },
         { count:1, id:"OP01-039", name:"Vista" },
-        { count:4, id:"ST24-002", name:"Roronoa Zoro" },
+        { count:4, id:"ST24-002", name:"Kid & Killer" },
         { count:3, id:"ST02-009", name:"Trafalgar Law" },
-        { count:4, id:"EB01-012", name:"Zoro Juurou" },
-        { count:4, id:"OP12-118", name:"Trafalgar Law" },
-        { count:2, id:"ST24-005", name:"Eustass Kid" },
-        { count:2, id:"OP01-051", name:"Portgas D. Ace" }
+        { count:4, id:"EB01-012", name:"Cavendish" },
+        { count:4, id:"OP12-118", name:"Jewelry Bonney" },
+        { count:2, id:"ST24-005", name:"X.Drake" },
+        { count:2, id:"OP01-051", name:"Eustass Kid" }
       ]},
       { title: "Event", cards: [
         { count:1, id:"OP01-027", name:"Round Table" },
@@ -1374,7 +1409,7 @@ const DECKLISTS = {
         { count:4, id:"OP14-027", name:"Roronoa Zoro" },
         { count:2, id:"ST16-004", name:"ST16-004" },
         { count:2, id:"OP14-119", name:"Haki Imbued Slash" },
-        { count:4, id:"ST24-004", name:"Roronoa Zoro" }
+        { count:4, id:"ST24-004", name:"Law & Bepo" }
       ]},
           { title: "Event / Stage", cards: [
         { count:4, id:"OP06-038", name:"OP06-038" },
@@ -1410,7 +1445,7 @@ const DECKLISTS = {
         { count:4, id:"EB03-062", name:"EB03-062" },
         { count:1, id:"OP13-076", name:"Divine Departure" },
         { count:1, id:"OP05-077", name:"OP05-077" },
-        { count:2, id:"OP14-078", name:"Heavenly Yaksha" },
+        { count:2, id:"OP14-078", name:"Bullet String" },
         { count:4, id:"OP12-115", name:"OP12-115" }
       ]}
     ]
@@ -1675,8 +1710,8 @@ function renderFavs() {
   favs.forEach(key => {
     const d = DECKLISTS[key];
     if (!d) return;
-    const mi = MATCHUPS.findIndex(m => m.deck === key);
-    const mName = mi >= 0 ? MATCHUPS[mi].name : d.leaderName;
+    const mi = getLM().findIndex(m => m.deck === key);
+    const mName = mi >= 0 ? getLM()[mi].name : d.leaderName;
     html += `<div class="fav-card" onclick="showDeck('${key}',${mi})">
       <img src="${cardImg(d.leader)}"
         onload="this.classList.add('loaded')"
@@ -1726,7 +1761,7 @@ function showDeck(deckKey, matchupIdx) {
     dbg('ERROR: no data for ' + deckKey);
     return;
   }
-  const matchup = (matchupIdx !== undefined) ? MATCHUPS[matchupIdx] : null;
+  const matchup = (matchupIdx !== undefined) ? getLM()[matchupIdx] : null;
   try {
     renderDeck(data, matchup);
     dbg('renderDeck OK | deck-content length=' + dc.innerHTML.length + ' | sd.display=' + getComputedStyle(sd).display + ' | sd.opacity=' + getComputedStyle(sd).opacity);
@@ -1823,7 +1858,7 @@ const tbody = document.getElementById('tbody');
 
 
 // ── COLOR MAP for filtering ──
-const MATCHUP_COLORS = {
+const ROSINANTE_COLORS = {
   "OP01 Law":       ["red","green"],
   "OP07 Bonney":    ["green"],
   "OP08 Carrot":    ["green"],
@@ -1859,13 +1894,20 @@ const MATCHUP_COLORS = {
   "ST29 Luffy":     ["yellow"],
   "P-117 Nami":     ["blue"],
 };
+const BOA_COLORS = {};
+LEADERS.rosinante.colorMap = ROSINANTE_COLORS;
+LEADERS.boa.colorMap = BOA_COLORS;
+
+let currentLeaderKey = 'rosinante';
+function getLM() { return LEADERS[currentLeaderKey].matchups; }
+function getLCM() { return LEADERS[currentLeaderKey].colorMap || {}; }
 
 let currentMode = 'table';
 let currentColor = 'all';
 
 const COLOR_HEX = {red:'#e05858',green:'#50c070',blue:'#5090e0',purple:'#9060d0',yellow:'#d0b030',black:'#888'};
 function colorDots(name) {
-  return (MATCHUP_COLORS[name]||[]).map(c=>`<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${COLOR_HEX[c]||'#888'};margin-left:3px;vertical-align:middle"></span>`).join('');
+  return (getLCM()[name]||[]).map(c=>`<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${COLOR_HEX[c]||'#888'};margin-left:3px;vertical-align:middle"></span>`).join('');
 }
 
 function setMode(mode) {
@@ -1891,7 +1933,7 @@ function matchVisible(m) {
   if (currentColor === 'warn') {
     colorMatch = m.warn;
   } else if (currentColor !== 'all') {
-    const cols = MATCHUP_COLORS[m.name] || [];
+    const cols = getLCM()[m.name] || [];
     colorMatch = cols.includes(currentColor);
   }
   return nameMatch && colorMatch;
@@ -1899,7 +1941,7 @@ function matchVisible(m) {
 
 function applyFilters() {
   let anyVisible = false;
-  MATCHUPS.forEach((m, i) => {
+  getLM().forEach((m, i) => {
     const visible = matchVisible(m);
     if (visible) anyVisible = true;
     // Table rows
@@ -1920,7 +1962,7 @@ function applyFilters() {
 function buildQrefCards() {
   const container = document.getElementById('qref-container');
   container.innerHTML = '';
-  MATCHUPS.forEach((m, i) => {
+  getLM().forEach((m, i) => {
     const wrHtml = [
       m.wr1 != null ? `<span class="qref-wr ${wrCls(m.wr1)}">${m.wr1}% 1st</span>` : '',
       m.wr2 != null ? `<span class="qref-wr ${wrCls(m.wr2)}">${m.wr2}% 2nd</span>` : '',
@@ -1971,7 +2013,9 @@ function buildQrefCards() {
   });
 }
 
-MATCHUPS.forEach((m, i) => {
+function rebuildMatchupTable() {
+  tbody.innerHTML = '';
+getLM().forEach((m, i) => {
   // essential
   let essHtml = '';
   if (m.essential.length) {
@@ -2014,19 +2058,20 @@ MATCHUPS.forEach((m, i) => {
 buildQrefCards();
 renderFavs();
 updateStarBtns();
+}
 
 // row click → open deck page
 tbody.addEventListener('mouseover', e => {
   const row = e.target.closest('tr.data-row');
   if (!row) return;
-  const m = MATCHUPS[parseInt(row.dataset.idx)];
+  const m = getLM()[parseInt(row.dataset.idx)];
 });
 
 tbody.addEventListener('click', e => {
   const row = e.target.closest('tr.data-row');
   if (!row) return;
   const idx = parseInt(row.dataset.idx);
-  const m = MATCHUPS[idx];
+  const m = getLM()[idx];
   if (m && m.deck) {
     showDeck(m.deck, idx);
   } else if (m) {
@@ -2038,6 +2083,59 @@ tbody.addEventListener('click', e => {
     if (!open) { panel.classList.add('open'); row.classList.add('active'); }
   }
 });
+
+function renderLeaderGrid() {
+  const grid = document.getElementById('leader-grid');
+  grid.innerHTML = '';
+  Object.keys(LEADERS).forEach(key => {
+    const L = LEADERS[key];
+    const card = document.createElement('div');
+    card.className = 'leader-card';
+    card.onclick = () => selectLeader(key);
+    const imgUrl = 'https://en.onepiece-cardgame.com/images/cardlist/card/' + L.cardId + '.png';
+    const img = document.createElement('img');
+    img.src = imgUrl;
+    img.alt = L.name;
+    img.onerror = function(){ this.style.display='none'; };
+    const nameDiv = document.createElement('div');
+    nameDiv.className = 'lc-name';
+    nameDiv.textContent = L.name;
+    const idDiv = document.createElement('div');
+    idDiv.className = 'lc-id';
+    idDiv.textContent = L.cardId;
+    card.appendChild(img);
+    card.appendChild(nameDiv);
+    card.appendChild(idDiv);
+    grid.appendChild(card);
+  });
+}
+
+function showHome() {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-home').classList.add('active');
+  renderLeaderGrid();
+}
+
+function selectLeader(key) {
+  currentLeaderKey = key;
+  const L = LEADERS[key];
+  document.getElementById('matchup-title').textContent = L.title;
+  document.getElementById('matchup-sub').textContent = L.sub;
+  currentMode = 'table';
+  currentColor = 'all';
+  document.getElementById('btn-table').classList.add('active');
+  document.getElementById('btn-qref').classList.remove('active');
+  document.getElementById('table-container').classList.remove('hidden');
+  document.getElementById('qref-container').classList.remove('visible');
+  document.querySelectorAll('.fbtn').forEach(b => b.classList.remove('active'));
+  document.querySelector('.fbtn-all').classList.add('active');
+  const si = document.getElementById('search-input');
+  if (si) si.value = '';
+  rebuildMatchupTable();
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-matchup').classList.add('active');
+}
+
 
 // ── RENDER DECK PAGE ─────────────────────────────────────────
 function renderDeck(d, matchup) {
@@ -2125,7 +2223,6 @@ function renderDeck(d, matchup) {
           onerror="console.error('IMG FAIL (card):', this.src); this.onerror=null;"
           alt="${card.name}">
         <div class="b-count">×${card.count}</div>
-        <div class="b-name">${card.name}</div>
       </div>`;
     });
     html += `</div></div>`;
@@ -2138,6 +2235,7 @@ function renderDeck(d, matchup) {
 
   document.getElementById('deck-content').innerHTML = html;
 }
+showHome();
 </script>
 </body>
 </html>
