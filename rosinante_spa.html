@@ -4015,15 +4015,7 @@ function renderDeck(d, matchup, deckKey) {
     </div><hr class="mi-divider">`;
   }
 
-  let html = `${matchupInfoHtml}
-    <div class="deck-header">
-      <h2>${d.leaderName} — Decklist</h2>
-      <div class="placement">${d.player} · ${d.placement}</div>
-      <div class="meta">${d.location} · ${d.date}</div>
-      <div class="tap-hint">Tap any card to enlarge</div>
-    </div>
-
-    <div class="leader-wrap">
+  let html = `<div class="leader-wrap">
       <img class="leader-img" id="leader-card"
         src="${cardImg(d.leader)}"
         onload="this.style.opacity='1'"
@@ -4034,7 +4026,8 @@ function renderDeck(d, matchup, deckKey) {
         <div class="lid">${d.leader} · ${colorPips} · ${d.leaderStats}</div>
         <div class="leff">${d.leaderEffect}</div>
       </div>
-    </div>`;
+    </div>
+    ${matchupInfoHtml}`;
 
   d.sections.forEach(sec => {
     const sTotal = sec.cards.reduce((a,c)=>a+c.count,0);
