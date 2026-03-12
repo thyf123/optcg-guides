@@ -5175,8 +5175,21 @@ function renderDeck(d, matchup, deckKey) {
     </div>
     ${matchupInfoHtml}`;
 
+  // Enforce section order: non-event/stage first, then event/stage always last
+  const _isEventStage = s => /event|stage/i.test(s.title);
+  const _sortByCost = cards => [...cards].sort((a,b) => {
+    if (a.cost == null && b.cost == null) return 0;
+    if (a.cost == null) return 1;
+    if (b.cost == null) return -1;
+    return a.cost - b.cost;
+  });
+  const _orderedSections = [
+    ...d.sections.filter(s => !_isEventStage(s)),
+    ...d.sections.filter(s =>  _isEventStage(s))
+  ];
+
   let _cardIdx = 0;
-  d.sections.forEach(sec => {
+  _orderedSections.forEach(sec => {
     const sTotal = sec.cards.reduce((a,c)=>a+c.count,0);
     html += `<div class="sec-wrap">
       <div class="sec-hdr">
@@ -5184,17 +5197,8 @@ function renderDeck(d, matchup, deckKey) {
         <span class="sec-cnt">×${sTotal}</span>
       </div>
       <div class="card-grid">`;
-    // Sort by cost ascending if any card has cost data; unknown costs sort last
-    const hasCost = sec.cards.some(c => c.cost != null);
-    const sortedCards = hasCost
-      ? [...sec.cards].sort((a,b) => {
-          if (a.cost == null && b.cost == null) return 0;
-          if (a.cost == null) return 1;
-          if (b.cost == null) return -1;
-          return a.cost - b.cost;
-        })
-      : sec.cards;
-    sortedCards.forEach(card => {
+    // Always sort by cost ascending; cards without cost field sort to end
+    _sortByCost(sec.cards).forEach(card => {
       const src = cardImg(card.id);
       const delay = Math.min(_cardIdx * 18, 220);
       _cardIdx++;
