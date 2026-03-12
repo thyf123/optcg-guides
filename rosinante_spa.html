@@ -294,6 +294,19 @@ tr.data-row.row-hidden td{color:#666}
 .sb-cancel{padding:6px 14px;border-radius:6px;border:1px solid #333;background:none;color:#888;cursor:pointer;font-size:0.78rem}
 .sb-save{padding:6px 14px;border-radius:6px;border:none;background:#c9a84c;color:#111;cursor:pointer;font-size:0.78rem;font-weight:700}
 .sb-status{font-size:0.67rem;margin-top:10px;min-height:16px}
+/* ── CARD @MENTION CHIPS ── */
+.card-mention{display:inline-block;background:#1a2a3a;color:#80c8ff;border:1px solid #2a5a8a55;border-radius:4px;padding:0 5px;font-size:0.72rem;cursor:pointer;font-weight:600;line-height:1.6;vertical-align:baseline}
+.card-mention:active{background:#253555}
+/* Autocomplete dropdown */
+#card-ac{display:none}
+.card-ac-item{display:flex;align-items:center;gap:10px;padding:7px 10px;cursor:pointer;border-bottom:1px solid #2a2a3a;transition:background 0.1s}
+.card-ac-item:hover,.card-ac-item:active{background:#252545}
+.card-ac-item:last-child{border-bottom:none}
+.card-ac-img{width:40px;border-radius:4px;flex-shrink:0;background:#13132a;display:block}
+.card-ac-info{min-width:0;flex:1}
+.card-ac-name{font-size:0.78rem;color:#e0d8c8;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.card-ac-meta{font-size:0.62rem;color:#666;margin-top:1px}
+.card-ac-label{color:#c9a84c99;font-size:0.6rem;font-weight:700;text-transform:uppercase;margin-left:4px}
 /* settings gear on home screen */
 .home-gear{position:absolute;top:16px;right:16px;background:none;border:none;color:#444;font-size:1rem;cursor:pointer;padding:4px}
 .home-gear:hover{color:#888}
@@ -3365,7 +3378,7 @@ function deleteCustomTip(deckKey, idx) {
 function _buildCustomTipsHtml(deckKey) {
   const tips = _getCustomTips(deckKey);
   const items = tips.map((t, i) =>
-    `<li class="custom-tip-item"><span class="cti-text">${t}</span><button class="cti-del" onclick="deleteCustomTip('${deckKey}',${i})" title="Remove">×</button></li>`
+    `<li class="custom-tip-item"><span class="cti-text">${_renderMentions(t)}</span><button class="cti-del" onclick="deleteCustomTip('${deckKey}',${i})" title="Remove">×</button></li>`
   ).join('');
   return (items ? `<ul class="mi-tips custom-tips">${items}</ul>` : '')
     + `<div id="add-tip-area"></div>`
@@ -3517,7 +3530,7 @@ function _buildMyHistoryHtml(deckKey) {
     return `<div class="my-history-item">
       <span class="${g.result==='W'?'my-res-w':'my-res-l'}">${g.result}</span>
       <span class="my-go">${g.go}</span>
-      ${g.note ? `<span class="my-note-text">${g.note}</span>` : '<span class="my-note-text" style="color:#333">—</span>'}
+      ${g.note ? `<span class="my-note-text">${_renderMentions(g.note)}</span>` : '<span class="my-note-text" style="color:#333">—</span>'}
       <span class="my-date">${ds}</span>
       ${_logEditMode ? `<button class="my-game-del" onclick="deleteGame('${currentLeaderKey}','${deckKey}',${g.ts})" title="Delete">✕</button>` : ''}
     </div>`;
@@ -3537,6 +3550,110 @@ function deleteGame(lk, dk, ts) {
   syncToSupabase();
   _refreshMySection(dk);
   _refreshYouCells();
+}
+
+// ── CARD @MENTION SYSTEM ─────────────────────────────────────────
+let _acPool = [], _acCards = [], _acTa = null, _acStart = -1;
+
+function _buildCardPool(deckKey, matchup) {
+  const seen = new Set();
+  const pool = [];
+  const addDeck = (dk, label) => {
+    const d = DECKLISTS[dk];
+    if (!d) return;
+    if (!seen.has(d.leader)) { seen.add(d.leader); pool.push({ id: d.leader, name: d.leaderName, label }); }
+    d.sections.forEach(sec => sec.cards.forEach(c => {
+      if (!seen.has(c.id)) { seen.add(c.id); pool.push({ id: c.id, name: c.name, label }); }
+    }));
+  };
+  addDeck(deckKey, 'My deck');
+  if (matchup) {
+    const mn = matchup.name.toLowerCase();
+    const mset = matchup.name.split(' ')[0];
+    Object.keys(DECKLISTS).forEach(dk => {
+      if (dk === deckKey) return;
+      const d = DECKLISTS[dk];
+      if (!d) return;
+      if ((mset && d.leader && d.leader.startsWith(mset + '-')) ||
+          (d.leaderName && mn.includes(d.leaderName.toLowerCase()))) {
+        addDeck(dk, 'Opp');
+      }
+    });
+  }
+  return pool;
+}
+
+function _setupAtMention(ta, deckKey, matchup) {
+  _acTa = ta;
+  _acPool = _buildCardPool(deckKey, matchup);
+  ta.removeEventListener('input', _onAtInput);
+  ta.removeEventListener('keydown', _onAtKeydown);
+  ta.addEventListener('input', _onAtInput);
+  ta.addEventListener('keydown', _onAtKeydown);
+}
+function _onAtInput() {
+  const ta = _acTa; if (!ta) return;
+  const val = ta.value, pos = ta.selectionStart;
+  let start = -1;
+  for (let i = pos - 1; i >= Math.max(0, pos - 40); i--) {
+    if (val[i] === '@') { start = i; break; }
+    if (val[i] === ' ' || val[i] === '\n') break;
+  }
+  if (start < 0) { _hideAcDropdown(); return; }
+  const query = val.slice(start + 1, pos).toLowerCase();
+  _acStart = start;
+  if (!query) { _hideAcDropdown(); return; }
+  const matches = _acPool.filter(c =>
+    c.name.toLowerCase().includes(query) || c.id.toLowerCase().includes(query)
+  ).slice(0, 8);
+  if (!matches.length) { _hideAcDropdown(); return; }
+  _acCards = matches;
+  _showAcDropdown(matches, ta);
+}
+function _onAtKeydown(e) {
+  const ac = document.getElementById('card-ac');
+  if (!ac || ac.style.display === 'none') return;
+  if (e.key === 'Escape') { _hideAcDropdown(); e.preventDefault(); }
+  if (e.key === 'Enter') { const f = ac.querySelector('.card-ac-item'); if (f) { f.click(); e.preventDefault(); } }
+}
+function _showAcDropdown(cards, ta) {
+  let ac = document.getElementById('card-ac');
+  if (!ac) { ac = document.createElement('div'); ac.id = 'card-ac'; document.body.appendChild(ac); }
+  const rect = ta.getBoundingClientRect();
+  const top = Math.min(rect.bottom + 4, window.innerHeight - 290);
+  ac.style.cssText = `position:fixed;left:${rect.left}px;top:${top}px;width:${Math.max(rect.width,260)}px;z-index:9999;background:#1e1e36;border:1px solid #c9a84c55;border-radius:8px;overflow:hidden;max-height:280px;overflow-y:auto;box-shadow:0 6px 24px #00000088`;
+  ac.innerHTML = cards.map((c, i) =>
+    `<div class="card-ac-item" data-idx="${i}" onclick="_pickAcItem(this)">
+      <img class="card-ac-img" src="${cardImg(c.id)}" alt="">
+      <div class="card-ac-info">
+        <div class="card-ac-name">${c.name}</div>
+        <div class="card-ac-meta">${c.id}<span class="card-ac-label">${c.label}</span></div>
+      </div>
+    </div>`
+  ).join('');
+  ac.style.display = 'block';
+}
+function _hideAcDropdown() {
+  const ac = document.getElementById('card-ac'); if (ac) ac.style.display = 'none';
+}
+function _pickAcItem(el) {
+  const c = _acCards[parseInt(el.dataset.idx)]; if (!c || !_acTa) return;
+  const ta = _acTa, pos = ta.selectionStart, val = ta.value;
+  const mention = `@[${c.name}](${c.id})`;
+  ta.value = val.slice(0, _acStart) + mention + val.slice(pos);
+  const np = _acStart + mention.length;
+  ta.setSelectionRange(np, np); ta.focus();
+  _hideAcDropdown(); _acStart = -1;
+}
+document.addEventListener('click', e => { if (!e.target.closest('#card-ac') && !e.target.closest('#my-notes-ta')) _hideAcDropdown(); });
+
+// Convert @[name](id) → tappable chip for display
+function _renderMentions(text) {
+  if (!text) return '';
+  const safe = String(text).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  return safe.replace(/@\[([^\]]+)\]\(([^)]+)\)/g, (_, name, id) =>
+    `<span class="card-mention" onclick="openModal('${cardImg(id)}','${id} · ${name}')">${name}</span>`
+  );
 }
 
 // ── SUPABASE SYNC ─────────────────────────────────────────────
@@ -4104,7 +4221,7 @@ function renderDeck(d, matchup, deckKey) {
     const tipsHtml = matchup.tips && matchup.tips.length
       ? `<div class="mi-section">
           <div class="mi-section-title">Key Tips</div>
-          <ul class="mi-tips">${matchup.tips.map(t=>`<li>${t}</li>`).join('')}</ul>
+          <ul class="mi-tips">${matchup.tips.map(t=>`<li>${_renderMentions(t)}</li>`).join('')}</ul>
         </div>`
       : '';
 
@@ -4194,7 +4311,7 @@ function renderDeck(d, matchup, deckKey) {
   document.getElementById('deck-content').innerHTML = html;
   // set textarea value after innerHTML (avoids HTML-encoding issues)
   const ta = document.getElementById('my-notes-ta');
-  if (ta) ta.value = existingNote;
+  if (ta) { ta.value = existingNote; _setupAtMention(ta, deckKey, matchup); }
   // render history
   _refreshMySection(deckKey);
 }
