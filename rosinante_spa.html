@@ -267,6 +267,14 @@ tr.data-row.row-hidden td{color:#666}
 .my-note-text{color:#aaa;flex:1;word-break:break-word}
 .my-date{color:#444;flex-shrink:0}
 .my-log-btn{font-size:0.7rem;padding:4px 10px;background:#1a2a3a;border:1px solid #3a5a7a;border-radius:5px;color:#80b8ff;cursor:pointer}
+.my-note-actions{display:flex;gap:6px;margin-top:6px}
+.my-note-save{font-size:0.7rem;padding:4px 12px;background:#1a3a2a;border:1px solid #30803050;border-radius:5px;color:#60d090;cursor:pointer;font-weight:700}
+.my-note-save:active{background:#1f4a32}
+.my-note-clear{font-size:0.7rem;padding:4px 10px;background:none;border:1px solid #2a2a40;border-radius:5px;color:#555;cursor:pointer}
+.my-note-saved{font-size:0.67rem;color:#60d090;opacity:0;transition:opacity 0.3s;align-self:center}
+.my-note-saved.show{opacity:1}
+.my-game-del{font-size:0.62rem;color:#443;background:none;border:none;cursor:pointer;padding:0 2px;flex-shrink:0;line-height:1}
+.my-game-del:hover{color:#aa4444}
 
 /* ── SYNC STATUS DOT ── */
 #sync-dot{position:fixed;top:10px;right:12px;font-size:0.6rem;font-weight:700;z-index:500;pointer-events:none;transition:opacity 0.3s}
@@ -3399,6 +3407,26 @@ function saveNote(deckKey, text) {
   _saveNotes();
   syncToSupabase();
 }
+function saveNoteDeck(deckKey) {
+  const ta = document.getElementById('my-notes-ta');
+  if (!ta) return;
+  saveNote(deckKey, ta.value);
+  const flash = document.getElementById('note-saved-flash');
+  if (flash) {
+    flash.classList.add('show');
+    setTimeout(() => flash.classList.remove('show'), 1800);
+  }
+}
+function clearNote(deckKey) {
+  const ta = document.getElementById('my-notes-ta');
+  if (ta) ta.value = '';
+  saveNote(deckKey, '');
+  const flash = document.getElementById('note-saved-flash');
+  if (flash) {
+    flash.classList.add('show');
+    setTimeout(() => flash.classList.remove('show'), 1800);
+  }
+}
 
 // ── LOG MODAL ──────────────────────────────────────────────────
 let _logDeck = null, _logGo = null, _logResult = null;
@@ -3483,6 +3511,7 @@ function _buildMyHistoryHtml(deckKey) {
       <span class="my-go">${g.go}</span>
       ${g.note ? `<span class="my-note-text">${g.note}</span>` : '<span class="my-note-text" style="color:#333">—</span>'}
       <span class="my-date">${ds}</span>
+      <button class="my-game-del" onclick="deleteGame('${currentLeaderKey}','${deckKey}',${g.ts})" title="Delete">✕</button>
     </div>`;
   }).join('');
   return recHtml + (rows ? `<div style="margin-top:6px">${rows}</div>` : '');
@@ -3491,6 +3520,15 @@ function _buildMyHistoryHtml(deckKey) {
 function _refreshMySection(deckKey) {
   const el = document.getElementById('my-hist-inner');
   if (el) el.innerHTML = _buildMyHistoryHtml(deckKey);
+}
+function deleteGame(lk, dk, ts) {
+  const idx = allGames.findIndex(g => g.leaderKey === lk && g.deckKey === dk && g.ts === ts);
+  if (idx < 0) return;
+  allGames.splice(idx, 1);
+  _saveGames();
+  syncToSupabase();
+  _refreshMySection(dk);
+  _refreshYouCells();
 }
 
 // ── SUPABASE SYNC ─────────────────────────────────────────────
@@ -4128,7 +4166,12 @@ function renderDeck(d, matchup, deckKey) {
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
       <div class="my-section-title" style="margin-bottom:0">📝 My Notes</div>
     </div>
-    <textarea id="my-notes-ta" class="my-notes-area" placeholder="Your observations, what to remember next time…" oninput="saveNote('${deckKey}', this.value)"></textarea>
+    <textarea id="my-notes-ta" class="my-notes-area" placeholder="Your observations, what to remember next time…"></textarea>
+    <div class="my-note-actions">
+      <button class="my-note-save" onclick="saveNoteDeck('${deckKey}')">Save</button>
+      <button class="my-note-clear" onclick="clearNote('${deckKey}')">Clear</button>
+      <span class="my-note-saved" id="note-saved-flash">Saved ✓</span>
+    </div>
     <div style="display:flex;justify-content:space-between;align-items:center;margin:14px 0 6px">
       <div class="my-section-title" style="margin-bottom:0">📊 My Record</div>
       <button class="my-log-btn" onclick="openLogModal('${deckKey}','${_mName}',event)">+ Log Game</button>
