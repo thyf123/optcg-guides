@@ -136,6 +136,16 @@ tr.detail-row td{padding:0;border-bottom:1px solid #1e1e36}
 .mode-btn.active{background:#c9a84c;color:#16162a;border-color:#c9a84c}
 .mode-label{font-size:0.65rem;color:#555;margin-left:auto}
 
+/* ── MATCHUP VISIBILITY EDIT MODE ── */
+.table-edit-btn{font-size:0.68rem;font-weight:700;border:1px solid #3a3a5a;border-radius:6px;padding:4px 10px;cursor:pointer;background:#1e1e36;color:#888;margin-left:auto}
+.table-edit-btn.active{background:#c9a84c22;color:#c9a84c;border-color:#c9a84c55}
+tr.data-row.row-hidden{opacity:0.28}
+tr.data-row.row-hidden td{color:#666}
+.edit-banner{font-size:0.68rem;color:#c9a84c99;background:#c9a84c0d;border:1px solid #c9a84c22;border-radius:6px;padding:6px 12px;margin-bottom:8px;text-align:center;display:none}
+.edit-banner.visible{display:block}
+.no-matchups-msg{text-align:center;padding:32px 16px;color:#555;font-size:0.82rem;display:none}
+.no-matchups-msg.visible{display:block}
+
 /* ── QUICK REF CARDS ── */
 #qref-container{display:none}
 #qref-container.visible{display:block}
@@ -320,8 +330,10 @@ tr.detail-row td{padding:0;border-bottom:1px solid #1e1e36}
   <div class="mode-bar">
     <button class="mode-btn active" id="btn-table" onclick="setMode('table')">Table</button>
     <button class="mode-btn" id="btn-qref" onclick="setMode('qref')">⚡ Quick Ref</button>
-    <span class="mode-label">Quick Ref = pre-match cheat sheet</span>
+    <button class="table-edit-btn" id="table-edit-btn" onclick="toggleTableEditMode()">Edit</button>
   </div>
+  <div class="edit-banner" id="edit-banner">Tap any row to show or hide it · Tap <b>Done</b> when finished</div>
+  <div class="no-matchups-msg" id="no-matchups-msg">No matchups selected — tap <b>Edit</b> to choose which to show</div>
 
   <!-- Search + filter -->
   <div class="search-bar">
@@ -3288,13 +3300,42 @@ function updateStarBtns() {
 let allGames = [];
 let allNotes = {};
 let allCustomTips = {};
+let allShownMatchups = {};
 try { allGames = JSON.parse(localStorage.getItem('optcg-games') || '[]'); } catch(e) {}
 try { allNotes = JSON.parse(localStorage.getItem('optcg-notes') || '{}'); } catch(e) {}
 try { allCustomTips = JSON.parse(localStorage.getItem('optcg-tips') || '{}'); } catch(e) {}
+try { allShownMatchups = JSON.parse(localStorage.getItem('optcg-shown-matchups') || '{}'); } catch(e) {}
 function _saveGames() { try { localStorage.setItem('optcg-games', JSON.stringify(allGames)); } catch(e) {} }
 function _saveNotes() { try { localStorage.setItem('optcg-notes', JSON.stringify(allNotes)); } catch(e) {} }
+function _saveShown() { try { localStorage.setItem('optcg-shown-matchups', JSON.stringify(allShownMatchups)); } catch(e) {} }
 
 function _saveTips() { try { localStorage.setItem('optcg-tips', JSON.stringify(allCustomTips)); } catch(e) {} }
+
+// ── MATCHUP VISIBILITY ──────────────────────────────────────────
+let tableEditMode = false;
+function toggleTableEditMode() {
+  tableEditMode = !tableEditMode;
+  const btn = document.getElementById('table-edit-btn');
+  const banner = document.getElementById('edit-banner');
+  btn.textContent = tableEditMode ? 'Done' : 'Edit';
+  btn.classList.toggle('active', tableEditMode);
+  if (banner) banner.classList.toggle('visible', tableEditMode);
+  rebuildMatchupTable();
+}
+function toggleMatchupVis(name) {
+  const lk = currentLeaderKey;
+  const arr = allShownMatchups[lk] ? [...allShownMatchups[lk]] : [];
+  const idx = arr.indexOf(name);
+  if (idx >= 0) arr.splice(idx, 1); else arr.push(name);
+  allShownMatchups[lk] = arr;
+  _saveShown();
+  syncToSupabase();
+  rebuildMatchupTable();
+}
+function _isMatchupShown(name) {
+  const arr = allShownMatchups[currentLeaderKey] || [];
+  return arr.includes(name);
+}
 function _getCustomTips(deckKey) { return allCustomTips[_nk(currentLeaderKey, deckKey)] || []; }
 function addCustomTip(deckKey, text) {
   text = text.trim();
@@ -3498,6 +3539,11 @@ async function syncFromSupabase() {
       allCustomTips = tr.payload;
       try { localStorage.setItem('optcg-tips', JSON.stringify(allCustomTips)); } catch(e) {}
     }
+    const sr = rows.find(r => r.id === 'shown-matchups');
+    if (sr && sr.payload && typeof sr.payload === 'object') {
+      allShownMatchups = sr.payload;
+      try { localStorage.setItem('optcg-shown-matchups', JSON.stringify(allShownMatchups)); } catch(e) {}
+    }
     _setSyncDot('synced');
   } catch(e) {
     _setSyncDot('error', '☁✗');
@@ -3515,7 +3561,8 @@ async function syncToSupabase() {
       body: JSON.stringify([
         { id: 'games', payload: allGames, updated_at: new Date().toISOString() },
         { id: 'notes', payload: allNotes, updated_at: new Date().toISOString() },
-        { id: 'tips', payload: allCustomTips, updated_at: new Date().toISOString() }
+        { id: 'tips', payload: allCustomTips, updated_at: new Date().toISOString() },
+        { id: 'shown-matchups', payload: allShownMatchups, updated_at: new Date().toISOString() }
       ])
     });
     if (!res.ok) throw new Error(res.status);
@@ -3840,7 +3887,14 @@ function buildQrefCards() {
 
 function rebuildMatchupTable() {
   tbody.innerHTML = '';
+  const noMatchupsMsg = document.getElementById('no-matchups-msg');
+  let shownCount = 0;
 getLM().forEach((m, i) => {
+  const isShown = _isMatchupShown(m.name);
+  // In normal mode, skip hidden matchups entirely
+  if (!tableEditMode && !isShown) return;
+  shownCount++;
+
   // essential
   let essHtml = '';
   if (m.essential.length) {
@@ -3853,22 +3907,16 @@ getLM().forEach((m, i) => {
     + m.tips.map(t=>`<li>${t}</li>`).join('')
     + '</ul></div>';
 
-  // deck cell
-  const deckCell = m.deck
-    ? `<td><button class="deck-btn" data-deck="${m.deck}">📋</button></td>`
-    : `<td style="color:#2a2a2a;font-size:0.6rem;padding:5px 10px">—</td>`;
-
-  const rec = personalRecord(currentLeaderKey, m.deck || '');
   const youCell = _youCellHtml(i, m.deck);
   const starCell = m.deck
     ? `<td style="padding:2px 4px;text-align:center;white-space:nowrap"><button class="star-btn" data-deck="${m.deck}" onclick="event.stopPropagation();toggleFav('${m.deck}')" title="Favourite">★</button><button class="log-btn" onclick="event.stopPropagation();openLogModal('${m.deck}','${m.name.replace(/'/g,"\'")}',event)" title="Log game">📋</button></td>`
     : `<td></td>`;
 
   const tr = document.createElement('tr');
-  tr.className = 'data-row';
+  tr.className = 'data-row' + (tableEditMode && !isShown ? ' row-hidden' : '');
   tr.dataset.idx = i;
   tr.innerHTML = `
-    <td><span class="mname">${m.name}</span>${colorDots(m.name)}${m.warn?'<span class="warn">⚠</span>':''}</td>
+    <td><span class="mname">${m.name}</span>${colorDots(m.name)}${m.warn?'<span class="warn">⚠</span>':''}${tableEditMode ? `<span style="margin-left:6px;font-size:0.65rem;color:${isShown?'#60d090':'#555'}">${isShown?'✓':''}</span>` : ''}</td>
     <td><span class="go ${m.go==='1st'?'go1':'go2'}">${m.go}</span></td>
     <td><span class="wr ${wrCls(m.wr1)}">${wrLbl(m.wr1)}</span></td>
     <td><span class="wr ${wrCls(m.wr2)}">${wrLbl(m.wr2)}</span></td>
@@ -3882,6 +3930,8 @@ getLM().forEach((m, i) => {
   dr.innerHTML = `<td colspan="7"><div class="detail-panel" id="panel-${i}">${essHtml}${tipsHtml}</div></td>`;
   tbody.appendChild(dr);
 });
+  // show/hide the empty state message
+  if (noMatchupsMsg) noMatchupsMsg.classList.toggle('visible', !tableEditMode && shownCount === 0);
 
 buildQrefCards();
 renderFavs();
@@ -3900,6 +3950,11 @@ tbody.addEventListener('click', e => {
   if (!row) return;
   const idx = parseInt(row.dataset.idx);
   const m = getLM()[idx];
+  if (tableEditMode) {
+    // In edit mode: toggle matchup visibility
+    if (m) toggleMatchupVis(m.name);
+    return;
+  }
   if (m && m.deck) {
     showDeck(m.deck, idx);
   } else if (m) {
@@ -3951,6 +4006,12 @@ function selectLeader(key) {
   document.getElementById('matchup-sub').textContent = L.sub;
   currentMode = 'table';
   currentColor = 'all';
+  // reset edit mode on leader switch
+  tableEditMode = false;
+  const editBtn = document.getElementById('table-edit-btn');
+  const banner = document.getElementById('edit-banner');
+  if (editBtn) { editBtn.textContent = 'Edit'; editBtn.classList.remove('active'); }
+  if (banner) banner.classList.remove('visible');
   document.getElementById('btn-table').classList.add('active');
   document.getElementById('btn-qref').classList.remove('active');
   document.getElementById('table-container').classList.remove('hidden');
