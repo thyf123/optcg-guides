@@ -3372,6 +3372,7 @@ function showAddTipInput(deckKey) {
   if (inp) {
     inp.focus();
     inp.addEventListener('keydown', e => { if (e.key === 'Enter') commitTip('${deckKey}'); });
+    _setupAtMention(inp, deckKey, _currentDeckMatchup);
   }
 }
 function commitTip(deckKey) {
@@ -4051,7 +4052,7 @@ getLM().forEach((m, i) => {
   }
   // tips
   const tipsHtml = '<div class="ds"><div class="dl">Tips</div><ul class="tips-list">'
-    + m.tips.map(t=>`<li>${t}</li>`).join('')
+    + m.tips.map(t=>`<li>${_renderMentions(t)}</li>`).join('')
     + '</ul></div>';
 
   const youCell = _youCellHtml(i, m.deck);
@@ -4191,7 +4192,11 @@ function selectLeader(key) {
 
 
 // ── RENDER DECK PAGE ─────────────────────────────────────────
+let _currentDeckMatchup = null;
+let _currentDeckKey = null;
 function renderDeck(d, matchup, deckKey) {
+  _currentDeckMatchup = matchup;
+  _currentDeckKey = deckKey;
   const total = d.sections.reduce((a,s)=>a+s.cards.reduce((b,c)=>b+c.count,0),0);
 
   // color pips for leader
