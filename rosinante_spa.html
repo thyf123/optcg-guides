@@ -264,6 +264,30 @@ tr.detail-row td{padding:0;border-bottom:1px solid #1e1e36}
 /* ── YOU COLUMN ── */
 .you-badge{font-size:0.68rem;font-weight:700;white-space:nowrap}
 .you-w{color:#8fffaa}.you-l{color:#888}
+.you-cell{display:flex;flex-direction:column;align-items:center;gap:3px}
+.you-spark{display:flex;gap:2px}
+.you-dot{width:7px;height:7px;border-radius:1px;flex-shrink:0}
+.you-dot-w{background:#50c878}.you-dot-l{background:#c05050}.you-dot-empty{background:#252535}
+.you-pct{font-size:0.66rem;font-weight:700}
+.you-delta{font-size:0.6rem;font-weight:700}
+.yd-pos{color:#8fffaa}.yd-neg{color:#ff8080}.yd-neu{color:#666}
+.you-nudge{font-size:0.6rem;color:#2a2a48;cursor:pointer;white-space:nowrap}
+.you-nudge:hover{color:#555}
+/* ── SORT HEADERS ── */
+th.sortable{cursor:pointer;user-select:none;position:relative}
+th.sortable:hover{color:#ffd080}
+th.sort-active{color:#ffd080}
+.sort-ind{margin-left:3px;opacity:0.7;font-size:0.58rem}
+/* ── LOGGED-ONLY TOGGLE ── */
+.fbtn-logged{background:#1a2a1a;color:#60d090;border:1px solid #30603050}
+.fbtn-logged.active{background:#1a4a2a;color:#8fffaa;border-color:#50a870;opacity:1}
+/* ── MOBILE: hide STYLE column ── */
+@media (max-width:480px){
+  td.sty,th.th-style{display:none}
+  .you-cell{gap:2px}
+}
+/* ── WARN TOOLTIP ── */
+.warn[title]{cursor:help}
 /* ── MY SECTION (deck page) ── */
 .my-section{margin-top:20px;border-top:1px solid #252535;padding-top:16px}
 .my-section-title{font-size:0.68rem;color:#c9a84c;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;margin-bottom:8px}
@@ -386,6 +410,7 @@ tr.detail-row td{padding:0;border-bottom:1px solid #1e1e36}
       <button class="fbtn fbtn-y" data-color="yellow" onclick="setColor(this)">Yellow</button>
       <button class="fbtn fbtn-bk" data-color="black" onclick="setColor(this)">Black</button>
       <button class="fbtn fbtn-warn" data-color="warn" onclick="setColor(this)">⚠ Hard</button>
+      <button class="fbtn fbtn-logged" id="logged-only-btn" onclick="toggleLoggedOnly()">📊 Logged</button>
     </div>
   </div>
 
@@ -396,6 +421,7 @@ tr.detail-row td{padding:0;border-bottom:1px solid #1e1e36}
     <div class="leg"><span class="sw" style="background:#7a6200"></span>50–55%</div>
     <div class="leg"><span class="sw" style="background:#7a3c00"></span>40–50%</div>
     <div class="leg"><span class="sw" style="background:#7a1515"></span>&lt;40%</div>
+    <div class="leg" style="margin-left:6px"><span style="color:#e07050">⚠</span><span style="color:#555;font-size:0.62rem"> &lt;50 games — low confidence</span></div>
   </div>
 
   <!-- Quick Ref cards -->
@@ -406,12 +432,12 @@ tr.detail-row td{padding:0;border-bottom:1px solid #1e1e36}
   <table>
     <thead>
       <tr>
-        <th>Matchup</th>
+        <th class="sortable" data-col="name" onclick="sortTable('name')">Matchup<span class="sort-ind" id="si-name"></span></th>
         <th>Go</th>
-        <th>1st</th>
-        <th>2nd</th>
-        <th>Style</th>
-        <th style="text-align:center">You</th>
+        <th class="sortable" data-col="wr1" onclick="sortTable('wr1')">1st<span class="sort-ind" id="si-wr1"></span></th>
+        <th class="sortable" data-col="wr2" onclick="sortTable('wr2')">2nd<span class="sort-ind" id="si-wr2"></span></th>
+        <th class="th-style">Style</th>
+        <th class="sortable" data-col="you" onclick="sortTable('you')" style="text-align:center">You<span class="sort-ind" id="si-you"></span></th>
         <th></th>
       </tr>
     </thead>
@@ -3513,22 +3539,76 @@ function saveLog() {
 }
 
 // ── PERSONAL STATS HELPERS ────────────────────────────────────
-function _youCellHtml(i, deckKey) {
-  const rec = personalRecord(currentLeaderKey, deckKey || '');
-  const inner = rec.total > 0
-    ? `<span class="you-badge"><span class="you-w">${rec.w}W</span><span class="you-l"> ${rec.l}L</span></span>`
-    : '<span style="color:#252535">—</span>';
-  return `<td id="you-${i}" style="text-align:center;padding:5px 6px">${inner}</td>`;
+// ── TABLE SORT ───────────────────────────────────────────────
+let _tableSort = { col: null, dir: 1 };
+function sortTable(col) {
+  if (_tableSort.col === col) _tableSort.dir *= -1; else { _tableSort.col = col; _tableSort.dir = -1; }
+  // update indicators
+  ['name','wr1','wr2','you'].forEach(c => {
+    const el = document.getElementById('si-' + c);
+    if (el) el.textContent = _tableSort.col === c ? (_tableSort.dir === -1 ? ' ▼' : ' ▲') : '';
+  });
+  document.querySelectorAll('th.sortable').forEach(th => th.classList.toggle('sort-active', th.dataset.col === _tableSort.col));
+  rebuildMatchupTable();
 }
-
+function _sortedMatchups() {
+  const ms = getLM().map((m, i) => ({ m, i }));
+  if (!_tableSort.col) return ms;
+  const d = _tableSort.dir;
+  return ms.sort((a, b) => {
+    const ma = a.m, mb = b.m;
+    if (_tableSort.col === 'name') return d * ma.name.localeCompare(mb.name);
+    if (_tableSort.col === 'wr1') return d * ((ma.wr1 ?? -1) - (mb.wr1 ?? -1));
+    if (_tableSort.col === 'wr2') return d * ((ma.wr2 ?? -1) - (mb.wr2 ?? -1));
+    if (_tableSort.col === 'you') {
+      const ra = personalRecord(currentLeaderKey, ma.deck || '');
+      const rb = personalRecord(currentLeaderKey, mb.deck || '');
+      const wa = ra.total > 0 ? ra.w / ra.total : -1;
+      const wb = rb.total > 0 ? rb.w / rb.total : -1;
+      return d * (wa - wb);
+    }
+    return 0;
+  });
+}
+// ── LOGGED-ONLY TOGGLE ───────────────────────────────────────
+let _loggedOnly = false;
+function toggleLoggedOnly() {
+  _loggedOnly = !_loggedOnly;
+  const btn = document.getElementById('logged-only-btn');
+  if (btn) btn.classList.toggle('active', _loggedOnly);
+  applyFilters();
+}
+// ── YOU COLUMN ───────────────────────────────────────────────
+function _youCellInner(deckKey, matchupIdx, metaWr) {
+  const rec = personalRecord(currentLeaderKey, deckKey || '');
+  if (rec.total === 0) {
+    return `<span class="you-nudge" onclick="event.stopPropagation();openLogModal('${deckKey}','',event)">+ log</span>`;
+  }
+  // spark: last 5 games most-recent first
+  const games = _gamesFor(currentLeaderKey, deckKey).slice(-5).reverse();
+  const dots = Array.from({length:5}, (_,k) => {
+    if (k >= games.length) return `<span class="you-dot you-dot-empty"></span>`;
+    return `<span class="you-dot ${games[k].result==='W'?'you-dot-w':'you-dot-l'}"></span>`;
+  }).join('');
+  const wr = Math.round(rec.w / rec.total * 100);
+  const wrCls2 = wr >= 55 ? 'yd-pos' : wr >= 45 ? 'yd-neu' : 'yd-neg';
+  let deltaHtml = '';
+  if (metaWr != null) {
+    const delta = wr - Math.round(metaWr);
+    const dcls = delta > 2 ? 'yd-pos' : delta < -2 ? 'yd-neg' : 'yd-neu';
+    deltaHtml = ` <span class="you-delta ${dcls}">${delta > 0 ? '+' : ''}${delta}%</span>`;
+  }
+  return `<div class="you-cell"><div class="you-spark">${dots}</div><div><span class="you-pct ${wrCls2}">${wr}%</span>${deltaHtml}</div></div>`;
+}
+function _youCellHtml(i, deckKey, metaWr) {
+  return `<td id="you-${i}" style="text-align:center;padding:5px 6px">${_youCellInner(deckKey, i, metaWr)}</td>`;
+}
 function _refreshYouCells() {
   getLM().forEach((m, i) => {
     const cell = document.getElementById('you-' + i);
     if (!cell) return;
-    const rec = personalRecord(currentLeaderKey, m.deck || '');
-    cell.innerHTML = rec.total > 0
-      ? `<span class="you-badge"><span class="you-w">${rec.w}W</span><span class="you-l"> ${rec.l}L</span></span>`
-      : '<span style="color:#252535">—</span>';
+    const metaWr = m.go === '1st' ? m.wr1 : m.wr2;
+    cell.innerHTML = _youCellInner(m.deck || '', i, metaWr);
   });
 }
 
@@ -4044,7 +4124,11 @@ function matchVisible(m) {
 function applyFilters() {
   let anyVisible = false;
   getLM().forEach((m, i) => {
-    const visible = matchVisible(m);
+    let visible = matchVisible(m);
+    if (visible && _loggedOnly) {
+      const rec = personalRecord(currentLeaderKey, m.deck || '');
+      if (rec.total === 0) visible = false;
+    }
     if (visible) anyVisible = true;
     // Table rows
     const dataRow = document.querySelector(`tr.data-row[data-idx="${i}"]`);
@@ -4117,8 +4201,7 @@ function buildQrefCards() {
 
 function rebuildMatchupTable() {
   tbody.innerHTML = '';
-getLM().forEach((m, i) => {
-
+  _sortedMatchups().forEach(({m, i}) => {
   // essential
   let essHtml = '';
   if (m.essential.length) {
@@ -4131,7 +4214,8 @@ getLM().forEach((m, i) => {
     + m.tips.map(t=>`<li>${_renderMentions(t)}</li>`).join('')
     + '</ul></div>';
 
-  const youCell = _youCellHtml(i, m.deck);
+  const metaWr = m.go === '1st' ? m.wr1 : m.wr2;
+  const youCell = _youCellHtml(i, m.deck, metaWr);
   const starCell = m.deck
     ? `<td style="padding:2px 4px;text-align:center;white-space:nowrap"><button class="star-btn" data-deck="${m.deck}" onclick="event.stopPropagation();toggleFav('${m.deck}')" title="Favourite">★</button><button class="log-btn" onclick="event.stopPropagation();openLogModal('${m.deck}','${m.name.replace(/'/g,"\'")}',event)" title="Log game">📋</button></td>`
     : `<td></td>`;
@@ -4140,7 +4224,7 @@ getLM().forEach((m, i) => {
   tr.className = 'data-row';
   tr.dataset.idx = i;
   tr.innerHTML = `
-    <td><span class="mname">${m.name}</span>${colorDots(m.name)}${m.warn?'<span class="warn">⚠</span>':''}</td>
+    <td><span class="mname">${m.name}</span>${colorDots(m.name)}${m.warn?`<span class="warn" title="Fewer than 50 games in dataset — treat with caution">⚠</span>`:''}  </td>
     <td><span class="go ${m.go==='1st'?'go1':'go2'}">${m.go}</span></td>
     <td><span class="wr ${wrCls(m.wr1)}">${wrLbl(m.wr1)}</span></td>
     <td><span class="wr ${wrCls(m.wr2)}">${wrLbl(m.wr2)}</span></td>
@@ -4274,10 +4358,13 @@ function selectLeader(key) {
   document.getElementById('matchup-sub').textContent = L.sub;
   currentMode = 'table';
   currentColor = 'all';
+  _loggedOnly = false;
 
   document.getElementById('table-container').classList.remove('hidden');
   document.querySelectorAll('.fbtn').forEach(b => b.classList.remove('active'));
   document.querySelector('.fbtn-all').classList.add('active');
+  const loggedBtn = document.getElementById('logged-only-btn');
+  if (loggedBtn) loggedBtn.classList.remove('active');
   const si = document.getElementById('search-input');
   if (si) si.value = '';
   rebuildMatchupTable();
