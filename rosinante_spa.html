@@ -94,9 +94,10 @@ tr.detail-row td{padding:0;border-bottom:1px solid #1e1e36}
 .sec-title{font-size:0.68rem;font-weight:700;letter-spacing:0.09em;text-transform:uppercase;color:#c9a84c}
 .sec-cnt{font-size:0.65rem;color:#666}
 
-.card-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
-.card-item{position:relative;border-radius:8px;overflow:hidden;background:#1a1a30;cursor:pointer;aspect-ratio:0.715}
-.card-item img{width:100%;height:100%;object-fit:cover;display:block;border-radius:8px;transition:opacity 0.2s;opacity:0}
+.card-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:5px}
+.card-item{position:relative;border-radius:6px;overflow:hidden;background:#1a1a30;cursor:pointer;aspect-ratio:0.715;transition:transform 0.18s,z-index 0s}
+.card-item.zoomed{transform:scale(2.2);z-index:100;border-radius:6px;box-shadow:0 8px 32px #000a}
+.card-item img{width:100%;height:100%;object-fit:cover;display:block;border-radius:6px;transition:opacity 0.2s;opacity:0}
 .card-item img.loaded{opacity:1}
 .b-count{position:absolute;bottom:4px;left:4px;background:rgba(0,0,0,0.85);color:#ffd080;font-size:0.85rem;font-weight:900;border-radius:4px;padding:1px 6px;border:1px solid #c9a84c55;pointer-events:none;line-height:1.5}
 .b-name{position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,0.78);color:#bbb;font-size:0.57rem;text-align:center;padding:2px 2px 3px;pointer-events:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -347,10 +348,8 @@ tr.data-row.row-hidden td{color:#666}
   <!-- Favourites -->
   <div id="fav-section" class="fav-section"></div>
 
-  <!-- Mode toggle -->
+  <!-- Mode bar -->
   <div class="mode-bar">
-    <button class="mode-btn active" id="btn-table" onclick="setMode('table')">Table</button>
-    <button class="mode-btn" id="btn-qref" onclick="setMode('qref')">⚡ Quick Ref</button>
     <button class="table-edit-btn" id="table-edit-btn" onclick="toggleTableEditMode()">Edit</button>
   </div>
   <div class="edit-banner" id="edit-banner">Tap any row to show or hide it · Tap <b>Done</b> when finished</div>
@@ -405,7 +404,10 @@ tr.data-row.row-hidden td{color:#666}
 
 <!-- ════ SCREEN 2: DECKLIST ════ -->
 <div class="screen" id="screen-deck">
-  <button class="back-btn" onclick="goBack()">← Back</button>
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+    <button class="back-btn" style="margin-bottom:0" onclick="goBack()">← Back</button>
+    <button class="my-log-btn" id="deck-top-log-btn" onclick="openLogModal('','',event)" style="display:none">+ Log Game</button>
+  </div>
   <div id="deck-content"></div>
 </div>
 
@@ -3526,7 +3528,7 @@ function _buildMyHistoryHtml(deckKey) {
   }
   const rows = games.slice(0, 12).map(g => {
     const d = new Date(g.ts);
-    const ds = (d.getMonth()+1) + '/' + d.getDate();
+    const ds = (d.getMonth()+1) + '/' + d.getDate() + ' ' + String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
     return `<div class="my-history-item">
       <span class="${g.result==='W'?'my-res-w':'my-res-l'}">${g.result}</span>
       <span class="my-go">${g.go}</span>
@@ -3854,6 +3856,22 @@ function loadImg(el, src, isLeader) {
   el.src = src;
 }
 
+function toggleCardZoom(e, el, cardId) {
+  e.stopPropagation();
+  if (el.classList.contains('zoomed')) {
+    // already zoomed → open full modal
+    el.classList.remove('zoomed');
+    openModal(el.querySelector('img').src, cardId);
+  } else {
+    // un-zoom any other card first
+    document.querySelectorAll('.card-item.zoomed').forEach(c => c.classList.remove('zoomed'));
+    el.classList.add('zoomed');
+    // tap elsewhere to unzoom
+    const off = () => { el.classList.remove('zoomed'); document.removeEventListener('click', off); };
+    setTimeout(() => document.addEventListener('click', off), 0);
+  }
+}
+
 function openModal(src, lbl) {
   if (!src) return;
   const modal = document.getElementById('modal');
@@ -4175,10 +4193,7 @@ function selectLeader(key) {
   const banner = document.getElementById('edit-banner');
   if (editBtn) { editBtn.textContent = 'Edit'; editBtn.classList.remove('active'); }
   if (banner) banner.classList.remove('visible');
-  document.getElementById('btn-table').classList.add('active');
-  document.getElementById('btn-qref').classList.remove('active');
   document.getElementById('table-container').classList.remove('hidden');
-  document.getElementById('qref-container').classList.remove('visible');
   document.querySelectorAll('.fbtn').forEach(b => b.classList.remove('active'));
   document.querySelector('.fbtn-all').classList.add('active');
   const si = document.getElementById('search-input');
@@ -4264,7 +4279,7 @@ function renderDeck(d, matchup, deckKey) {
       <div class="card-grid">`;
     sec.cards.forEach(card => {
       const src = cardImg(card.id);
-      html += `<div class="card-item" onclick="openModal(this.querySelector('img').src,'${card.id}')">
+      html += `<div class="card-item" onclick="toggleCardZoom(event,this,'${card.id}')">
         <img src="${src}"
           onload="this.classList.add('loaded')"
           onerror="console.error('IMG FAIL (card):', this.src); this.onerror=null;"
@@ -4285,6 +4300,13 @@ function renderDeck(d, matchup, deckKey) {
 
   // reset log edit mode on each deck page load
   _logEditMode = false;
+  // wire up top-right log button
+  const topLogBtn = document.getElementById('deck-top-log-btn');
+  if (topLogBtn) {
+    const _mNameTop = (matchup ? matchup.name : deckKey).replace(/'/g,'&#39;');
+    topLogBtn.style.display = '';
+    topLogBtn.onclick = (e) => openLogModal(deckKey, _mNameTop, e);
+  }
   // append my-section
   const existingNote = allNotes[_nk(currentLeaderKey, deckKey)] || '';
   const _mName = (matchup ? matchup.name : deckKey).replace(/'/g, '&#39;');
