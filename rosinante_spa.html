@@ -317,6 +317,42 @@ th.sort-active{color:#ffd080}
 .mi-game-chip.w{background:#1a3a2a;color:#60d090}
 .mi-game-chip.l{background:#3a1a1a;color:#e05050}
 .mi-games-rec{font-size:0.68rem;color:#555;margin-left:2px}
+/* ── Stats screen ── */
+.stats-nav-btn{background:none;border:1px solid #2a2a40;border-radius:6px;color:#888;font-size:1rem;padding:4px 8px;cursor:pointer;flex-shrink:0;margin-top:2px}
+.stats-nav-btn:active{background:#1a1a30}
+.stats-screen-title{font-size:0.9rem;color:#c9a84c;font-weight:700;text-align:center}
+.stats-overview{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:18px}
+.stats-kpi{background:#1a1a2e;border:1px solid #2a2a40;border-radius:8px;padding:10px 6px;text-align:center}
+.stats-kpi-val{font-size:1.3rem;font-weight:800;color:#e8d8a0}
+.stats-kpi-val.pos{color:#60d090}
+.stats-kpi-val.neg{color:#e05050}
+.stats-kpi-val.neu{color:#888}
+.stats-kpi-lbl{font-size:0.6rem;color:#555;text-transform:uppercase;letter-spacing:0.04em;margin-top:2px}
+.stats-section-hdr{font-size:0.72rem;color:#c9a84c;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;margin:16px 0 8px;border-bottom:1px solid #2a2a3a;padding-bottom:4px}
+.stats-split{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:4px}
+.stats-split-card{background:#1a1a2e;border:1px solid #2a2a40;border-radius:8px;padding:10px}
+.stats-split-card .ss-label{font-size:0.65rem;color:#666;margin-bottom:4px}
+.stats-split-card .ss-val{font-size:1.1rem;font-weight:800;color:#e8d8a0}
+.stats-split-card .ss-rec{font-size:0.7rem;color:#555;margin-top:2px}
+.stats-delta-table{width:100%;border-collapse:collapse;font-size:0.74rem;margin-bottom:8px}
+.stats-delta-table th{text-align:left;color:#666;font-weight:600;font-size:0.64rem;padding:4px 4px 6px;border-bottom:1px solid #2a2a3a;text-transform:uppercase;letter-spacing:0.04em}
+.stats-delta-table th.r{text-align:right}
+.stats-delta-table td{padding:6px 4px;border-bottom:1px solid #1e1e30;vertical-align:middle}
+.stats-delta-table td.r{text-align:right}
+.sdt-name{color:#ccc;font-weight:600}
+.sdt-games{color:#555}
+.sdt-wr{font-weight:700}
+.sdt-delta{font-weight:800;font-size:0.78rem}
+.sdt-delta.pos{color:#60d090}
+.sdt-delta.neg{color:#e05050}
+.sdt-delta.neu{color:#666}
+.stats-priority{background:#1a1a2e;border:1px solid #3a2a2a;border-radius:8px;padding:12px;margin-top:4px}
+.stats-priority-title{font-size:0.68rem;color:#e07050;font-weight:700;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.04em}
+.stats-priority-item{display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:0.75rem}
+.spi-rank{width:18px;height:18px;border-radius:50%;background:#3a2020;color:#e07050;font-size:0.65rem;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.spi-name{color:#ccc;flex:1}
+.spi-delta{color:#e05050;font-weight:800;font-size:0.76rem}
+.stats-empty{text-align:center;padding:40px 16px;color:#444;font-size:0.82rem}
 .my-note-actions{display:flex;gap:6px;margin-top:6px}
 .my-note-save{font-size:0.7rem;padding:4px 12px;background:#1a3a2a;border:1px solid #30803050;border-radius:5px;color:#60d090;cursor:pointer;font-weight:700}
 .my-note-save:active{background:#1f4a32}
@@ -403,8 +439,13 @@ th.sort-active{color:#ffd080}
 
 <!-- ════ SCREEN 1: MATCHUP TABLE ════ -->
 <div class="screen" id="screen-matchup">
-  <h1 id="matchup-title">OP12-061 Donquixote Rosinante</h1>
-  <p class="sub" id="matchup-sub">TCGMatchMaking.com · 25,255 games · 55.0% WR · EB03</p>
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+    <div>
+      <h1 id="matchup-title">OP12-061 Donquixote Rosinante</h1>
+      <p class="sub" id="matchup-sub">TCGMatchMaking.com · 25,255 games · 55.0% WR · EB03</p>
+    </div>
+    <button class="stats-nav-btn" onclick="showStats()" title="My Stats">📊</button>
+  </div>
 
   <!-- Favourites -->
   <div id="fav-section" class="fav-section"></div>
@@ -471,6 +512,16 @@ th.sort-active{color:#ffd080}
 </div>
 <div id="log-toast">✓ Logged!</div>
 
+
+<!-- ════ SCREEN 3: MY STATS ════ -->
+<div class="screen" id="screen-stats">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+    <button class="back-btn" style="margin-bottom:0" onclick="goBackFromStats()">← Back</button>
+    <div class="stats-screen-title">📊 My Stats</div>
+    <div style="width:56px"></div>
+  </div>
+  <div id="stats-content"></div>
+</div>
 
 <!-- ════ LOG GAME MODAL ════ -->
 <div id="log-modal" onclick="closeLogModal()">
@@ -4386,6 +4437,167 @@ function renderLeaderGrid() {
     grid.appendChild(card);
   });
 }
+
+// ── MY STATS SCREEN ──────────────────────────────────────────
+function showStats() {
+  // Clear any inline display overrides (showDeck uses style.display directly)
+  document.querySelectorAll('.screen').forEach(s => { s.classList.remove('active'); s.style.display = ''; });
+  const ss = document.getElementById('screen-stats');
+  ss.classList.add('active');
+  ss.scrollTop = 0;
+  renderStats(currentLeaderKey);
+}
+function goBackFromStats() {
+  document.querySelectorAll('.screen').forEach(s => { s.classList.remove('active'); s.style.display = ''; });
+  const sm = document.getElementById('screen-matchup');
+  sm.classList.add('active');
+}
+function _gameXwr(game) {
+  const matchups = LEADERS[game.leaderKey]?.matchups;
+  if (!matchups) return null;
+  const m = matchups.find(mu => mu.deck === game.deckKey);
+  if (!m) return null;
+  return game.go === '1st' ? m.wr1 : m.wr2;
+}
+function renderStats(leaderKey) {
+  const el = document.getElementById('stats-content');
+  const games = allGames.filter(g => g.leaderKey === leaderKey);
+
+  if (games.length === 0) {
+    el.innerHTML = `<div class="stats-empty">No games logged yet for this leader.<br>Head to a matchup and tap <b>+ Log Game</b>!</div>`;
+    return;
+  }
+
+  const L = LEADERS[leaderKey];
+  const totalW = games.filter(g => g.result === 'W').length;
+  const totalWr = Math.round(totalW / games.length * 100);
+
+  // xWR: average meta WR for the go-order used in each game (only where data exists)
+  const xwrGames = games.filter(g => _gameXwr(g) !== null);
+  const xWr = xwrGames.length > 0
+    ? Math.round(xwrGames.reduce((s, g) => s + _gameXwr(g), 0) / xwrGames.length)
+    : null;
+  const delta = xWr !== null ? totalWr - xWr : null;
+  const deltaCls = delta === null ? 'neu' : delta > 2 ? 'pos' : delta < -2 ? 'neg' : 'neu';
+  const deltaStr = delta === null ? '—' : (delta > 0 ? '+' : '') + delta + '%';
+
+  // 1st / 2nd split
+  const g1 = games.filter(g => g.go === '1st');
+  const g2 = games.filter(g => g.go === '2nd');
+  const wr1 = g1.length > 0 ? Math.round(g1.filter(g => g.result === 'W').length / g1.length * 100) : null;
+  const wr2 = g2.length > 0 ? Math.round(g2.filter(g => g.result === 'W').length / g2.length * 100) : null;
+
+  // Per-matchup table
+  const matchups = L.matchups;
+  const rows = matchups.map(m => {
+    const mg = games.filter(g => g.deckKey === m.deck);
+    if (mg.length === 0) return null;
+    const mw = mg.filter(g => g.result === 'W').length;
+    const mWr = Math.round(mw / mg.length * 100);
+    const xg = mg.filter(g => _gameXwr(g) !== null);
+    const mXwr = xg.length > 0 ? Math.round(xg.reduce((s, g) => s + _gameXwr(g), 0) / xg.length) : null;
+    const mDelta = mXwr !== null ? mWr - mXwr : null;
+    return { name: m.name, g: mg.length, w: mw, wr: mWr, xwr: mXwr, delta: mDelta };
+  }).filter(Boolean);
+
+  // Sort by delta ascending (worst first)
+  const sorted = [...rows].sort((a, b) => {
+    if (a.delta === null && b.delta === null) return 0;
+    if (a.delta === null) return 1;
+    if (b.delta === null) return -1;
+    return a.delta - b.delta;
+  });
+
+  const priority = sorted.filter(r => r.delta !== null && r.delta < -2).slice(0, 3);
+
+  // ── Build HTML ──
+  const wrCls2 = wr => wr >= 55 ? 'pos' : wr >= 45 ? 'neu' : 'neg';
+
+  let html = `<div style="font-size:0.72rem;color:#555;margin-bottom:12px">${L.title}</div>`;
+
+  // KPIs
+  html += `<div class="stats-overview">
+    <div class="stats-kpi">
+      <div class="stats-kpi-val ${wrCls2(totalWr)}">${totalWr}%</div>
+      <div class="stats-kpi-lbl">Personal WR</div>
+    </div>
+    <div class="stats-kpi">
+      <div class="stats-kpi-val ${xWr !== null ? wrCls2(xWr) : 'neu'}">${xWr !== null ? xWr + '%' : '—'}</div>
+      <div class="stats-kpi-lbl">xWR (meta)</div>
+    </div>
+    <div class="stats-kpi">
+      <div class="stats-kpi-val ${deltaCls}">${deltaStr}</div>
+      <div class="stats-kpi-lbl">vs Meta</div>
+    </div>
+    <div class="stats-kpi">
+      <div class="stats-kpi-val neu">${games.length}</div>
+      <div class="stats-kpi-lbl">Games</div>
+    </div>
+  </div>`;
+
+  // 1st / 2nd split
+  html += `<div class="stats-section-hdr">Go Order Split</div>
+  <div class="stats-split">
+    <div class="stats-split-card">
+      <div class="ss-label">Going 1st</div>
+      <div class="ss-val ${wr1 !== null ? wrCls2(wr1) : ''}">${wr1 !== null ? wr1 + '%' : '—'}</div>
+      <div class="ss-rec">${g1.length} game${g1.length !== 1 ? 's' : ''} · ${g1.filter(g=>g.result==='W').length}W ${g1.filter(g=>g.result==='L').length}L</div>
+    </div>
+    <div class="stats-split-card">
+      <div class="ss-label">Going 2nd</div>
+      <div class="ss-val ${wr2 !== null ? wrCls2(wr2) : ''}">${wr2 !== null ? wr2 + '%' : '—'}</div>
+      <div class="ss-rec">${g2.length} game${g2.length !== 1 ? 's' : ''} · ${g2.filter(g=>g.result==='W').length}W ${g2.filter(g=>g.result==='L').length}L</div>
+    </div>
+  </div>`;
+
+  // Priority focus
+  if (priority.length > 0) {
+    html += `<div class="stats-section-hdr">Priority Focus</div>
+    <div class="stats-priority">
+      <div class="stats-priority-title">⚠ Most Underperforming vs Meta</div>
+      ${priority.map((r, idx) => `<div class="stats-priority-item">
+        <div class="spi-rank">${idx + 1}</div>
+        <div class="spi-name">${r.name}</div>
+        <div class="spi-delta">${r.delta}%</div>
+      </div>`).join('')}
+    </div>`;
+  }
+
+  // Delta table
+  html += `<div class="stats-section-hdr">Matchup Breakdown <span style="font-size:0.6rem;color:#444;font-weight:400;text-transform:none">(sorted: worst delta first)</span></div>
+  <table class="stats-delta-table">
+    <thead><tr>
+      <th>Matchup</th>
+      <th class="r">G</th>
+      <th class="r">WR</th>
+      <th class="r">xWR</th>
+      <th class="r">Δ</th>
+    </tr></thead>
+    <tbody>`;
+
+  sorted.forEach(r => {
+    const dCls = r.delta === null ? 'neu' : r.delta > 2 ? 'pos' : r.delta < -2 ? 'neg' : 'neu';
+    const dStr = r.delta === null ? '—' : (r.delta > 0 ? '+' : '') + r.delta + '%';
+    html += `<tr>
+      <td class="sdt-name">${r.name}</td>
+      <td class="r sdt-games">${r.g}</td>
+      <td class="r sdt-wr ${wrCls2(r.wr)}">${r.wr}%</td>
+      <td class="r" style="color:#555">${r.xwr !== null ? r.xwr + '%' : '—'}</td>
+      <td class="r sdt-delta ${dCls}">${dStr}</td>
+    </tr>`;
+  });
+
+  html += `</tbody></table>`;
+
+  // rows with no xWR data (deck has no meta WR)
+  const noMeta = rows.filter(r => r.xwr === null);
+  if (noMeta.length > 0) {
+    html += `<div style="font-size:0.64rem;color:#444;margin-top:4px">* xWR not available for matchups without meta data (shown as —)</div>`;
+  }
+
+  el.innerHTML = html;
+}
+// ── END MY STATS SCREEN ──────────────────────────────────────
 
 function showHome() {
   _homeEditMode = false;
