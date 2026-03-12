@@ -3540,20 +3540,14 @@ function _buildCardPool(deckKey, matchup) {
       if (!seen.has(c.id)) { seen.add(c.id); pool.push({ id: c.id, name: c.name, label }); }
     }));
   };
-  addDeck(deckKey, 'My deck');
-  if (matchup) {
-    const mn = matchup.name.toLowerCase();
-    const mset = matchup.name.split(' ')[0];
-    Object.keys(DECKLISTS).forEach(dk => {
-      if (dk === deckKey) return;
-      const d = DECKLISTS[dk];
-      if (!d) return;
-      if ((mset && d.leader && d.leader.startsWith(mset + '-')) ||
-          (d.leaderName && mn.includes(d.leaderName.toLowerCase()))) {
-        addDeck(dk, 'Opp');
-      }
-    });
-  }
+  // "My deck" = the deck belonging to the leader selected on the home screen
+  const myLeaderCardId = LEADERS[currentLeaderKey] ? LEADERS[currentLeaderKey].cardId : null;
+  const myDeckKey = myLeaderCardId
+    ? Object.keys(DECKLISTS).find(dk => DECKLISTS[dk].leader === myLeaderCardId)
+    : null;
+  if (myDeckKey) addDeck(myDeckKey, 'My deck');
+  // "Opp" = exactly the deck being viewed (deckKey), if it's different from mine
+  if (deckKey && deckKey !== myDeckKey) addDeck(deckKey, 'Opp');
   return pool;
 }
 
