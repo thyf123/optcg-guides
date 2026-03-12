@@ -317,10 +317,13 @@ tr.detail-row td{padding:0;border-bottom:1px solid #1e1e36}
 /* ── CUSTOM TIPS ── */
 .custom-tips-section{margin-top:6px}
 .custom-tips{margin-top:4px}
-.custom-tip-item{display:flex;align-items:flex-start;justify-content:space-between;gap:6px}
-.cti-text{flex:1;color:#c0cfe8}
-.cti-del{background:none;border:none;color:#444;cursor:pointer;font-size:0.82rem;padding:0 2px;line-height:1.4;flex-shrink:0}
-.cti-del:hover{color:#e05858}
+.custom-tip-item{display:flex;align-items:flex-start;justify-content:space-between;gap:6px;padding:3px 0}
+.cti-text{flex:1;color:#c0cfe8;font-size:0.76rem;line-height:1.5}
+.cti-del{background:none;border:none;color:#e05858;cursor:pointer;font-size:0.9rem;padding:0 4px;line-height:1.4;flex-shrink:0}
+.cti-edit-input{flex:1;background:#13132a;border:1px solid #2a2a40;border-radius:4px;color:#c0cfe8;font-size:0.74rem;padding:4px 7px;font-family:inherit;line-height:1.5}
+.cti-edit-input:focus{outline:none;border-color:#c9a84c55}
+.tips-edit-btn{background:none;border:1px solid #c9a84c55;border-radius:5px;color:#c9a84c;font-size:0.65rem;font-weight:700;padding:3px 9px;cursor:pointer;letter-spacing:0.04em;-webkit-tap-highlight-color:transparent}
+.tips-edit-btn.active{background:#c9a84c22;border-color:#c9a84c}
 .add-tip-btn{margin-top:7px;background:none;border:1px dashed #2a2a50;border-radius:5px;color:#555;font-size:0.68rem;padding:4px 10px;cursor:pointer;width:100%}
 .add-tip-btn:hover{border-color:#c9a84c55;color:#888}
 .add-tip-row{display:flex;gap:6px;margin-top:7px}
@@ -3351,14 +3354,46 @@ function deleteCustomTip(deckKey, idx) {
   syncToSupabase();
   _renderCustomTips(deckKey);
 }
+let _tipsEditMode = false;
+function toggleTipsEditMode(deckKey) {
+  _tipsEditMode = !_tipsEditMode;
+  _renderCustomTips(deckKey);
+}
+function saveTipEdit(deckKey, idx, value) {
+  const k = _nk(currentLeaderKey, deckKey);
+  if (!allCustomTips[k] || value === undefined) return;
+  allCustomTips[k][idx] = value;
+  _saveTips();
+  syncToSupabase();
+}
 function _buildCustomTipsHtml(deckKey) {
   const tips = _getCustomTips(deckKey);
-  const items = tips.map((t, i) =>
-    `<li class="custom-tip-item"><span class="cti-text">${_renderMentions(t)}</span><button class="cti-del" onclick="deleteCustomTip('${deckKey}',${i})" title="Remove">×</button></li>`
-  ).join('');
-  return (items ? `<ul class="mi-tips custom-tips">${items}</ul>` : '')
-    + `<div id="add-tip-area"></div>`
-    + `<button class="add-tip-btn" onclick="showAddTipInput('${deckKey}')">+ Add tip</button>`;
+  const showHeader = tips.length > 0 || _tipsEditMode;
+  const headerHtml = showHeader
+    ? `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
+        <span style="font-size:0.62rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#c9a84c88">My Tips</span>
+        <button class="tips-edit-btn${_tipsEditMode?' active':''}" onclick="toggleTipsEditMode('${deckKey}')">${_tipsEditMode?'Done':'Edit'}</button>
+       </div>` : '';
+  let items = '';
+  if (_tipsEditMode) {
+    items = tips.map((t, i) =>
+      `<li class="custom-tip-item">
+        <input class="cti-edit-input" value="${t.replace(/&/g,'&amp;').replace(/"/g,'&quot;')}"
+          onchange="saveTipEdit('${deckKey}',${i},this.value)"
+          onblur="saveTipEdit('${deckKey}',${i},this.value)">
+        <button class="cti-del" onclick="deleteCustomTip('${deckKey}',${i})" title="Delete">×</button>
+      </li>`
+    ).join('');
+  } else {
+    items = tips.map((t, i) =>
+      `<li class="custom-tip-item"><span class="cti-text">${_renderMentions(t)}</span></li>`
+    ).join('');
+  }
+  const listHtml = items ? `<ul class="mi-tips custom-tips">${items}</ul>` : '';
+  const addHtml = _tipsEditMode
+    ? '<div id="add-tip-area"></div>'
+    : `<div id="add-tip-area"></div><button class="add-tip-btn" onclick="showAddTipInput('${deckKey}')">+ Add tip</button>`;
+  return headerHtml + listHtml + addHtml;
 }
 function _renderCustomTips(deckKey) {
   const el = document.getElementById('custom-tips-wrap');
@@ -4220,6 +4255,7 @@ let _currentDeckKey = null;
 function renderDeck(d, matchup, deckKey) {
   _currentDeckMatchup = matchup;
   _currentDeckKey = deckKey;
+  _tipsEditMode = false;
   const total = d.sections.reduce((a,s)=>a+s.cards.reduce((b,c)=>b+c.count,0),0);
 
   // color pips for leader
