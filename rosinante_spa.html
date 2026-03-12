@@ -105,6 +105,7 @@ tr.detail-row td{padding:0;border-bottom:1px solid #1e1e36}
 .card-item img{width:100%;height:100%;object-fit:cover;display:block;border-radius:6px;transition:opacity 0.2s;opacity:0}
 .card-item img.loaded{opacity:1}
 .b-count{position:absolute;bottom:4px;left:4px;background:rgba(0,0,0,0.85);color:#ffd080;font-size:0.85rem;font-weight:900;border-radius:4px;padding:1px 6px;border:1px solid #c9a84c55;pointer-events:none;line-height:1.5}
+.b-cost{position:absolute;top:4px;left:4px;background:rgba(10,10,30,0.88);color:#a0c8ff;font-size:0.72rem;font-weight:800;border-radius:3px;padding:0px 5px;border:1px solid #4a8abf55;pointer-events:none;line-height:1.6}
 .b-name{position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,0.78);color:#bbb;font-size:0.57rem;text-align:center;padding:2px 2px 3px;pointer-events:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
 .total-bar{background:#1e1e38;border:1px solid #c9a84c22;border-radius:8px;padding:8px 14px;display:flex;justify-content:space-between;align-items:center;margin-top:4px;margin-bottom:20px}
@@ -2479,23 +2480,23 @@ const DECKLISTS = {
     date: "March 2026",
     sourceUrl: "https://onepiecetopdecks.com/deck-list/english-eb-03-deck-list-one-piece-heroines-edition/",
     sections: [
-          { title: "Character", cards: [
-        { count:4, id:"OP13-086", name:"Saint Shalria" },
-        { count:4, id:"OP13-092", name:"Saint Mjosgard" },
-        { count:4, id:"OP13-083", name:"St. Jaygarcia Saturn" },
-        { count:4, id:"OP13-089", name:"St. Topman Warcury" },
-        { count:4, id:"OP13-080", name:"St. Ethanbaron V. Nusjuro" },
-        { count:4, id:"OP13-091", name:"St. Marcus Mars" },
-        { count:4, id:"OP13-084", name:"St. Shepherd Ju Peter" },
-        { count:4, id:"OP13-082", name:"Five Elders" },
-        { count:4, id:"OP13-096", name:"The Five Elders Are at Your Service!!!" },
-        { count:4, id:"OP13-097", name:"The World's Equilibrium Cannot Be Maintained Forever" },
-        { count:4, id:"OP13-098", name:"Never Existed... in the First Place..." },
-        { count:4, id:"OP14-096", name:"Ground Death" },
-        { count:1, id:"OP05-097", name:"Mary Geoise" }
+      { title: "Character", cards: [
+        { count:4, id:"OP13-082", name:"Five Elders",                      cost:1 },
+        { count:4, id:"OP13-086", name:"Saint Shalria",                    cost:2 },
+        { count:4, id:"OP13-092", name:"Saint Mjosgard",                   cost:2 },
+        { count:4, id:"OP13-083", name:"St. Jaygarcia Saturn",             cost:7 },
+        { count:4, id:"OP13-089", name:"St. Topman Warcury",               cost:7 },
+        { count:4, id:"OP13-080", name:"St. Ethanbaron V. Nusjuro",        cost:7 },
+        { count:4, id:"OP13-091", name:"St. Marcus Mars",                  cost:7 },
+        { count:4, id:"OP13-084", name:"St. Shepherd Ju Peter",            cost:7 }
       ]},
-          { title: "Event / Stage", cards: [
-        { count:1, id:"OP13-099", name:"The Empty Throne" }
+      { title: "Event / Stage", cards: [
+        { count:4, id:"OP13-096", name:"The Five Elders Are at Your Service!!!",              cost:1 },
+        { count:4, id:"OP13-098", name:"Never Existed... in the First Place...",              cost:1 },
+        { count:4, id:"OP14-096", name:"Ground Death",                                        cost:1 },
+        { count:1, id:"OP05-097", name:"Mary Geoise",                                         cost:1 },
+        { count:4, id:"OP13-097", name:"The World's Equilibrium Cannot Be Maintained Forever",cost:2 },
+        { count:1, id:"OP13-099", name:"The Empty Throne",                                    cost:7 }
       ]}
     ]
   },
@@ -5183,16 +5184,28 @@ function renderDeck(d, matchup, deckKey) {
         <span class="sec-cnt">×${sTotal}</span>
       </div>
       <div class="card-grid">`;
-    sec.cards.forEach(card => {
+    // Sort by cost ascending if any card has cost data; unknown costs sort last
+    const hasCost = sec.cards.some(c => c.cost != null);
+    const sortedCards = hasCost
+      ? [...sec.cards].sort((a,b) => {
+          if (a.cost == null && b.cost == null) return 0;
+          if (a.cost == null) return 1;
+          if (b.cost == null) return -1;
+          return a.cost - b.cost;
+        })
+      : sec.cards;
+    sortedCards.forEach(card => {
       const src = cardImg(card.id);
       const delay = Math.min(_cardIdx * 18, 220);
       _cardIdx++;
+      const costBadge = card.cost != null ? `<div class="b-cost">${card.cost}</div>` : '';
       html += `<div class="card-item" style="animation-delay:${delay}ms" onclick="toggleCardZoom(event,this,'${card.id}')">
         <img src="${src}"
           onload="this.classList.add('loaded')"
           onerror="console.error('IMG FAIL (card):', this.src); this.onerror=null;"
           alt="${card.name}">
         <div class="b-count">×${card.count}</div>
+        ${costBadge}
       </div>`;
     });
     html += `</div></div>`;
