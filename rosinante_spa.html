@@ -138,14 +138,7 @@ tr.detail-row td{padding:0;border-bottom:1px solid #1e1e36}
 .mode-label{font-size:0.65rem;color:#555;margin-left:auto}
 
 /* ── MATCHUP VISIBILITY EDIT MODE ── */
-.table-edit-btn{font-size:0.75rem;font-weight:700;border:1px solid #c9a84c66;border-radius:6px;padding:5px 16px;cursor:pointer;background:#1e1e36;color:#c9a84c;letter-spacing:0.04em}
-.table-edit-btn.active{background:#c9a84c22;color:#c9a84c;border-color:#c9a84c}
-tr.data-row.row-hidden{opacity:0.28}
-tr.data-row.row-hidden td{color:#666}
-.edit-banner{font-size:0.68rem;color:#c9a84c99;background:#c9a84c0d;border:1px solid #c9a84c22;border-radius:6px;padding:6px 12px;margin-bottom:8px;text-align:center;display:none}
-.edit-banner.visible{display:block}
-.no-matchups-msg{text-align:center;padding:32px 16px;color:#555;font-size:0.82rem;display:none}
-.no-matchups-msg.visible{display:block}
+
 
 /* ── QUICK REF CARDS ── */
 #qref-container{display:none}
@@ -216,6 +209,12 @@ tr.data-row.row-hidden td{color:#666}
 .fav-card:hover .fav-rm{opacity:1}
 .star-btn{background:none;border:none;cursor:pointer;font-size:0.82rem;padding:1px 4px;opacity:0.22;transition:opacity 0.15s;line-height:1;flex-shrink:0;color:#c9a84c}
 .star-btn.starred{opacity:1}
+/* ── HOME EDIT MODE ── */
+.home-edit-btn{position:absolute;top:16px;left:16px;background:none;border:1px solid #c9a84c55;border-radius:6px;color:#c9a84c;font-size:0.68rem;font-weight:700;padding:4px 10px;cursor:pointer;letter-spacing:0.05em;-webkit-tap-highlight-color:transparent}
+.home-edit-btn.active{background:#c9a84c22;border-color:#c9a84c}
+.leader-card.hidden-leader{opacity:0.3;border-color:#333}
+.leader-card.hidden-leader .lc-name::after{content:" (hidden)";font-size:0.6rem;color:#c9a84c88}
+
 /* ── HOME SCREEN ── */
 #screen-home{padding:24px 16px;position:relative}
 .home-title{font-size:1.2rem;color:#c9a84c;font-weight:700;margin-bottom:6px;text-align:center}
@@ -334,6 +333,7 @@ tr.data-row.row-hidden td{color:#666}
 
 <!-- ════ SCREEN 0: HOME ════ -->
 <div class="screen active" id="screen-home">
+  <button class="home-edit-btn" id="home-edit-btn" onclick="toggleHomeEditMode()">Edit</button>
   <button class="home-gear" onclick="openSbModal()" title="Sync settings">⚙</button>
   <div class="home-title">OPTCG Matchup Guide</div>
   <div class="home-sub">Choose a leader</div>
@@ -348,12 +348,7 @@ tr.data-row.row-hidden td{color:#666}
   <!-- Favourites -->
   <div id="fav-section" class="fav-section"></div>
 
-  <!-- Mode bar -->
-  <div class="mode-bar">
-    <button class="table-edit-btn" id="table-edit-btn" onclick="toggleTableEditMode()">Edit</button>
-  </div>
-  <div class="edit-banner" id="edit-banner">Tap any row to show or hide it · Tap <b>Done</b> when finished</div>
-  <div class="no-matchups-msg" id="no-matchups-msg">No matchups selected — tap the <b style="color:#c9a84c">Edit</b> button above to choose which to show</div>
+
 
   <!-- Search + filter -->
   <div class="search-bar">
@@ -3323,42 +3318,18 @@ function updateStarBtns() {
 let allGames = [];
 let allNotes = {};
 let allCustomTips = {};
-let allShownMatchups = {};
+
 try { allGames = JSON.parse(localStorage.getItem('optcg-games') || '[]'); } catch(e) {}
 try { allNotes = JSON.parse(localStorage.getItem('optcg-notes') || '{}'); } catch(e) {}
 try { allCustomTips = JSON.parse(localStorage.getItem('optcg-tips') || '{}'); } catch(e) {}
-try { allShownMatchups = JSON.parse(localStorage.getItem('optcg-shown-matchups') || '{}'); } catch(e) {}
+
 function _saveGames() { try { localStorage.setItem('optcg-games', JSON.stringify(allGames)); } catch(e) {} }
 function _saveNotes() { try { localStorage.setItem('optcg-notes', JSON.stringify(allNotes)); } catch(e) {} }
-function _saveShown() { try { localStorage.setItem('optcg-shown-matchups', JSON.stringify(allShownMatchups)); } catch(e) {} }
+
 
 function _saveTips() { try { localStorage.setItem('optcg-tips', JSON.stringify(allCustomTips)); } catch(e) {} }
 
-// ── MATCHUP VISIBILITY ──────────────────────────────────────────
-let tableEditMode = false;
-function toggleTableEditMode() {
-  tableEditMode = !tableEditMode;
-  const btn = document.getElementById('table-edit-btn');
-  const banner = document.getElementById('edit-banner');
-  btn.textContent = tableEditMode ? 'Done' : 'Edit';
-  btn.classList.toggle('active', tableEditMode);
-  if (banner) banner.classList.toggle('visible', tableEditMode);
-  rebuildMatchupTable();
-}
-function toggleMatchupVis(name) {
-  const lk = currentLeaderKey;
-  const arr = allShownMatchups[lk] ? [...allShownMatchups[lk]] : [];
-  const idx = arr.indexOf(name);
-  if (idx >= 0) arr.splice(idx, 1); else arr.push(name);
-  allShownMatchups[lk] = arr;
-  _saveShown();
-  syncToSupabase();
-  rebuildMatchupTable();
-}
-function _isMatchupShown(name) {
-  const arr = allShownMatchups[currentLeaderKey] || [];
-  return arr.includes(name);
-}
+
 function _getCustomTips(deckKey) { return allCustomTips[_nk(currentLeaderKey, deckKey)] || []; }
 function addCustomTip(deckKey, text) {
   text = text.trim();
@@ -3704,10 +3675,11 @@ async function syncFromSupabase() {
       allCustomTips = tr.payload;
       try { localStorage.setItem('optcg-tips', JSON.stringify(allCustomTips)); } catch(e) {}
     }
-    const sr = rows.find(r => r.id === 'shown-matchups');
-    if (sr && sr.payload && typeof sr.payload === 'object') {
-      allShownMatchups = sr.payload;
-      try { localStorage.setItem('optcg-shown-matchups', JSON.stringify(allShownMatchups)); } catch(e) {}
+
+    const hlr = rows.find(r => r.id === 'hidden-leaders');
+    if (hlr && Array.isArray(hlr.payload)) {
+      allHiddenLeaders = new Set(hlr.payload);
+      try { localStorage.setItem('optcg-hidden-leaders', JSON.stringify(hlr.payload)); } catch(e) {}
     }
     _setSyncDot('synced');
   } catch(e) {
@@ -3727,7 +3699,7 @@ async function syncToSupabase() {
         { id: 'games', payload: allGames, updated_at: new Date().toISOString() },
         { id: 'notes', payload: allNotes, updated_at: new Date().toISOString() },
         { id: 'tips', payload: allCustomTips, updated_at: new Date().toISOString() },
-        { id: 'shown-matchups', payload: allShownMatchups, updated_at: new Date().toISOString() }
+        { id: 'hidden-leaders', payload: [...allHiddenLeaders], updated_at: new Date().toISOString() },
       ])
     });
     if (!res.ok) throw new Error(res.status);
@@ -4068,13 +4040,7 @@ function buildQrefCards() {
 
 function rebuildMatchupTable() {
   tbody.innerHTML = '';
-  const noMatchupsMsg = document.getElementById('no-matchups-msg');
-  let shownCount = 0;
 getLM().forEach((m, i) => {
-  const isShown = _isMatchupShown(m.name);
-  // In normal mode, skip hidden matchups entirely
-  if (!tableEditMode && !isShown) return;
-  shownCount++;
 
   // essential
   let essHtml = '';
@@ -4094,10 +4060,10 @@ getLM().forEach((m, i) => {
     : `<td></td>`;
 
   const tr = document.createElement('tr');
-  tr.className = 'data-row' + (tableEditMode && !isShown ? ' row-hidden' : '');
+  tr.className = 'data-row';
   tr.dataset.idx = i;
   tr.innerHTML = `
-    <td><span class="mname">${m.name}</span>${colorDots(m.name)}${m.warn?'<span class="warn">⚠</span>':''}${tableEditMode ? `<span style="margin-left:6px;font-size:0.65rem;color:${isShown?'#60d090':'#555'}">${isShown?'✓':''}</span>` : ''}</td>
+    <td><span class="mname">${m.name}</span>${colorDots(m.name)}${m.warn?'<span class="warn">⚠</span>':''}</td>
     <td><span class="go ${m.go==='1st'?'go1':'go2'}">${m.go}</span></td>
     <td><span class="wr ${wrCls(m.wr1)}">${wrLbl(m.wr1)}</span></td>
     <td><span class="wr ${wrCls(m.wr2)}">${wrLbl(m.wr2)}</span></td>
@@ -4112,7 +4078,7 @@ getLM().forEach((m, i) => {
   tbody.appendChild(dr);
 });
   // show/hide the empty state message
-  if (noMatchupsMsg) noMatchupsMsg.classList.toggle('visible', !tableEditMode && shownCount === 0);
+
 
 buildQrefCards();
 renderFavs();
@@ -4131,11 +4097,6 @@ tbody.addEventListener('click', e => {
   if (!row) return;
   const idx = parseInt(row.dataset.idx);
   const m = getLM()[idx];
-  if (tableEditMode) {
-    // In edit mode: toggle matchup visibility
-    if (m) toggleMatchupVis(m.name);
-    return;
-  }
   if (m && m.deck) {
     showDeck(m.deck, idx);
   } else if (m) {
@@ -4148,14 +4109,41 @@ tbody.addEventListener('click', e => {
   }
 });
 
+// ── LEADER VISIBILITY ─────────────────────────────────────────
+let allHiddenLeaders = new Set();
+let _homeEditMode = false;
+try {
+  const _hl = localStorage.getItem('optcg-hidden-leaders');
+  if (_hl) allHiddenLeaders = new Set(JSON.parse(_hl));
+} catch(e) {}
+
+function _saveHiddenLeaders() {
+  try { localStorage.setItem('optcg-hidden-leaders', JSON.stringify([...allHiddenLeaders])); } catch(e) {}
+}
+function toggleHomeEditMode() {
+  _homeEditMode = !_homeEditMode;
+  const btn = document.getElementById('home-edit-btn');
+  if (btn) { btn.textContent = _homeEditMode ? 'Done' : 'Edit'; btn.classList.toggle('active', _homeEditMode); }
+  renderLeaderGrid();
+}
+function toggleHideLeader(key) {
+  if (allHiddenLeaders.has(key)) allHiddenLeaders.delete(key);
+  else allHiddenLeaders.add(key);
+  _saveHiddenLeaders();
+  syncToSupabase();
+  renderLeaderGrid();
+}
+
 function renderLeaderGrid() {
   const grid = document.getElementById('leader-grid');
   grid.innerHTML = '';
   Object.keys(LEADERS).forEach(key => {
     const L = LEADERS[key];
+    const isHidden = allHiddenLeaders.has(key);
+    if (!_homeEditMode && isHidden) return;
     const card = document.createElement('div');
-    card.className = 'leader-card';
-    card.onclick = () => selectLeader(key);
+    card.className = 'leader-card' + (isHidden ? ' hidden-leader' : '');
+    card.onclick = _homeEditMode ? () => toggleHideLeader(key) : () => selectLeader(key);
     const imgUrl = 'https://en.onepiece-cardgame.com/images/cardlist/card/' + L.cardId + '.png';
     const img = document.createElement('img');
     img.src = imgUrl;
@@ -4175,6 +4163,9 @@ function renderLeaderGrid() {
 }
 
 function showHome() {
+  _homeEditMode = false;
+  const _heb = document.getElementById('home-edit-btn');
+  if (_heb) { _heb.textContent = 'Edit'; _heb.classList.remove('active'); }
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById('screen-home').classList.add('active');
   renderLeaderGrid();
@@ -4187,12 +4178,7 @@ function selectLeader(key) {
   document.getElementById('matchup-sub').textContent = L.sub;
   currentMode = 'table';
   currentColor = 'all';
-  // reset edit mode on leader switch
-  tableEditMode = false;
-  const editBtn = document.getElementById('table-edit-btn');
-  const banner = document.getElementById('edit-banner');
-  if (editBtn) { editBtn.textContent = 'Edit'; editBtn.classList.remove('active'); }
-  if (banner) banner.classList.remove('visible');
+
   document.getElementById('table-container').classList.remove('hidden');
   document.querySelectorAll('.fbtn').forEach(b => b.classList.remove('active'));
   document.querySelector('.fbtn-all').classList.add('active');
