@@ -304,6 +304,19 @@ th.sort-active{color:#ffd080}
 .my-note-text{color:#aaa;flex:1;word-break:break-word}
 .my-date{color:#444;flex-shrink:0}
 .my-log-btn{font-size:0.7rem;padding:4px 10px;background:#1a2a3a;border:1px solid #3a5a7a;border-radius:5px;color:#80b8ff;cursor:pointer}
+/* ── Deck FAB ── */
+.deck-fab{position:fixed;bottom:22px;right:18px;z-index:200;background:#1a7aff;color:#fff;border:none;border-radius:50px;padding:10px 18px;font-size:0.8rem;font-weight:700;cursor:pointer;box-shadow:0 4px 16px #0008;letter-spacing:0.02em;transition:transform 0.1s,opacity 0.2s}
+.deck-fab:active{transform:scale(0.94)}
+/* ── Log toast ── */
+#log-toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(12px);background:#1a3a2a;border:1px solid #30803060;color:#60d090;border-radius:8px;padding:9px 20px;font-size:0.78rem;font-weight:700;z-index:400;opacity:0;pointer-events:none;transition:opacity 0.25s,transform 0.25s}
+#log-toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+/* ── Mini games strip in matchup info ── */
+.mi-games{margin-top:10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.mi-games-label{font-size:0.65rem;color:#555;text-transform:uppercase;letter-spacing:0.05em;flex-shrink:0}
+.mi-game-chip{display:inline-flex;align-items:center;gap:3px;font-size:0.68rem;padding:2px 6px;border-radius:4px;font-weight:700}
+.mi-game-chip.w{background:#1a3a2a;color:#60d090}
+.mi-game-chip.l{background:#3a1a1a;color:#e05050}
+.mi-games-rec{font-size:0.68rem;color:#555;margin-left:2px}
 .my-note-actions{display:flex;gap:6px;margin-top:6px}
 .my-note-save{font-size:0.7rem;padding:4px 12px;background:#1a3a2a;border:1px solid #30803050;border-radius:5px;color:#60d090;cursor:pointer;font-weight:700}
 .my-note-save:active{background:#1f4a32}
@@ -454,7 +467,9 @@ th.sort-active{color:#ffd080}
     <button class="my-log-btn" id="deck-top-log-btn" onclick="openLogModal('','',event)" style="display:none">+ Log Game</button>
   </div>
   <div id="deck-content"></div>
+  <button class="deck-fab" id="deck-fab" onclick="openLogModal(_currentDeckKey,'',event)" style="display:none">+ Log Game</button>
 </div>
+<div id="log-toast">✓ Logged!</div>
 
 
 <!-- ════ LOG GAME MODAL ════ -->
@@ -3535,7 +3550,35 @@ function saveLog() {
   _refreshYouCells();
   if (document.getElementById('screen-deck').classList.contains('active')) {
     _refreshMySection(_logDeck);
+    _refreshMiniGames(_logDeck);
   }
+  _showLogToast();
+}
+function _showLogToast() {
+  const t = document.getElementById('log-toast');
+  if (!t) return;
+  t.classList.add('show');
+  clearTimeout(t._tid);
+  t._tid = setTimeout(() => t.classList.remove('show'), 2000);
+}
+function _miniGamesHtml(deckKey) {
+  const rec = personalRecord(currentLeaderKey, deckKey || '');
+  if (rec.total === 0) return '';
+  const games = _gamesFor(currentLeaderKey, deckKey).slice(-4).reverse();
+  const chips = games.map(g => {
+    const note = g.note ? ` · ${g.note.substring(0,20)}${g.note.length>20?'…':''}` : '';
+    return `<span class="mi-game-chip ${g.result==='W'?'w':'l'}" title="${g.go}${note}">${g.result} ${g.go}</span>`;
+  }).join('');
+  const pct = Math.round(rec.w / rec.total * 100);
+  return `<div class="mi-games">
+    <span class="mi-games-label">Your games</span>
+    ${chips}
+    <span class="mi-games-rec">${rec.w}W ${rec.l}L · ${pct}%</span>
+  </div>`;
+}
+function _refreshMiniGames(deckKey) {
+  const el = document.getElementById('mi-games-wrap');
+  if (el) el.innerHTML = _miniGamesHtml(deckKey);
 }
 
 // ── PERSONAL STATS HELPERS ────────────────────────────────────
@@ -3940,6 +3983,8 @@ function goBack() {
   _sd.style.display = 'none';
   _sm.className = 'screen active';
   _sm.style.display = 'block';
+  const fab = document.getElementById('deck-fab');
+  if (fab) fab.style.display = 'none';
   requestAnimationFrame(() => { _sm.scrollTop = savedScroll; _refreshYouCells(); });
 }
 
@@ -4426,6 +4471,7 @@ function renderDeck(d, matchup, deckKey) {
       </div>
       ${essHtml}${tipsHtml}
       <div class="custom-tips-section" id="custom-tips-wrap">${_ctHtml}</div>
+      <div id="mi-games-wrap">${_miniGamesHtml(deckKey)}</div>
     </div><hr class="mi-divider">`;
   }
 
@@ -4474,12 +4520,17 @@ function renderDeck(d, matchup, deckKey) {
 
   // reset log edit mode on each deck page load
   _logEditMode = false;
-  // wire up top-right log button
+  // wire up top-right log button + FAB
+  const _mNameTop = (matchup ? matchup.name : deckKey).replace(/'/g,'&#39;');
   const topLogBtn = document.getElementById('deck-top-log-btn');
   if (topLogBtn) {
-    const _mNameTop = (matchup ? matchup.name : deckKey).replace(/'/g,'&#39;');
     topLogBtn.style.display = '';
     topLogBtn.onclick = (e) => openLogModal(deckKey, _mNameTop, e);
+  }
+  const fab = document.getElementById('deck-fab');
+  if (fab) {
+    fab.style.display = '';
+    fab.onclick = (e) => openLogModal(deckKey, _mNameTop, e);
   }
   // append my-section
   const existingNote = allNotes[_nk(currentLeaderKey, deckKey)] || '';
