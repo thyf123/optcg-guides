@@ -3489,6 +3489,14 @@ function _refreshYouCells() {
   });
 }
 
+let _logEditMode = false;
+function toggleLogEditMode(deckKey) {
+  _logEditMode = !_logEditMode;
+  const btn = document.getElementById('log-edit-btn');
+  if (btn) { btn.textContent = _logEditMode ? 'Done' : 'Edit'; btn.classList.toggle('active', _logEditMode); }
+  _refreshMySection(deckKey);
+}
+
 function _buildMyHistoryHtml(deckKey) {
   const rec = personalRecord(currentLeaderKey, deckKey);
   const games = _gamesFor(currentLeaderKey, deckKey).slice().reverse();
@@ -3511,7 +3519,7 @@ function _buildMyHistoryHtml(deckKey) {
       <span class="my-go">${g.go}</span>
       ${g.note ? `<span class="my-note-text">${g.note}</span>` : '<span class="my-note-text" style="color:#333">—</span>'}
       <span class="my-date">${ds}</span>
-      <button class="my-game-del" onclick="deleteGame('${currentLeaderKey}','${deckKey}',${g.ts})" title="Delete">✕</button>
+      ${_logEditMode ? `<button class="my-game-del" onclick="deleteGame('${currentLeaderKey}','${deckKey}',${g.ts})" title="Delete">✕</button>` : ''}
     </div>`;
   }).join('');
   return recHtml + (rows ? `<div style="margin-top:6px">${rows}</div>` : '');
@@ -4158,6 +4166,8 @@ function renderDeck(d, matchup, deckKey) {
   // source link at bottom
   html += `<a class="ext-link-bottom" href="${d.sourceUrl}" target="_blank">→ Source: onepiecetopdecks.com</a>`;
 
+  // reset log edit mode on each deck page load
+  _logEditMode = false;
   // append my-section
   const existingNote = allNotes[_nk(currentLeaderKey, deckKey)] || '';
   const _mName = (matchup ? matchup.name : deckKey).replace(/'/g, '&#39;');
@@ -4174,7 +4184,10 @@ function renderDeck(d, matchup, deckKey) {
     </div>
     <div style="display:flex;justify-content:space-between;align-items:center;margin:14px 0 6px">
       <div class="my-section-title" style="margin-bottom:0">📊 My Record</div>
-      <button class="my-log-btn" onclick="openLogModal('${deckKey}','${_mName}',event)">+ Log Game</button>
+      <div style="display:flex;gap:6px">
+        <button class="my-note-clear" id="log-edit-btn" onclick="toggleLogEditMode('${deckKey}')">Edit</button>
+        <button class="my-log-btn" onclick="openLogModal('${deckKey}','${_mName}',event)">+ Log Game</button>
+      </div>
     </div>
     <div id="my-hist-inner"></div>
   </div>`;
