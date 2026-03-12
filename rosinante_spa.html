@@ -4719,10 +4719,10 @@ function renderStats(leaderKey) {
   <div class="alpha-chart-wrap"><canvas id="wr-chart"></canvas></div>
   <div id="wr-empty-msg" class="alpha-empty-msg" style="display:none">Not enough games for this window size yet.</div>
   <div class="alpha-legend">
-    <div class="alpha-legend-item"><div class="alpha-legend-dot" style="background:#80b8ff"></div>Overall</div>
-    <div class="alpha-legend-item"><div class="alpha-legend-dot" style="background:#60d090"></div>Going 1st</div>
-    <div class="alpha-legend-item"><div class="alpha-legend-dot" style="background:#e09050"></div>Going 2nd</div>
-    <div class="alpha-legend-item"><div class="alpha-legend-dot" style="background:#c9a84c;border-radius:0;height:2px;width:12px;margin:0 2px"></div>Meta WR</div>
+    <div class="alpha-legend-item"><div class="alpha-legend-dot" style="background:#c9a84c"></div>Personal WR</div>
+    <div class="alpha-legend-item"><div class="alpha-legend-dot" style="background:#4a8abf"></div>Meta WR</div>
+    <div class="alpha-legend-item"><div class="alpha-legend-dot" style="background:#60d09055"></div>Going 1st</div>
+    <div class="alpha-legend-item"><div class="alpha-legend-dot" style="background:#e0905055"></div>Going 2nd</div>
   </div>`;
 
   // Alpha chart
@@ -4797,28 +4797,58 @@ function _renderWrChart(leaderKey, windowSize) {
   const labels = points.map(p => `#${p.gameNum} · ${p.date.getMonth()+1}/${p.date.getDate()}`);
   if (_wrChartInst) { _wrChartInst.destroy(); _wrChartInst = null; }
 
-  const mkDataset = (label, data, color, dash) => ({
-    label, data,
-    borderColor: color,
-    borderWidth: dash ? 1.5 : 2,
-    borderDash: dash || [],
-    pointRadius: points.length <= 20 ? 3 : 0,
-    pointHoverRadius: 5,
-    pointBackgroundColor: color,
-    fill: false,
-    tension: 0.35,
-    spanGaps: true
-  });
+  const pr = points.length <= 20 ? 3 : 0;
+  const personalData = points.map(p => p.overall);
+  const metaData     = points.map(p => p.metaWr);
+  const wr1Data      = points.map(p => p.wr1);
+  const wr2Data      = points.map(p => p.wr2);
 
   _wrChartInst = new Chart(canvas, {
     type: 'line',
     data: {
       labels,
       datasets: [
-        mkDataset('Overall', points.map(p => p.overall), '#80b8ff'),
-        mkDataset('Going 1st', points.map(p => p.wr1), '#60d090'),
-        mkDataset('Going 2nd', points.map(p => p.wr2), '#e09050'),
-        mkDataset('Meta WR', points.map(p => p.metaWr), '#c9a84c88', [5,4]),
+        // ① Personal WR — primary bold line, fills toward meta (green above / red below)
+        {
+          label: 'Personal WR',
+          data: personalData,
+          borderColor: '#c9a84c',
+          borderWidth: 2.5,
+          pointRadius: pr, pointHoverRadius: 5,
+          pointBackgroundColor: '#c9a84c',
+          fill: { target: 1, above: 'rgba(96,208,144,0.18)', below: 'rgba(224,80,80,0.18)' },
+          tension: 0.35, spanGaps: true, order: 1
+        },
+        // ② Meta WR — solid reference line, no fill
+        {
+          label: 'Meta WR',
+          data: metaData,
+          borderColor: '#4a8abf',
+          borderWidth: 2,
+          borderDash: [5, 4],
+          pointRadius: pr, pointHoverRadius: 5,
+          pointBackgroundColor: '#4a8abf',
+          fill: false,
+          tension: 0.35, spanGaps: true, order: 2
+        },
+        // ③ Going 1st — thin secondary line
+        {
+          label: 'Going 1st',
+          data: wr1Data,
+          borderColor: 'rgba(96,208,144,0.5)',
+          borderWidth: 1,
+          pointRadius: 0, pointHoverRadius: 4,
+          fill: false, tension: 0.35, spanGaps: true, order: 3
+        },
+        // ④ Going 2nd — thin secondary line
+        {
+          label: 'Going 2nd',
+          data: wr2Data,
+          borderColor: 'rgba(224,144,80,0.5)',
+          borderWidth: 1,
+          pointRadius: 0, pointHoverRadius: 4,
+          fill: false, tension: 0.35, spanGaps: true, order: 4
+        }
       ]
     },
     options: {
@@ -4838,8 +4868,17 @@ function _renderWrChart(leaderKey, windowSize) {
             title: ctx => ctx[0].label,
             label: ctx => {
               const v = ctx.parsed.y;
-              if (v === null) return null;
-              return `${ctx.dataset.label}: ${v}%`;
+              if (v === null || v === undefined) return null;
+              const lbl = ctx.dataset.label;
+              if (lbl === 'Personal WR' || lbl === 'Meta WR') {
+                const p = points[ctx.dataIndex];
+                if (lbl === 'Personal WR') {
+                  const diff = p.metaWr !== null ? (p.overall - p.metaWr).toFixed(1) : null;
+                  return [`Personal WR: ${v}%`, diff !== null ? `  vs Meta: ${diff > 0 ? '+' : ''}${diff}%` : ''];
+                }
+                return `Meta WR: ${v}%`;
+              }
+              return `${lbl}: ${v}%`;
             }
           }
         }
