@@ -3854,7 +3854,6 @@ function toggleCardZoom(e, el, cardId) {
   if (el.classList.contains('zoomed')) {
     el.classList.remove('zoomed');
     el.style.transformOrigin = '';
-    openModal(el.querySelector('img').src, cardId);
   } else {
     document.querySelectorAll('.card-item.zoomed').forEach(c => { c.classList.remove('zoomed'); c.style.transformOrigin = ''; });
     // Set transform-origin based on position so card stays on screen
