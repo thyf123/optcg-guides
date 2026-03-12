@@ -3619,7 +3619,7 @@ function _pickAcItem(el) {
   ta.setSelectionRange(np, np); ta.focus();
   _hideAcDropdown(); _acStart = -1;
 }
-document.addEventListener('click', e => { if (!e.target.closest('#card-ac') && !e.target.closest('#my-notes-ta')) _hideAcDropdown(); });
+document.addEventListener('click', e => { if (!e.target.closest('#card-ac') && e.target !== _acTa) _hideAcDropdown(); });
 
 // Convert @[name](id) → tappable chip for display
 function _renderMentions(text) {
