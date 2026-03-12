@@ -298,7 +298,7 @@ tr.detail-row td{padding:0;border-bottom:1px solid #1e1e36}
 .card-mention{display:inline-block;background:#1a2a3a;color:#80c8ff;border:1px solid #2a5a8a55;border-radius:4px;padding:0 5px;font-size:0.72rem;cursor:pointer;font-weight:600;line-height:1.6;vertical-align:baseline}
 .card-mention:active{background:#253555}
 #mention-popup{position:fixed;z-index:9999;background:#1e1e36;border:1px solid #c9a84c55;border-radius:10px;padding:8px;box-shadow:0 8px 32px #000c;text-align:center}
-#mention-popup img{width:150px;border-radius:7px;display:block}
+#mention-popup img{width:220px;border-radius:7px;display:block}
 #mention-popup .mp-label{font-size:0.6rem;color:#c9a84c99;margin-top:5px;white-space:nowrap}
 /* Autocomplete dropdown */
 #card-ac{display:none}
@@ -3628,7 +3628,7 @@ function showMentionCard(e, imgUrl, label) {
   document.body.appendChild(pop);
   // Position near tapped element, clamped to viewport
   const r = e.target.closest('.card-mention').getBoundingClientRect();
-  const pw = 166, ph = 200;
+  const pw = 236, ph = 280;
   let left = r.left, top = r.bottom + 6;
   if (left + pw > window.innerWidth - 8) left = window.innerWidth - pw - 8;
   if (left < 8) left = 8;
