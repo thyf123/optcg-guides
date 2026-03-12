@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>OPTCG Matchup Guide</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%;overflow:hidden}
@@ -370,6 +371,16 @@ th.sort-active{color:#ffd080}
 .spi-name{color:#ccc;flex:1}
 .spi-delta{color:#e05050;font-weight:800;font-size:0.76rem}
 .stats-empty{text-align:center;padding:40px 16px;color:#444;font-size:0.82rem}
+/* ── Alpha chart ── */
+.alpha-window-row{display:flex;align-items:center;gap:6px;margin-bottom:10px;flex-wrap:wrap}
+.alpha-window-lbl{font-size:0.65rem;color:#555;flex-shrink:0}
+.alpha-btn{font-size:0.68rem;padding:3px 10px;border-radius:5px;border:1px solid #2a2a40;background:none;color:#555;cursor:pointer;transition:all 0.15s}
+.alpha-btn.active{background:#c9a84c22;border-color:#c9a84c88;color:#c9a84c;font-weight:700}
+.alpha-chart-wrap{position:relative;height:190px;margin-bottom:6px}
+.alpha-legend{display:flex;gap:12px;justify-content:center;margin-top:4px;flex-wrap:wrap}
+.alpha-legend-item{display:flex;align-items:center;gap:4px;font-size:0.62rem;color:#555}
+.alpha-legend-dot{width:8px;height:8px;border-radius:50%}
+.alpha-empty-msg{text-align:center;padding:20px;color:#444;font-size:0.75rem}
 .my-note-actions{display:flex;gap:6px;margin-top:6px}
 .my-note-save{font-size:0.7rem;padding:4px 12px;background:#1a3a2a;border:1px solid #30803050;border-radius:5px;color:#60d090;cursor:pointer;font-weight:700}
 .my-note-save:active{background:#1f4a32}
@@ -4547,6 +4558,8 @@ function showStats() {
   renderStats(currentLeaderKey);
 }
 function goBackFromStats() {
+  if (_wrChartInst) { _wrChartInst.destroy(); _wrChartInst = null; }
+  if (_alphaChartInst) { _alphaChartInst.destroy(); _alphaChartInst = null; }
   document.querySelectorAll('.screen').forEach(s => { s.classList.remove('active'); s.style.display = ''; });
   const sm = document.getElementById('screen-matchup');
   sm.classList.add('active');
@@ -4695,8 +4708,286 @@ function renderStats(leaderKey) {
     html += `<div style="font-size:0.64rem;color:#444;margin-top:4px">* xWR not available for matchups without meta data (shown as —)</div>`;
   }
 
+  // Rolling WR chart
+  html += `<div class="stats-section-hdr" style="margin-top:20px">Rolling Win Rate</div>
+  <div class="alpha-window-row">
+    <span class="alpha-window-lbl">Window:</span>
+    <button class="alpha-btn wr-btn active" data-w="10" onclick="_setWrWindow(10,this)">10</button>
+    <button class="alpha-btn wr-btn" data-w="30" onclick="_setWrWindow(30,this)">30</button>
+    <button class="alpha-btn wr-btn" data-w="50" onclick="_setWrWindow(50,this)">50</button>
+  </div>
+  <div class="alpha-chart-wrap"><canvas id="wr-chart"></canvas></div>
+  <div id="wr-empty-msg" class="alpha-empty-msg" style="display:none">Not enough games for this window size yet.</div>
+  <div class="alpha-legend">
+    <div class="alpha-legend-item"><div class="alpha-legend-dot" style="background:#80b8ff"></div>Overall</div>
+    <div class="alpha-legend-item"><div class="alpha-legend-dot" style="background:#60d090"></div>Going 1st</div>
+    <div class="alpha-legend-item"><div class="alpha-legend-dot" style="background:#e09050"></div>Going 2nd</div>
+    <div class="alpha-legend-item"><div class="alpha-legend-dot" style="background:#c9a84c;border-radius:0;height:2px;width:12px;margin:0 2px"></div>Meta WR</div>
+  </div>`;
+
+  // Alpha chart
+  html += `<div class="stats-section-hdr" style="margin-top:20px">Alpha Trend <span style="font-size:0.6rem;color:#444;font-weight:400;text-transform:none;letter-spacing:0">· Personal WR − Meta WR (rolling)</span></div>
+  <div class="alpha-window-row">
+    <span class="alpha-window-lbl">Window:</span>
+    <button class="alpha-btn alpha-w-btn active" data-w="10" onclick="_setAlphaWindow(10,this)">10</button>
+    <button class="alpha-btn alpha-w-btn" data-w="30" onclick="_setAlphaWindow(30,this)">30</button>
+    <button class="alpha-btn alpha-w-btn" data-w="50" onclick="_setAlphaWindow(50,this)">50</button>
+  </div>
+  <div class="alpha-chart-wrap"><canvas id="alpha-chart"></canvas></div>
+  <div id="alpha-empty-msg" class="alpha-empty-msg" style="display:none">Not enough games for this window size yet.</div>
+  <div class="alpha-legend">
+    <div class="alpha-legend-item"><div class="alpha-legend-dot" style="background:#60d090"></div>Outperforming</div>
+    <div class="alpha-legend-item"><div class="alpha-legend-dot" style="background:#e05050"></div>Underperforming</div>
+  </div>`;
+
   el.innerHTML = html;
+  // Render both charts after DOM is updated
+  requestAnimationFrame(() => {
+    _renderWrChart(leaderKey, _wrWindow);
+    _renderAlphaChart(leaderKey, _alphaWindow);
+  });
 }
+
+// ── ROLLING WR CHART ─────────────────────────────────────────
+let _wrChartInst = null;
+let _wrWindow = 10;
+
+function _computeRollingWr(leaderKey, windowSize) {
+  const games = allGames.filter(g => g.leaderKey === leaderKey).sort((a, b) => a.ts - b.ts);
+  const points = [];
+  for (let i = windowSize - 1; i < games.length; i++) {
+    const win = games.slice(i - windowSize + 1, i + 1);
+    const overall = win.filter(g => g.result === 'W').length / windowSize * 100;
+    const g1 = win.filter(g => g.go === '1st');
+    const g2 = win.filter(g => g.go === '2nd');
+    const wr1 = g1.length > 0 ? g1.filter(g => g.result === 'W').length / g1.length * 100 : null;
+    const wr2 = g2.length > 0 ? g2.filter(g => g.result === 'W').length / g2.length * 100 : null;
+    const xwrG = win.filter(g => _gameXwr(g) !== null);
+    const metaWr = xwrG.length > 0 ? xwrG.reduce((s, g) => s + _gameXwr(g), 0) / xwrG.length : null;
+    points.push({
+      gameNum: i + 1, date: new Date(games[i].ts),
+      overall: parseFloat(overall.toFixed(1)),
+      wr1: wr1 !== null ? parseFloat(wr1.toFixed(1)) : null,
+      wr2: wr2 !== null ? parseFloat(wr2.toFixed(1)) : null,
+      metaWr: metaWr !== null ? parseFloat(metaWr.toFixed(1)) : null
+    });
+  }
+  return points;
+}
+
+function _setWrWindow(w, btn) {
+  _wrWindow = w;
+  document.querySelectorAll('.wr-btn').forEach(b => b.classList.toggle('active', b === btn));
+  if (currentLeaderKey) _renderWrChart(currentLeaderKey, w);
+}
+
+function _renderWrChart(leaderKey, windowSize) {
+  const canvas = document.getElementById('wr-chart');
+  const emptyMsg = document.getElementById('wr-empty-msg');
+  if (!canvas) return;
+  const points = _computeRollingWr(leaderKey, windowSize);
+  if (points.length === 0) {
+    canvas.style.display = 'none';
+    if (emptyMsg) emptyMsg.style.display = 'block';
+    return;
+  }
+  canvas.style.display = 'block';
+  if (emptyMsg) emptyMsg.style.display = 'none';
+
+  const labels = points.map(p => `#${p.gameNum} · ${p.date.getMonth()+1}/${p.date.getDate()}`);
+  if (_wrChartInst) { _wrChartInst.destroy(); _wrChartInst = null; }
+
+  const mkDataset = (label, data, color, dash) => ({
+    label, data,
+    borderColor: color,
+    borderWidth: dash ? 1.5 : 2,
+    borderDash: dash || [],
+    pointRadius: points.length <= 20 ? 3 : 0,
+    pointHoverRadius: 5,
+    pointBackgroundColor: color,
+    fill: false,
+    tension: 0.35,
+    spanGaps: true
+  });
+
+  _wrChartInst = new Chart(canvas, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        mkDataset('Overall', points.map(p => p.overall), '#80b8ff'),
+        mkDataset('Going 1st', points.map(p => p.wr1), '#60d090'),
+        mkDataset('Going 2nd', points.map(p => p.wr2), '#e09050'),
+        mkDataset('Meta WR', points.map(p => p.metaWr), '#c9a84c88', [5,4]),
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: { duration: 300 },
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#1e1e36',
+          borderColor: '#2a2a50',
+          borderWidth: 1,
+          titleColor: '#c9a84c',
+          bodyColor: '#aaa',
+          callbacks: {
+            title: ctx => ctx[0].label,
+            label: ctx => {
+              const v = ctx.parsed.y;
+              if (v === null) return null;
+              return `${ctx.dataset.label}: ${v}%`;
+            }
+          }
+        }
+      },
+      scales: {
+        x: { ticks: { color: '#444', font: { size: 9 }, maxTicksLimit: 6, maxRotation: 0 }, grid: { color: '#1a1a2e' } },
+        y: {
+          min: 0, max: 100,
+          ticks: { color: '#555', font: { size: 10 }, callback: v => v + '%', stepSize: 25 },
+          grid: { color: '#1a1a2e' }
+        }
+      }
+    }
+  });
+}
+// ── ALPHA CHART ───────────────────────────────────────────────
+let _alphaChartInst = null;
+let _alphaWindow = 10;
+
+function _computeRollingAlpha(leaderKey, windowSize) {
+  const games = allGames.filter(g => g.leaderKey === leaderKey).sort((a, b) => a.ts - b.ts);
+  const points = [];
+  for (let i = windowSize - 1; i < games.length; i++) {
+    const win = games.slice(i - windowSize + 1, i + 1);
+    const wins = win.filter(g => g.result === 'W').length;
+    const personalWr = wins / windowSize * 100;
+    const xwrG = win.filter(g => _gameXwr(g) !== null);
+    const metaWr = xwrG.length > 0 ? xwrG.reduce((s, g) => s + _gameXwr(g), 0) / xwrG.length : null;
+    const alpha = metaWr !== null ? parseFloat((personalWr - metaWr).toFixed(1)) : null;
+    points.push({ gameNum: i + 1, date: new Date(games[i].ts), alpha, personalWr: parseFloat(personalWr.toFixed(1)), metaWr: metaWr !== null ? parseFloat(metaWr.toFixed(1)) : null });
+  }
+  return points;
+}
+
+function _setAlphaWindow(w, btn) {
+  _alphaWindow = w;
+  document.querySelectorAll('.alpha-btn').forEach(b => b.classList.toggle('active', b === btn));
+  const lk = document.getElementById('stats-content') ? currentLeaderKey : null;
+  if (lk) _renderAlphaChart(lk, w);
+}
+
+function _renderAlphaChart(leaderKey, windowSize) {
+  const canvas = document.getElementById('alpha-chart');
+  const emptyMsg = document.getElementById('alpha-empty-msg');
+  if (!canvas) return;
+
+  const points = _computeRollingAlpha(leaderKey, windowSize);
+
+  if (points.length === 0) {
+    canvas.style.display = 'none';
+    if (emptyMsg) emptyMsg.style.display = 'block';
+    return;
+  }
+  canvas.style.display = 'block';
+  if (emptyMsg) emptyMsg.style.display = 'none';
+
+  const labels = points.map(p => {
+    const d = p.date;
+    return `#${p.gameNum} · ${d.getMonth()+1}/${d.getDate()}`;
+  });
+  const alphaData = points.map(p => p.alpha);
+  const zeroData = points.map(() => 0);
+
+  if (_alphaChartInst) { _alphaChartInst.destroy(); _alphaChartInst = null; }
+
+  _alphaChartInst = new Chart(canvas, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: `Alpha (${windowSize}-game rolling)`,
+          data: alphaData,
+          borderColor: '#c9a84c',
+          borderWidth: 2.5,
+          pointRadius: alphaData.length <= 20 ? 3 : 0,
+          pointHoverRadius: 5,
+          pointBackgroundColor: alphaData.map(v => v === null ? '#c9a84c' : v >= 0 ? '#60d090' : '#e05050'),
+          fill: false,
+          tension: 0.35,
+          spanGaps: true,
+          segment: {
+            borderColor: ctx => {
+              const v = ctx.p0.parsed.y;
+              return v >= 0 ? '#60d090' : '#e05050';
+            }
+          }
+        },
+        {
+          label: 'Zero',
+          data: zeroData,
+          borderColor: '#2a2a50',
+          borderWidth: 1,
+          borderDash: [5, 4],
+          pointRadius: 0,
+          fill: false,
+          tension: 0
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: { duration: 300 },
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#1e1e36',
+          borderColor: '#2a2a50',
+          borderWidth: 1,
+          titleColor: '#c9a84c',
+          bodyColor: '#aaa',
+          callbacks: {
+            title: ctx => ctx[0].label,
+            label: ctx => {
+              if (ctx.datasetIndex === 1) return null;
+              const p = points[ctx.dataIndex];
+              const lines = [];
+              const sign = (v, suffix='%') => v == null ? '—' : (v > 0 ? '+' : '') + v + suffix;
+              lines.push(`Alpha: ${sign(p.alpha)}`);
+              lines.push(`Personal WR: ${p.personalWr}%`);
+              if (p.metaWr !== null) lines.push(`Meta WR: ${p.metaWr}%`);
+              return lines;
+            },
+            filter: item => item.datasetIndex !== 1
+          }
+        }
+      },
+      scales: {
+        x: {
+          ticks: { color: '#444', font: { size: 9 }, maxTicksLimit: 6, maxRotation: 0 },
+          grid: { color: '#1a1a2e' }
+        },
+        y: {
+          ticks: {
+            color: '#555',
+            font: { size: 10 },
+            callback: v => (v > 0 ? '+' : '') + v + '%'
+          },
+          grid: { color: '#1a1a2e' }
+        }
+      }
+    }
+  });
+}
+// ── END ALPHA CHART ───────────────────────────────────────────
+
 // ── END MY STATS SCREEN ──────────────────────────────────────
 
 function showHome() {
