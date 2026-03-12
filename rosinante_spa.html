@@ -3630,8 +3630,12 @@ function openLogModal(deckKey, matchupName, event) {
   document.querySelectorAll('#log-modal .log-toggle').forEach(b => b.classList.remove('active'));
   document.getElementById('log-save-btn').disabled = true;
   document.getElementById('log-modal').style.display = 'flex';
+  // Wire up @mention autocomplete on the note textarea
+  const ta = document.getElementById('log-note');
+  const matchup = getLM().find(m => m.deck === deckKey) || null;
+  _setupAtMention(ta, deckKey, matchup);
 }
-function closeLogModal() { document.getElementById('log-modal').style.display = 'none'; }
+function closeLogModal() { document.getElementById('log-modal').style.display = 'none'; _hideAcDropdown(); }
 
 function setLogGo(go) {
   _logGo = go;
