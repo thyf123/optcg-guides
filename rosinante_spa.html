@@ -55,11 +55,11 @@ tr.data-row.active td{background:#252545}
 .deck-btn:active{background:#1f4a32}
 
 /* detail panel */
+tr.detail-row{display:none}
+tr.detail-row.open{display:table-row}
 tr.detail-row td{padding:0;border-bottom:1px solid #1e1e36}
-.detail-panel{display:grid;grid-template-rows:0fr;overflow:hidden;background:#1a1a30;border-left:3px solid #c9a84c55;transition:grid-template-rows 0.22s ease}
-.detail-panel>div{min-height:0;overflow:hidden}
-.detail-panel.open{grid-template-rows:1fr}
-.detail-panel-inner{padding:10px 14px 12px 18px}
+.detail-panel{padding:10px 14px 12px 18px;background:#1a1a30;border-left:3px solid #c9a84c55;animation:detailIn 0.18s ease-out}
+@keyframes detailIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
 .dl{font-size:0.62rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#c9a84c;margin-bottom:3px}
 .ei{display:flex;gap:6px;margin-bottom:3px}
 .ec{font-weight:700;color:#ffd080;white-space:nowrap;flex-shrink:0;font-size:0.72rem}
@@ -4313,6 +4313,8 @@ function applyFilters() {
     const detailRow = dataRow ? dataRow.nextSibling : null;
     if (dataRow) dataRow.style.display = visible ? '' : 'none';
     if (detailRow && detailRow.classList.contains('detail-row')) {
+      // If row becomes hidden, also collapse any open detail panel
+      if (!visible) detailRow.classList.remove('open');
       detailRow.style.display = visible ? '' : 'none';
     }
     // Qref cards
@@ -4411,7 +4413,7 @@ function rebuildMatchupTable() {
 
   const dr = document.createElement('tr');
   dr.className = 'detail-row';
-  dr.innerHTML = `<td colspan="7"><div class="detail-panel" id="panel-${i}"><div class="detail-panel-inner">${essHtml}${tipsHtml}</div></div></td>`;
+  dr.innerHTML = `<td colspan="7"><div class="detail-panel" id="panel-${i}">${essHtml}${tipsHtml}</div></td>`;
   tbody.appendChild(dr);
 });
   // show/hide the empty state message
@@ -4437,12 +4439,12 @@ tbody.addEventListener('click', e => {
   if (m && m.deck) {
     showDeck(m.deck, idx);
   } else if (m) {
-    // No deck yet — still show tips panel inline as fallback
-    const panel = document.getElementById('panel-'+idx);
-    const open = panel.classList.contains('open');
-    document.querySelectorAll('.detail-panel.open').forEach(p=>p.classList.remove('open'));
+    // No deck yet — show tips panel inline as fallback
+    const dr = row.nextSibling;
+    const isOpen = dr && dr.classList.contains('open');
+    document.querySelectorAll('tr.detail-row.open').forEach(r=>r.classList.remove('open'));
     document.querySelectorAll('tr.data-row.active').forEach(r=>r.classList.remove('active'));
-    if (!open) { panel.classList.add('open'); row.classList.add('active'); }
+    if (!isOpen && dr) { dr.classList.add('open'); row.classList.add('active'); }
   }
 });
 
