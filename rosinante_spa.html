@@ -297,6 +297,9 @@ tr.detail-row td{padding:0;border-bottom:1px solid #1e1e36}
 /* ── CARD @MENTION CHIPS ── */
 .card-mention{display:inline-block;background:#1a2a3a;color:#80c8ff;border:1px solid #2a5a8a55;border-radius:4px;padding:0 5px;font-size:0.72rem;cursor:pointer;font-weight:600;line-height:1.6;vertical-align:baseline}
 .card-mention:active{background:#253555}
+#mention-popup{position:fixed;z-index:9999;background:#1e1e36;border:1px solid #c9a84c55;border-radius:10px;padding:8px;box-shadow:0 8px 32px #000c;text-align:center}
+#mention-popup img{width:150px;border-radius:7px;display:block}
+#mention-popup .mp-label{font-size:0.6rem;color:#c9a84c99;margin-top:5px;white-space:nowrap}
 /* Autocomplete dropdown */
 #card-ac{display:none}
 .card-ac-item{display:flex;align-items:center;gap:10px;padding:7px 10px;cursor:pointer;border-bottom:1px solid #2a2a3a;transition:background 0.1s}
@@ -3615,12 +3618,35 @@ function _pickAcItem(el) {
 }
 document.addEventListener('click', e => { if (!e.target.closest('#card-ac') && e.target !== _acTa) _hideAcDropdown(); });
 
+function showMentionCard(e, imgUrl, label) {
+  e.stopPropagation();
+  const existing = document.getElementById('mention-popup');
+  if (existing) { existing.remove(); return; }
+  const pop = document.createElement('div');
+  pop.id = 'mention-popup';
+  pop.innerHTML = `<img src="${imgUrl}" alt=""><div class="mp-label">${label}</div>`;
+  document.body.appendChild(pop);
+  // Position near tapped element, clamped to viewport
+  const r = e.target.closest('.card-mention').getBoundingClientRect();
+  const pw = 166, ph = 200;
+  let left = r.left, top = r.bottom + 6;
+  if (left + pw > window.innerWidth - 8) left = window.innerWidth - pw - 8;
+  if (left < 8) left = 8;
+  if (top + ph > window.innerHeight - 8) top = r.top - ph - 6;
+  pop.style.left = left + 'px';
+  pop.style.top = top + 'px';
+  setTimeout(() => {
+    const close = ev => { if (!pop.contains(ev.target)) { pop.remove(); document.removeEventListener('click', close); } };
+    document.addEventListener('click', close);
+  }, 0);
+}
+
 // Convert @[name](id) → tappable chip for display
 function _renderMentions(text) {
   if (!text) return '';
   const safe = String(text).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   return safe.replace(/@\[([^\]]+)\]\(([^)]+)\)/g, (_, name, id) =>
-    `<span class="card-mention" onclick="openModal('${cardImg(id)}','${id} · ${name}')">${name} <span style="font-size:0.75em;opacity:0.65">${id}</span></span>`
+    `<span class="card-mention" onclick="showMentionCard(event,'${cardImg(id)}','${id} · ${name}')">${name} <span style="font-size:0.75em;opacity:0.65">${id}</span></span>`
   );
 }
 
@@ -3826,15 +3852,19 @@ function loadImg(el, src, isLeader) {
 function toggleCardZoom(e, el, cardId) {
   e.stopPropagation();
   if (el.classList.contains('zoomed')) {
-    // already zoomed → open full modal
     el.classList.remove('zoomed');
+    el.style.transformOrigin = '';
     openModal(el.querySelector('img').src, cardId);
   } else {
-    // un-zoom any other card first
-    document.querySelectorAll('.card-item.zoomed').forEach(c => c.classList.remove('zoomed'));
+    document.querySelectorAll('.card-item.zoomed').forEach(c => { c.classList.remove('zoomed'); c.style.transformOrigin = ''; });
+    // Set transform-origin based on position so card stays on screen
+    const r = el.getBoundingClientRect();
+    const vw = window.innerWidth, vh = window.innerHeight;
+    const ox = r.left + r.width/2 < vw * 0.35 ? '0%' : r.right > vw * 0.65 ? '100%' : '50%';
+    const oy = r.top + r.height/2 < vh * 0.4 ? '0%' : r.bottom > vh * 0.65 ? '100%' : '50%';
+    el.style.transformOrigin = `${ox} ${oy}`;
     el.classList.add('zoomed');
-    // tap elsewhere to unzoom
-    const off = () => { el.classList.remove('zoomed'); document.removeEventListener('click', off); };
+    const off = () => { el.classList.remove('zoomed'); el.style.transformOrigin = ''; document.removeEventListener('click', off); };
     setTimeout(() => document.addEventListener('click', off), 0);
   }
 }
