@@ -1207,30 +1207,42 @@ th.sort-active { color: var(--gl-gold-h); }
 .log-btn:hover { opacity: 1; }
 
 /* Settings modal (kept for legacy sync, now hidden behind auth) */
-/* ── ADD LEADER MODAL ── */
+/* ── ADD LEADER PICKER MODAL ── */
 #add-leader-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.88); z-index: 500; display: none; align-items: flex-end; justify-content: center; }
 #add-leader-modal.open { display: flex; }
-.alm-sheet { background: var(--gl-surface); border-radius: var(--r-xl) var(--r-xl) 0 0; width: 100%; max-width: 420px; padding: var(--sp-5) var(--sp-4) calc(var(--sp-5) + env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: var(--sp-3); }
-.alm-handle { width: 36px; height: 4px; background: var(--gl-border-2); border-radius: 2px; margin: 0 auto; }
-.alm-title { font-size: 0.85rem; font-weight: 700; color: var(--gl-gold); font-family: var(--font-display); letter-spacing: 0.05em; }
-.alm-sub { font-size: 0.65rem; color: var(--gl-text-faint); margin-top: -8px; line-height: 1.5; }
-.alm-preview { display: flex; align-items: center; gap: 12px; background: var(--gl-surface-2); border: 1px solid var(--gl-border-2); border-radius: var(--r-md); padding: 10px; min-height: 72px; }
-.alm-preview-img { width: 50px; border-radius: 5px; flex-shrink: 0; opacity: 0; transition: opacity 0.2s; }
-.alm-preview-img.visible { opacity: 1; }
-.alm-preview-empty { width: 50px; height: 70px; border-radius: 5px; background: var(--gl-surface-3); border: 1px dashed var(--gl-border-2); flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; color: var(--gl-text-faint); }
-.alm-preview-info { flex: 1; }
-.alm-preview-name { font-size: 0.75rem; color: var(--gl-text); font-weight: 600; }
-.alm-preview-id { font-size: 0.6rem; color: var(--gl-text-faint); margin-top: 2px; font-family: monospace; }
-.alm-input { background: var(--gl-surface-2); border: 1px solid var(--gl-border-2); border-radius: var(--r-md); color: var(--gl-text); font-size: 0.78rem; font-family: monospace; padding: 10px 12px; width: 100%; box-sizing: border-box; letter-spacing: 0.05em; text-transform: uppercase; }
-.alm-input:focus { outline: none; border-color: var(--gl-gold-dim); }
-.alm-input::placeholder { text-transform: none; font-family: var(--font-body); letter-spacing: 0; color: var(--gl-text-faint); opacity: 0.7; }
-.alm-name-input { background: var(--gl-surface-2); border: 1px solid var(--gl-border-2); border-radius: var(--r-md); color: var(--gl-text); font-size: 0.78rem; padding: 10px 12px; width: 100%; box-sizing: border-box; }
-.alm-name-input:focus { outline: none; border-color: var(--gl-gold-dim); }
-.alm-err { font-size: 0.62rem; color: #e05858; min-height: 1em; }
-.alm-row { display: flex; gap: 8px; }
-.alm-btn-save { flex: 1; background: var(--gl-gold); color: #0a0c12; border: none; border-radius: var(--r-md); font-size: 0.78rem; font-weight: 700; padding: 11px; cursor: pointer; }
-.alm-btn-save:disabled { opacity: 0.4; cursor: not-allowed; }
-.alm-btn-cancel { background: var(--gl-surface-2); color: var(--gl-text-muted); border: 1px solid var(--gl-border-2); border-radius: var(--r-md); font-size: 0.78rem; padding: 11px 18px; cursor: pointer; }
+.alm-sheet { background: var(--gl-surface); border-radius: var(--r-xl) var(--r-xl) 0 0; width: 100%; max-width: 540px; height: 88vh; display: flex; flex-direction: column; overflow: hidden; }
+.alm-header { flex-shrink: 0; padding: var(--sp-3) var(--sp-4) 0; }
+.alm-handle { width: 36px; height: 4px; background: var(--gl-border-2); border-radius: 2px; margin: 0 auto var(--sp-3); }
+.alm-title-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--sp-2); }
+.alm-title { font-size: 0.88rem; font-weight: 700; color: var(--gl-gold); font-family: var(--font-display); letter-spacing: 0.05em; }
+.alm-close { background: none; border: none; color: var(--gl-text-faint); font-size: 1.2rem; cursor: pointer; padding: 2px 6px; line-height: 1; }
+.alm-search { width: 100%; background: var(--gl-surface-2); border: 1px solid var(--gl-border-2); border-radius: var(--r-md); color: var(--gl-text); font-size: 0.78rem; padding: 9px 12px; box-sizing: border-box; margin-bottom: var(--sp-2); }
+.alm-search:focus { outline: none; border-color: var(--gl-gold-dim); }
+.alm-colors { display: flex; gap: 5px; overflow-x: auto; padding-bottom: var(--sp-2); scrollbar-width: none; }
+.alm-colors::-webkit-scrollbar { display: none; }
+.alm-col-btn { flex-shrink: 0; border: 1px solid var(--gl-border-2); border-radius: 20px; background: var(--gl-surface-2); color: var(--gl-text-muted); font-size: 0.62rem; font-weight: 700; padding: 4px 10px; cursor: pointer; transition: all var(--t); white-space: nowrap; }
+.alm-col-btn.active { background: var(--gl-gold); color: #0a0c12; border-color: var(--gl-gold); }
+.alm-col-btn[data-col="Red"].active    { background: #c84040; border-color: #c84040; color: #fff; }
+.alm-col-btn[data-col="Green"].active  { background: #2a7a3a; border-color: #2a7a3a; color: #fff; }
+.alm-col-btn[data-col="Blue"].active   { background: #2060b0; border-color: #2060b0; color: #fff; }
+.alm-col-btn[data-col="Purple"].active { background: #6030a0; border-color: #6030a0; color: #fff; }
+.alm-col-btn[data-col="Yellow"].active { background: #a08020; border-color: #a08020; color: #fff; }
+.alm-col-btn[data-col="Black"].active  { background: #444; border-color: #666; color: #fff; }
+.alm-status { font-size: 0.62rem; color: var(--gl-text-faint); padding: var(--sp-2) 0 var(--sp-1); text-align: center; }
+/* scrollable grid */
+.alm-grid-wrap { flex: 1; overflow-y: auto; padding: 0 var(--sp-4) calc(var(--sp-4) + env(safe-area-inset-bottom)); }
+.alm-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding-top: var(--sp-2); }
+.alm-card { position: relative; border-radius: var(--r-md); overflow: hidden; cursor: pointer; border: 2px solid transparent; transition: border-color var(--t), transform var(--t); background: var(--gl-surface-2); aspect-ratio: 0.715; }
+.alm-card:active { transform: scale(0.96); }
+.alm-card.added { opacity: 0.38; cursor: default; pointer-events: none; }
+.alm-card img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.alm-card-overlay { position: absolute; bottom: 0; left: 0; right: 0; background: linear-gradient(transparent, rgba(0,0,0,0.85)); padding: 16px 5px 5px; }
+.alm-card-name { font-size: 0.52rem; color: #fff; font-weight: 600; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.alm-card-id { font-size: 0.48rem; color: rgba(255,255,255,0.55); font-family: monospace; margin-top: 1px; }
+.alm-card-check { position: absolute; top: 4px; right: 4px; background: var(--gl-gold); color: #0a0c12; border-radius: 50%; width: 16px; height: 16px; font-size: 0.6rem; display: flex; align-items: center; justify-content: center; font-weight: 900; }
+.alm-loading { display: flex; flex-direction: column; align-items: center; justify-content: center; flex: 1; gap: 10px; color: var(--gl-text-faint); font-size: 0.72rem; padding: var(--sp-6); }
+.alm-spinner { width: 28px; height: 28px; border: 3px solid var(--gl-border-2); border-top-color: var(--gl-gold); border-radius: 50%; animation: spin 0.8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
 /* Add leader tile in grid */
 .leader-card-add { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; background: var(--gl-surface); border: 1.5px dashed var(--gl-border-2); border-radius: var(--r-lg); cursor: pointer; aspect-ratio: 0.715; transition: border-color var(--t), background var(--t); min-height: 140px; }
 .leader-card-add:hover { border-color: var(--gl-gold-dim); background: var(--gl-surface-2); }
@@ -1688,27 +1700,31 @@ th.sort-active { color: var(--gl-gold-h); }
   <div class="modal-lbl" id="modal-lbl"></div>
 </div>
 
-<!-- ════ ADD LEADER MODAL ════ -->
+<!-- ════ ADD LEADER PICKER MODAL ════ -->
 <div id="add-leader-modal" onclick="_almBgClick(event)">
   <div class="alm-sheet" onclick="event.stopPropagation()">
-    <div class="alm-handle"></div>
-    <div class="alm-title">Add Leader</div>
-    <div class="alm-sub">Enter the card ID of your leader — the image will preview automatically</div>
-    <div class="alm-preview" id="alm-preview">
-      <div class="alm-preview-empty" id="alm-preview-empty">🃏</div>
-      <img class="alm-preview-img" id="alm-preview-img" src="" alt="" style="display:none">
-      <div class="alm-preview-info">
-        <div class="alm-preview-name" id="alm-preview-name">—</div>
-        <div class="alm-preview-id" id="alm-preview-id"></div>
+    <div class="alm-header">
+      <div class="alm-handle"></div>
+      <div class="alm-title-row">
+        <span class="alm-title">Choose a Leader</span>
+        <button class="alm-close" onclick="closeAddLeader()">✕</button>
+      </div>
+      <input class="alm-search" id="alm-search" type="text" placeholder="Search by name…" oninput="_almFilter()">
+      <div class="alm-colors" id="alm-colors">
+        <button class="alm-col-btn active" data-col="All" onclick="_almSetColor(this)">All</button>
+        <button class="alm-col-btn" data-col="Red" onclick="_almSetColor(this)">Red</button>
+        <button class="alm-col-btn" data-col="Green" onclick="_almSetColor(this)">Green</button>
+        <button class="alm-col-btn" data-col="Blue" onclick="_almSetColor(this)">Blue</button>
+        <button class="alm-col-btn" data-col="Purple" onclick="_almSetColor(this)">Purple</button>
+        <button class="alm-col-btn" data-col="Yellow" onclick="_almSetColor(this)">Yellow</button>
+        <button class="alm-col-btn" data-col="Black" onclick="_almSetColor(this)">Black</button>
       </div>
     </div>
-    <input class="alm-input" id="alm-id-input" type="text" placeholder="e.g. OP09-001" maxlength="12"
-      oninput="_almIdChange(this.value)" onpaste="_almIdChange(this.value)">
-    <input class="alm-name-input" id="alm-name-input" type="text" placeholder="Display name (optional)">
-    <div class="alm-err" id="alm-err"></div>
-    <div class="alm-row">
-      <button class="alm-btn-cancel" onclick="closeAddLeader()">Cancel</button>
-      <button class="alm-btn-save" id="alm-save-btn" onclick="saveAddLeader()" disabled>Add Leader</button>
+    <div id="alm-body" class="alm-grid-wrap">
+      <div class="alm-loading">
+        <div class="alm-spinner"></div>
+        Loading leaders…
+      </div>
     </div>
   </div>
 </div>
@@ -4795,21 +4811,19 @@ function _saveNotes() { try { localStorage.setItem('optcg-notes', JSON.stringify
 function _saveMyDecks() { try { localStorage.setItem('optcg-my-decks', JSON.stringify(allMyDecks)); } catch(e) {} }
 function _saveCustomLeaders() { try { localStorage.setItem('optcg-custom-leaders', JSON.stringify(allCustomLeaders)); } catch(e) {} }
 
-// ── ADD LEADER MODAL ──────────────────────────────────────────
-let _almPreviewTimer = null;
+// ── ADD LEADER PICKER ──────────────────────────────────────────
+const _ALM_API   = 'https://www.optcgapi.com/api/sets/filtered/?card_type=leader';
+const _ALM_CACHE = 'optcg-leaders-api-cache';
+const _ALM_TTL   = 7 * 24 * 60 * 60 * 1000; // 7 days
+let _almAllLeaders = [];   // full list from API
+let _almColorFilter = 'All';
 
 function openAddLeader() {
-  const modal = document.getElementById('add-leader-modal');
-  document.getElementById('alm-id-input').value = '';
-  document.getElementById('alm-name-input').value = '';
-  document.getElementById('alm-err').textContent = '';
-  document.getElementById('alm-save-btn').disabled = true;
-  document.getElementById('alm-preview-empty').style.display = '';
-  document.getElementById('alm-preview-img').style.display = 'none';
-  document.getElementById('alm-preview-name').textContent = '—';
-  document.getElementById('alm-preview-id').textContent = '';
-  modal.classList.add('open');
-  setTimeout(() => document.getElementById('alm-id-input').focus(), 150);
+  document.getElementById('add-leader-modal').classList.add('open');
+  document.getElementById('alm-search').value = '';
+  _almColorFilter = 'All';
+  document.querySelectorAll('.alm-col-btn').forEach(b => b.classList.toggle('active', b.dataset.col === 'All'));
+  _almLoadLeaders();
 }
 
 function closeAddLeader() {
@@ -4820,65 +4834,91 @@ function _almBgClick(e) {
   if (e.target === document.getElementById('add-leader-modal')) closeAddLeader();
 }
 
-function _almIdChange(raw) {
-  clearTimeout(_almPreviewTimer);
-  const val = raw.toUpperCase().replace(/[^A-Z0-9-]/g, '');
-  document.getElementById('alm-id-input').value = val;
-  document.getElementById('alm-err').textContent = '';
-  document.getElementById('alm-save-btn').disabled = true;
-  if (!val.match(/^[A-Z]{1,4}\d*-\d{3,4}$/)) {
-    document.getElementById('alm-preview-name').textContent = val ? 'Invalid ID format' : '—';
-    document.getElementById('alm-preview-id').textContent = '';
-    document.getElementById('alm-preview-empty').style.display = '';
-    document.getElementById('alm-preview-img').style.display = 'none';
-    return;
+async function _almLoadLeaders() {
+  // Try cache first
+  try {
+    const cached = JSON.parse(localStorage.getItem(_ALM_CACHE) || 'null');
+    if (cached && cached.data && (Date.now() - cached.fetchedAt < _ALM_TTL)) {
+      _almAllLeaders = cached.data;
+      _almRenderGrid();
+      return;
+    }
+  } catch(e) {}
+  // Show spinner
+  document.getElementById('alm-body').innerHTML = '<div class="alm-loading"><div class="alm-spinner"></div>Loading all leaders…</div>';
+  try {
+    const res  = await fetch(_ALM_API);
+    const data = await res.json();
+    _almAllLeaders = data;
+    localStorage.setItem(_ALM_CACHE, JSON.stringify({ data, fetchedAt: Date.now() }));
+    _almRenderGrid();
+  } catch(e) {
+    document.getElementById('alm-body').innerHTML =
+      '<div class="alm-loading" style="color:#e05858">Failed to load. Check your connection and try again.</div>';
   }
-  // Check duplicate
-  const existingBuiltin = Object.values(LEADERS).find(l => l.cardId === val);
-  if (existingBuiltin) {
-    document.getElementById('alm-err').textContent = 'This leader is already in the list.';
-    return;
-  }
-  // Preview image with debounce
-  _almPreviewTimer = setTimeout(() => {
-    const img = document.getElementById('alm-preview-img');
-    const empty = document.getElementById('alm-preview-empty');
-    const nameEl = document.getElementById('alm-preview-name');
-    const idEl = document.getElementById('alm-preview-id');
-    img.onload = () => {
-      img.classList.add('visible');
-      empty.style.display = 'none';
-      img.style.display = '';
-      nameEl.textContent = document.getElementById('alm-name-input').value.trim() || val;
-      idEl.textContent = val;
-      document.getElementById('alm-save-btn').disabled = false;
-    };
-    img.onerror = () => {
-      document.getElementById('alm-err').textContent = 'Card not found — check the ID.';
-      img.style.display = 'none';
-      empty.style.display = '';
-    };
-    img.classList.remove('visible');
-    img.src = cardImg(val);
-  }, 400);
 }
 
-function saveAddLeader() {
-  const cardId = document.getElementById('alm-id-input').value.trim().toUpperCase();
-  const name   = document.getElementById('alm-name-input').value.trim() || cardId;
-  if (!cardId) return;
-  // Build a minimal LEADERS-compatible entry and inject it at runtime
+function _almSetColor(btn) {
+  _almColorFilter = btn.dataset.col;
+  document.querySelectorAll('.alm-col-btn').forEach(b => b.classList.toggle('active', b === btn));
+  _almFilter();
+}
+
+function _almFilter() {
+  const q = (document.getElementById('alm-search').value || '').toLowerCase().trim();
+  const col = _almColorFilter;
+  const filtered = _almAllLeaders.filter(l => {
+    const matchColor = col === 'All' || l.card_color.includes(col);
+    const matchSearch = !q || l.card_name.toLowerCase().includes(q) || l.card_set_id.toLowerCase().includes(q);
+    return matchColor && matchSearch;
+  });
+  _almRenderGrid(filtered);
+}
+
+function _almRenderGrid(leaders) {
+  if (leaders === undefined) leaders = _almAllLeaders;
+  // Figure out which card IDs are already added (builtin + custom)
+  const addedIds = new Set(Object.values(LEADERS).map(l => l.cardId).filter(Boolean));
+  const body = document.getElementById('alm-body');
+  if (!leaders.length) {
+    body.innerHTML = '<div class="alm-loading">No leaders found</div>';
+    return;
+  }
+  const items = leaders.map(l => {
+    const id   = l.card_set_id;
+    const name = l.card_name.replace(/\s*\(\d+\)\s*$/, ''); // strip trailing (001) etc
+    const img  = cardImg(id);
+    const already = addedIds.has(id);
+    return `<div class="alm-card${already ? ' added' : ''}" onclick="_almPickLeader('${id}','${name.replace(/'/g,"\\'")}','${l.card_color}')">
+      <img src="${img}" alt="${name}" loading="lazy" onerror="this.style.opacity='0.2'">
+      <div class="alm-card-overlay">
+        <div class="alm-card-name">${name}</div>
+        <div class="alm-card-id">${id}</div>
+      </div>
+      ${already ? '<div class="alm-card-check">✓</div>' : ''}
+    </div>`;
+  }).join('');
+  body.innerHTML = `<div class="alm-grid">${items}</div>`;
+}
+
+function _almPickLeader(cardId, name, color) {
   const key = 'custom_' + cardId.replace(/-/g,'_').toLowerCase();
-  allCustomLeaders[key] = { cardId, name, addedAt: Date.now() };
+  if (LEADERS[key] || Object.values(LEADERS).find(l => l.cardId === cardId)) return;
+  allCustomLeaders[key] = { cardId, name, color, addedAt: Date.now() };
   _injectCustomLeader(key, allCustomLeaders[key]);
   _saveCustomLeaders();
   syncToSupabase();
   closeAddLeader();
   renderLeaderGrid();
+  // Brief flash to show it was added
+  setTimeout(() => {
+    const el = document.querySelector(`.leader-card[data-key="${key}"]`);
+    if (el) el.style.outline = '2px solid var(--gl-gold)';
+  }, 100);
 }
 
 function _injectCustomLeader(key, cl) {
-  if (LEADERS[key]) return; // already injected
+  if (LEADERS[key]) return;
   LEADERS[key] = {
     cardId: cl.cardId,
     name: cl.name,
@@ -4897,7 +4937,6 @@ function deleteCustomLeader(key) {
   renderLeaderGrid();
 }
 
-// Inject any persisted custom leaders on boot
 function _bootCustomLeaders() {
   Object.keys(allCustomLeaders).forEach(k => _injectCustomLeader(k, allCustomLeaders[k]));
 }
