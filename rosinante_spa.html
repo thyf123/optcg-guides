@@ -512,23 +512,23 @@ img, picture, video, canvas, svg { display: block; max-width: 100%; }
 
 /* My Deck bar */
 .my-deck-bar {
-  display: flex; align-items: center; gap: 10px;
+  display: flex; align-items: center; gap: 8px;
   background: var(--gl-surface); border: 1px solid var(--gl-border-2);
-  border-radius: var(--r-md); padding: 8px 10px;
+  border-radius: var(--r-md); padding: 5px 10px 5px 6px;
   margin-bottom: var(--sp-3); cursor: pointer;
   transition: border-color var(--t), background var(--t);
 }
 .my-deck-bar:hover { border-color: var(--gl-gold-dim); background: var(--gl-surface-2); }
 .my-deck-bar:active { transform: scale(0.985); }
 .mdb-img {
-  width: 36px; height: auto; border-radius: 4px; flex-shrink: 0;
+  width: 28px; height: auto; border-radius: 3px; flex-shrink: 0;
   background: var(--gl-surface-3); opacity: 0; transition: opacity var(--t);
 }
 .mdb-img.loaded { opacity: 1; }
 .mdb-info { flex: 1; min-width: 0; }
 .mdb-label { font-size: 0.56rem; color: var(--gl-gold); font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; display: block; line-height: 1.2; }
-.mdb-name  { font-size: 0.75rem; color: var(--gl-text); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
-.mdb-arrow { font-size: 0.8rem; color: var(--gl-text-faint); flex-shrink: 0; }
+.mdb-name  { display: none; }
+.mdb-arrow { font-size: 0.7rem; color: var(--gl-text-faint); flex-shrink: 0; }
 .stats-nav-btn {
   background: var(--gl-surface-2);
   border: 1px solid var(--gl-border-2);
@@ -1545,10 +1545,8 @@ th.sort-active { color: var(--gl-gold-h); }
   <!-- My Deck bar -->
   <div class="my-deck-bar" id="my-deck-bar" onclick="" style="display:none">
     <img class="mdb-img" id="mdb-img" src="" alt="">
-    <div class="mdb-info">
-      <span class="mdb-label">My Deck</span>
-      <span class="mdb-name" id="mdb-name">—</span>
-    </div>
+    <span class="mdb-label">My Deck</span>
+    <span id="mdb-name" style="display:none"></span>
     <span class="mdb-arrow">›</span>
   </div>
 
