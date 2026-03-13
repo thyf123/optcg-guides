@@ -1281,9 +1281,9 @@ th.sort-active { color: var(--gl-gold-h); }
 /* split layout */
 .myd-layout { display: flex; gap: 10px; flex: 1; overflow: hidden; min-height: 0; }
 /* left: text editor panel */
-.myd-text-panel { width: 130px; flex-shrink: 0; display: flex; flex-direction: column; gap: 6px; }
+.myd-text-panel { width: 165px; flex-shrink: 0; display: flex; flex-direction: column; gap: 5px; }
 .myd-ta-label { font-size: 0.55rem; font-weight: 700; color: var(--gl-gold); text-transform: uppercase; letter-spacing: 0.1em; }
-.myd-ta { flex: 1; background: var(--gl-surface-2); border: 1px solid var(--gl-border-2); border-radius: var(--r-md); color: var(--gl-text); font-family: monospace; font-size: 0.65rem; line-height: 1.8; padding: 8px 9px; resize: none; min-height: 0; }
+.myd-ta { flex: 0 0 62px; background: var(--gl-surface-2); border: 1px solid var(--gl-border-2); border-radius: var(--r-md); color: var(--gl-text); font-family: monospace; font-size: 0.65rem; line-height: 1.8; padding: 6px 8px; resize: none; }
 .myd-ta:focus { outline: none; border-color: var(--gl-gold-dim); }
 .myd-ta-hint { font-size: 0.55rem; color: var(--gl-text-faint); line-height: 1.4; }
 .myd-ta-saved { font-size: 0.55rem; color: var(--gl-success); opacity: 0; transition: opacity 0.4s; }
@@ -1306,8 +1306,8 @@ th.sort-active { color: var(--gl-gold-h); }
 .myd-stack { position: relative; transition: transform 0.15s; }
 .myd-stack:hover { transform: translateY(-5px); z-index: 20; }
 .myd-stack-inner { position: relative; cursor: pointer; }
-.myd-card-img { width: 80px; border-radius: 5px; display: block; box-shadow: 0 4px 14px rgba(0,0,0,0.65); }
-.myd-copy { position: absolute; top: 0; left: 0; width: 80px; border-radius: 5px; box-shadow: 0 4px 14px rgba(0,0,0,0.5); }
+.myd-card-img { width: 110px; border-radius: 5px; display: block; box-shadow: 0 4px 14px rgba(0,0,0,0.65); }
+.myd-copy { position: absolute; top: 0; left: 0; width: 110px; border-radius: 5px; box-shadow: 0 4px 14px rgba(0,0,0,0.5); }
 .myd-count-badge { position: absolute; bottom: 5px; right: 3px; background: rgba(0,0,0,0.85); color: var(--gl-gold); font-size: 0.6rem; font-weight: 700; border-radius: 4px; padding: 1px 5px; line-height: 1.4; pointer-events: none; z-index: 11; }
 /* per-card controls — shown on hover */
 .myd-card-controls { position: absolute; bottom: -26px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 3px; opacity: 0; transition: opacity 0.15s; pointer-events: none; white-space: nowrap; z-index: 30; }
@@ -1334,6 +1334,23 @@ th.sort-active { color: var(--gl-gold-h); }
 .myd-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 180px; gap: 10px; }
 .myd-empty-icon { font-size: 2.5rem; opacity: 0.3; }
 .myd-empty-text { font-size: 0.72rem; color: var(--gl-text-faint); text-align: center; }
+/* card chips list (left panel) */
+.myd-chips-list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 4px; min-height: 0; }
+.myd-chip { display: flex; align-items: center; gap: 5px; background: var(--gl-surface-2); border: 1px solid var(--gl-border-2); border-radius: 6px; padding: 4px 5px; transition: border-color 0.15s; }
+.myd-chip:hover { border-color: var(--gl-gold-dim); }
+.myd-chip-img { width: 30px; border-radius: 3px; flex-shrink: 0; display: block; }
+.myd-chip-info { flex: 1; min-width: 0; overflow: hidden; }
+.myd-chip-id { font-size: 0.52rem; font-family: monospace; color: var(--gl-text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.myd-chip-type { font-size: 0.46rem; color: var(--gl-text-faint); margin-top: 1px; }
+.myd-chip-cnt { font-size: 0.62rem; font-weight: 700; color: var(--gl-gold); flex-shrink: 0; }
+.myd-chip-rm { background: none; border: none; color: var(--gl-text-faint); cursor: pointer; font-size: 0.72rem; padding: 0 1px; line-height: 1; flex-shrink: 0; }
+.myd-chip-rm:hover { color: #e05858; }
+/* card popup (non-fullscreen preview) */
+.myd-card-popup { position: fixed; z-index: 350; background: rgba(10,12,18,0.97); border: 1px solid rgba(255,255,255,0.18); border-radius: 10px; padding: 10px; box-shadow: 0 16px 48px rgba(0,0,0,0.85); flex-direction: column; align-items: center; gap: 6px; pointer-events: auto; }
+.myd-card-popup img { width: 250px; border-radius: 7px; display: block; }
+.myd-card-popup-id { font-size: 0.58rem; font-family: monospace; color: var(--gl-text-faint); }
+.myd-card-popup-close { position: absolute; top: 5px; right: 8px; background: none; border: none; color: rgba(255,255,255,0.5); cursor: pointer; font-size: 1rem; line-height: 1; }
+.myd-card-popup-close:hover { color: #fff; }
 
 #sb-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.82); z-index: 400; display: none; align-items: center; justify-content: center; padding: var(--sp-4); }
 .sb-card { background: var(--gl-surface); border: 1px solid var(--gl-border-2); border-radius: var(--r-xl); padding: var(--sp-6); width: 340px; max-width: 100%; box-shadow: 0 24px 64px rgba(0,0,0,0.6); }
@@ -1797,14 +1814,15 @@ th.sort-active { color: var(--gl-gold-h); }
     <button class="myd-save-btn" onclick="_mydSaveNow()">Save</button>
   </div>
   <div class="myd-layout">
-    <!-- left: live text editor -->
+    <!-- left: paste + card chips -->
     <div class="myd-text-panel">
       <div class="myd-ta-label">Decklist</div>
+      <div class="myd-ta-hint">One card per line — e.g. <span style="color:var(--gl-gold);font-family:monospace">4xOP07-046</span></div>
       <textarea class="myd-ta" id="myd-ta" spellcheck="false"
-        placeholder="4xOP07-046&#10;2xOP06-047&#10;…"
+        placeholder="Paste decklist here…"
         oninput="_mydTaChange()"></textarea>
-      <div class="myd-ta-hint">One card per line<br>e.g. <span style="color:var(--gl-gold);font-family:monospace">4xOP07-046</span></div>
       <div class="myd-ta-saved" id="myd-ta-saved">✓ Saved</div>
+      <div class="myd-chips-list" id="myd-chips-list"></div>
     </div>
     <!-- right: card board + add bar -->
     <div class="myd-cards-panel">
@@ -1825,6 +1843,13 @@ th.sort-active { color: var(--gl-gold-h); }
       </div>
     </div>
   </div>
+</div>
+
+<!-- card popup (non-fullscreen preview) -->
+<div class="myd-card-popup" id="myd-card-popup" style="display:none">
+  <button class="myd-card-popup-close" onclick="_mydHideCardPopup()">×</button>
+  <img id="myd-popup-img" src="" alt="">
+  <div class="myd-card-popup-id" id="myd-popup-id"></div>
 </div>
 
 </div><!-- #app -->
@@ -4862,6 +4887,11 @@ try { allCustomEssentials = JSON.parse(localStorage.getItem('optcg-essentials') 
 try { allMyDecks = JSON.parse(localStorage.getItem('optcg-my-decks') || '{}'); } catch(e) {}
 try { allCustomLeaders = JSON.parse(localStorage.getItem('optcg-custom-leaders') || '{}'); } catch(e) {}
 
+// Card type cache — keyed by card ID → 'Character'|'Event'|'Stage'|'Leader'
+let _mydCardTypeCache = {};
+try { _mydCardTypeCache = JSON.parse(localStorage.getItem('optcg-card-types') || '{}'); } catch(e) {}
+function _mydSaveTypeCache() { try { localStorage.setItem('optcg-card-types', JSON.stringify(_mydCardTypeCache)); } catch(e) {} }
+
 function _saveGames() { try { localStorage.setItem('optcg-games', JSON.stringify(allGames)); } catch(e) {} }
 function _saveNotes() { try { localStorage.setItem('optcg-notes', JSON.stringify(allNotes)); } catch(e) {} }
 function _saveMyDecks() { try { localStorage.setItem('optcg-my-decks', JSON.stringify(allMyDecks)); } catch(e) {} }
@@ -5498,6 +5528,8 @@ function _pickAcItem(el) {
   _hideAcDropdown(); _acStart = -1;
 }
 document.addEventListener('click', e => { if (!e.target.closest('#card-ac') && e.target !== _acTa) _hideAcDropdown(); });
+// Dismiss card popup when clicking outside it
+document.addEventListener('click', e => { if (!e.target.closest('#myd-card-popup') && !e.target.closest('.myd-stack-inner') && !e.target.closest('.myd-leader-img')) _mydHideCardPopup(); });
 
 // showMentionCard replaced by delegated listener in _renderMentions section above
 
@@ -6849,6 +6881,7 @@ function showMyDeckViewer(leaderCardId) {
   }
   document.getElementById('myd-ta-saved').classList.remove('show');
   _mydRenderCards();
+  _mydRenderChips();
   document.querySelectorAll('.screen').forEach(s => { s.classList.remove('active'); s.style.display = ''; });
   document.getElementById('screen-my-deck').classList.add('active');
 }
@@ -6865,8 +6898,9 @@ function closMyDeckViewer() {
 }
 
 function _mydTaChange() {
-  // Re-render grid immediately from textarea
+  // Re-render grid + chips immediately from textarea
   _mydRenderCards();
+  _mydRenderChips();
   // Debounced save
   clearTimeout(_mydSaveTimer);
   _mydSaveTimer = setTimeout(() => {
@@ -6902,21 +6936,13 @@ function _mydRenderCards() {
 
   if (totalEl) totalEl.textContent = allTotal ? `${allTotal} cards` : '';
 
-  function renderStack(c) {
-    const offset = Math.min(c.count - 1, 3);
-    let copies = '';
-    for (let i = offset; i > 0; i--) {
-      copies += `<img class="myd-copy" src="${cardImg(c.id)}" alt=""
-        style="top:${-i*3}px;left:${i*3}px;z-index:${10-i}" loading="lazy">`;
-    }
-    const cntBadge = c.count > 1 ? `<div class="myd-count-badge">${c.count}×</div>` : '';
+  function renderCard(c) {
     return `<div class="myd-stack">
-      <div class="myd-stack-inner" style="padding-top:${offset*3}px;padding-left:${offset*3}px"
-           onclick="openModal('${cardImg(c.id)}','${c.id}')">
-        ${copies}
+      <div class="myd-stack-inner"
+           onclick="_mydShowCardPopup('${c.id}','${cardImg(c.id)}',event)">
         <img class="myd-card-img" src="${cardImg(c.id)}" alt="${c.id}" loading="lazy"
-          onload="this.style.opacity='1'" style="opacity:0;transition:opacity 0.25s;position:relative;z-index:10">
-        ${cntBadge}
+          onload="this.style.opacity='1'" style="opacity:0;transition:opacity 0.25s">
+        <div class="myd-count-badge">${c.count}×</div>
       </div>
       <div class="myd-card-controls">
         <button class="myd-ctrl-btn myd-ctrl-del" title="Remove"
@@ -6940,13 +6966,12 @@ function _mydRenderCards() {
   const leaderHtml = `
     <div class="myd-leader-row">
       <img class="myd-leader-img" src="${cardImg(_mydCurrentCardId)}" alt="Leader"
-        onclick="openModal('${cardImg(_mydCurrentCardId)}','${_mydCurrentCardId}')"
+        onclick="_mydShowCardPopup('${_mydCurrentCardId}','${cardImg(_mydCurrentCardId)}',event)"
         onload="this.style.opacity='1'">
       <div class="myd-leader-info">
         <span class="myd-leader-badge">Leader</span>
         <div class="myd-leader-name">${leaderName}</div>
         <div class="myd-leader-id">${_mydCurrentCardId}</div>
-        ${leaderCard ? `<div style="font-size:0.58rem;color:var(--gl-text-faint);margin-top:2px">${leaderCard.count}× in list</div>` : ''}
       </div>
     </div>`;
 
@@ -6957,9 +6982,99 @@ function _mydRenderCards() {
     return;
   }
 
+  // Group by type (using cached types)
+  const characters = deckCards.filter(c => _mydCardTypeCache[c.id] === 'Character');
+  const events     = deckCards.filter(c => _mydCardTypeCache[c.id] === 'Event');
+  const stages     = deckCards.filter(c => _mydCardTypeCache[c.id] === 'Stage');
+  const unknown    = deckCards.filter(c => !_mydCardTypeCache[c.id]);
+
+  function section(label, list) {
+    if (!list.length) return '';
+    const total = list.reduce((s,c) => s + c.count, 0);
+    return `<div class="myd-section-label">${label} — ${total}</div>
+    <div class="myd-cards-grid" style="margin-bottom:16px">${list.map(renderCard).join('')}</div>`;
+  }
+
   table.innerHTML = leaderHtml
-    + `<div class="myd-section-label">Deck — ${deckTotal} cards</div>`
-    + `<div class="myd-cards-grid">${deckCards.map(renderStack).join('')}</div>`;
+    + section('Characters', characters)
+    + section('Events & Stages', [...events, ...stages])
+    + (unknown.length ? section('Other', unknown) : '');
+
+  // Async: fetch missing types and re-render
+  const allIds = deckCards.map(c => c.id);
+  const missing = allIds.filter(id => !_mydCardTypeCache[id]);
+  if (missing.length) _mydLoadTypes(missing);
+}
+
+async function _mydLoadTypes(ids) {
+  const missing = ids.filter(id => !_mydCardTypeCache[id]);
+  if (!missing.length) return;
+  // Batch by set: one fetch per unique set covers all cards in that set
+  const sets = [...new Set(missing.map(id => id.split('-')[0]))];
+  await Promise.all(sets.map(async setId => {
+    try {
+      const res = await fetch(`https://www.optcgapi.com/api/sets/filtered/?card_set_id=${encodeURIComponent(setId)}`);
+      const data = await res.json();
+      if (Array.isArray(data)) {
+        for (const card of data) {
+          if (card.card_id && card.card_type) _mydCardTypeCache[card.card_id] = card.card_type;
+        }
+      }
+    } catch(e) {}
+  }));
+  _mydSaveTypeCache();
+  _mydRenderCards();
+  _mydRenderChips();
+}
+
+function _mydShowCardPopup(id, imgSrc, event) {
+  if (event) event.stopPropagation();
+  const popup = document.getElementById('myd-card-popup');
+  const img   = document.getElementById('myd-popup-img');
+  const lbl   = document.getElementById('myd-popup-id');
+  if (!popup) return;
+  img.src = imgSrc;
+  if (lbl) lbl.textContent = id;
+  popup.style.display = 'flex';
+  // Position near click, keeping within viewport
+  const px = event ? event.clientX : window.innerWidth / 2;
+  const py = event ? event.clientY : window.innerHeight / 2;
+  const vw = window.innerWidth, vh = window.innerHeight;
+  const pw = 276, ph = 340;
+  let left = px + 14, top = py - 30;
+  if (left + pw > vw - 8) left = px - pw - 14;
+  if (top + ph > vh - 8) top = vh - ph - 8;
+  if (top < 8) top = 8;
+  if (left < 8) left = 8;
+  popup.style.left = left + 'px';
+  popup.style.top  = top + 'px';
+}
+
+function _mydHideCardPopup() {
+  const popup = document.getElementById('myd-card-popup');
+  if (popup) popup.style.display = 'none';
+}
+
+function _mydRenderChips() {
+  const ta   = document.getElementById('myd-ta');
+  const list = document.getElementById('myd-chips-list');
+  if (!list) return;
+  const text = ta ? ta.value : '';
+  const { cards } = text.trim() ? parseDeckList(text) : { cards: [] };
+  if (!cards.length) { list.innerHTML = ''; return; }
+  list.innerHTML = cards.map(c => {
+    const t = _mydCardTypeCache[c.id];
+    const typeLabel = t ? `<div class="myd-chip-type">${t}</div>` : '';
+    return `<div class="myd-chip">
+      <img class="myd-chip-img" src="${cardImg(c.id)}" alt="${c.id}" loading="lazy" onerror="this.style.opacity='0.3'">
+      <div class="myd-chip-info">
+        <div class="myd-chip-id">${c.id}</div>
+        ${typeLabel}
+      </div>
+      <div class="myd-chip-cnt">${c.count}×</div>
+      <button class="myd-chip-rm" onclick="event.stopPropagation();_mydRemoveCard('${c.id}')" title="Remove">×</button>
+    </div>`;
+  }).join('');
 }
 
 function _mydChangeCount(id, delta) {
