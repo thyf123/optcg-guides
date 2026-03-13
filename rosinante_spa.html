@@ -1304,17 +1304,30 @@ th.sort-active { color: var(--gl-gold-h); }
 .myd-topbar { display: flex; align-items: center; gap: 10px; padding: var(--sp-3) 0 var(--sp-2); flex-shrink: 0; }
 .myd-back { background: none; border: none; color: var(--gl-text-muted); font-size: 1.1rem; cursor: pointer; padding: 4px 8px 4px 0; }
 .myd-title { font-size: 0.85rem; font-weight: 700; color: var(--gl-gold); font-family: var(--font-display); letter-spacing: 0.05em; flex: 1; }
-.myd-count { font-size: 0.7rem; color: var(--gl-text-faint); font-weight: 600; }
+/* deck progress */
+.myd-progress-wrap { display: flex; align-items: center; gap: 7px; }
+.myd-count { font-size: 0.68rem; font-weight: 700; color: var(--gl-text-muted); white-space: nowrap; }
+.myd-count.warn { color: #e07830; }
+.myd-count.ok   { color: var(--gl-success); }
+.myd-progress-bar { width: 60px; height: 5px; background: var(--gl-surface-3); border-radius: 3px; overflow: hidden; }
+.myd-progress-fill { height: 100%; background: var(--gl-gold); border-radius: 3px; transition: width 0.3s; }
 /* split layout */
 .myd-layout { display: flex; gap: 10px; flex: 1; overflow: hidden; min-height: 0; }
 /* left: text editor panel */
-.myd-text-panel { width: 210px; flex-shrink: 0; display: flex; flex-direction: column; gap: 5px; }
+.myd-text-panel { width: 215px; flex-shrink: 0; display: flex; flex-direction: column; gap: 6px; }
+.myd-panel-section { background: var(--gl-surface-2); border: 1px solid var(--gl-border-2); border-radius: var(--r-md); padding: 9px 10px; display: flex; flex-direction: column; gap: 5px; }
+.myd-panel-section-title { font-size: 0.52rem; font-weight: 700; color: var(--gl-gold); text-transform: uppercase; letter-spacing: 0.1em; }
 .myd-ta-label { font-size: 0.55rem; font-weight: 700; color: var(--gl-gold); text-transform: uppercase; letter-spacing: 0.1em; }
-.myd-ta { flex: 0 0 62px; background: var(--gl-surface-2); border: 1px solid var(--gl-border-2); border-radius: var(--r-md); color: var(--gl-text); font-family: monospace; font-size: 0.65rem; line-height: 1.8; padding: 6px 8px; resize: none; }
-.myd-ta:focus { outline: none; border-color: var(--gl-gold-dim); }
-.myd-ta-hint { font-size: 0.55rem; color: var(--gl-text-faint); line-height: 1.4; }
+.myd-ta { flex: 0 0 80px; background: var(--gl-surface-3); border: 1px solid var(--gl-border-2); border-radius: var(--r-md); color: var(--gl-text); font-family: monospace; font-size: 0.65rem; line-height: 1.8; padding: 6px 8px; resize: none; }
+.myd-ta:focus { outline: none; border-color: var(--gl-gold-dim); box-shadow: 0 0 0 2px rgba(212,175,55,0.12); }
+.myd-ta-hint { font-size: 0.52rem; color: var(--gl-text-faint); line-height: 1.5; }
+.myd-ta-hint code { color: var(--gl-gold); font-size: 0.52rem; background: rgba(212,175,55,0.1); border-radius: 3px; padding: 0 3px; }
 .myd-ta-saved { font-size: 0.55rem; color: var(--gl-success); opacity: 0; transition: opacity 0.4s; }
 .myd-ta-saved.show { opacity: 1; }
+/* left panel chip header */
+.myd-chips-header { display: flex; align-items: center; justify-content: space-between; }
+.myd-chips-title { font-size: 0.52rem; font-weight: 700; color: var(--gl-text-faint); text-transform: uppercase; letter-spacing: 0.08em; }
+.myd-chips-count { font-size: 0.52rem; color: var(--gl-text-faint); }
 /* right: card board */
 .myd-cards-panel { flex: 1; overflow: hidden; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
 .myd-table { background: linear-gradient(160deg, #5c3a1e 0%, #3d2510 40%, #2a1a0c 100%); border-radius: var(--r-lg); padding: var(--sp-3); flex: 1; overflow-y: auto; position: relative; }
@@ -1332,8 +1345,7 @@ th.sort-active { color: var(--gl-gold-h); }
 .myd-cards-grid { display: flex; flex-wrap: wrap; gap: 14px 10px; position: relative; z-index: 1; }
 .myd-stack { position: relative; padding-bottom: 30px; }
 .myd-stack-inner { position: relative; cursor: pointer; }
-.myd-stack-inner:hover img { transform: translateY(-3px); }
-.myd-card-img { width: 110px; border-radius: 5px; display: block; box-shadow: 0 4px 14px rgba(0,0,0,0.65); transition: transform 0.15s; }
+.myd-card-img { width: 110px; border-radius: 5px; display: block; box-shadow: 0 4px 14px rgba(0,0,0,0.65); }
 .myd-copy { position: absolute; top: 0; left: 0; width: 110px; border-radius: 5px; box-shadow: 0 4px 14px rgba(0,0,0,0.5); }
 .myd-count-badge { position: absolute; bottom: 5px; right: 3px; background: rgba(0,0,0,0.85); color: var(--gl-gold); font-size: 0.6rem; font-weight: 700; border-radius: 4px; padding: 1px 5px; line-height: 1.4; pointer-events: none; z-index: 11; }
 /* per-card controls — always visible */
@@ -1344,10 +1356,13 @@ th.sort-active { color: var(--gl-gold-h); }
 .myd-ctrl-del:hover { background: #e05858; color: #fff; border-color: #e05858; }
 .myd-ctrl-count { font-size: 0.68rem; color: var(--gl-text); font-weight: 700; min-width: 14px; text-align: center; }
 /* add/search bar */
-.myd-add-bar { flex-shrink: 0; display: flex; gap: 6px; align-items: stretch; position: relative; }
-.myd-add-inp { flex: 1; background: var(--gl-surface-2); border: 1px solid var(--gl-border-2); border-radius: var(--r-md); color: var(--gl-text); font-size: 0.7rem; padding: 7px 10px; font-family: inherit; min-width: 0; }
-.myd-add-inp:focus { outline: none; border-color: var(--gl-gold-dim); }
-.myd-add-btn { background: var(--gl-gold); color: #0a0c12; border: none; border-radius: var(--r-md); padding: 0 12px; font-size: 0.7rem; font-weight: 700; cursor: pointer; white-space: nowrap; }
+.myd-add-bar { flex-shrink: 0; display: flex; gap: 6px; align-items: stretch; position: relative; flex-direction: column; }
+.myd-add-bar-label { font-size: 0.5rem; color: var(--gl-text-faint); text-transform: uppercase; letter-spacing: 0.07em; }
+.myd-add-bar-row { display: flex; gap: 6px; align-items: stretch; }
+.myd-add-inp { flex: 1; background: var(--gl-surface-2); border: 1px solid var(--gl-gold-dim); border-radius: var(--r-md); color: var(--gl-text); font-size: 0.7rem; padding: 9px 12px; font-family: inherit; min-width: 0; }
+.myd-add-inp:focus { outline: none; border-color: var(--gl-gold); box-shadow: 0 0 0 2px rgba(212,175,55,0.15); }
+.myd-add-inp::placeholder { color: rgba(255,255,255,0.28); }
+.myd-add-btn { background: var(--gl-gold); color: #0a0c12; border: none; border-radius: var(--r-md); padding: 0 14px; font-size: 0.72rem; font-weight: 700; cursor: pointer; white-space: nowrap; }
 .myd-add-btn:hover { background: var(--gl-gold-h); }
 .myd-search-dd { position: absolute; bottom: calc(100% + 4px); left: 0; right: 0; background: var(--gl-surface); border: 1px solid var(--gl-border-2); border-radius: var(--r-md); overflow: hidden; z-index: 200; max-height: 340px; overflow-y: auto; display: none; box-shadow: 0 -8px 32px rgba(0,0,0,0.7); }
 .myd-search-header { font-size: 0.48rem; color: var(--gl-text-faint); text-transform: uppercase; letter-spacing: 0.08em; padding: 7px 10px 4px; border-bottom: 1px solid var(--gl-border-2); }
@@ -1373,9 +1388,18 @@ th.sort-active { color: var(--gl-gold-h); }
 /* save btn */
 .myd-save-btn { background: var(--gl-surface-2); border: 1px solid var(--gl-border-2); border-radius: var(--r-md); color: var(--gl-text-muted); font-size: 0.65rem; padding: 4px 10px; cursor: pointer; }
 .myd-save-btn:hover { border-color: var(--gl-gold-dim); color: var(--gl-gold); }
-.myd-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 180px; gap: 10px; }
-.myd-empty-icon { font-size: 2.5rem; opacity: 0.3; }
-.myd-empty-text { font-size: 0.72rem; color: var(--gl-text-faint); text-align: center; }
+.myd-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 200px; gap: 0; padding: 20px; }
+.myd-empty-icon { font-size: 2.2rem; opacity: 0.25; margin-bottom: 12px; }
+.myd-empty-title { font-size: 0.8rem; font-weight: 700; color: var(--gl-text); margin-bottom: 6px; }
+.myd-empty-text { font-size: 0.65rem; color: var(--gl-text-faint); text-align: center; line-height: 1.6; max-width: 300px; margin-bottom: 18px; }
+.myd-start-options { display: flex; flex-direction: column; gap: 8px; width: 100%; max-width: 320px; }
+.myd-start-opt { display: flex; align-items: center; gap: 10px; background: var(--gl-surface-3); border: 1px solid var(--gl-border-2); border-radius: 9px; padding: 10px 13px; cursor: pointer; transition: border-color 0.15s; text-align: left; width: 100%; font-family: inherit; }
+.myd-start-opt:hover { border-color: var(--gl-gold-dim); }
+.myd-start-opt-num { width: 22px; height: 22px; border-radius: 50%; background: rgba(212,175,55,0.15); border: 1px solid rgba(212,175,55,0.4); color: var(--gl-gold); font-size: 0.6rem; font-weight: 800; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.myd-start-opt-body { flex: 1; min-width: 0; }
+.myd-start-opt-title { font-size: 0.65rem; font-weight: 700; color: var(--gl-text); }
+.myd-start-opt-desc { font-size: 0.52rem; color: var(--gl-text-faint); margin-top: 2px; line-height: 1.4; }
+.myd-start-opt-arrow { color: var(--gl-text-faint); font-size: 0.85rem; flex-shrink: 0; }
 /* card chips list (left panel) */
 .myd-chips-list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 3px; min-height: 0; }
 .myd-chip { display: flex; align-items: center; gap: 7px; background: var(--gl-surface-2); border: 1px solid var(--gl-border-2); border-radius: 7px; padding: 5px 7px 5px 5px; transition: border-color 0.15s, background 0.15s; cursor: pointer; min-height: 44px; }
@@ -1977,35 +2001,76 @@ th.sort-active { color: var(--gl-gold-h); }
   <div class="myd-topbar">
     <button class="myd-back" onclick="closMyDeckViewer()">‹ Back</button>
     <div class="myd-title" id="myd-title">My Deck</div>
-    <span class="myd-count" id="myd-total"></span>
-    <button class="myd-save-btn" onclick="_mydSaveNow()">Save</button>
+    <div class="myd-progress-wrap">
+      <span class="myd-count" id="myd-total"></span>
+      <div class="myd-progress-bar"><div class="myd-progress-fill" id="myd-progress-fill" style="width:0%"></div></div>
+    </div>
+    <button class="myd-save-btn" onclick="_mydSaveNow()">💾 Save</button>
   </div>
   <div class="myd-layout">
     <!-- left: paste + card chips -->
     <div class="myd-text-panel">
-      <div class="myd-ta-label">Decklist</div>
-      <div class="myd-ta-hint">One card per line — e.g. <span style="color:var(--gl-gold);font-family:monospace">4xOP07-046</span></div>
-      <textarea class="myd-ta" id="myd-ta" spellcheck="false"
-        placeholder="Paste decklist here…"
-        oninput="_mydTaChange()"></textarea>
-      <div class="myd-ta-saved" id="myd-ta-saved">✓ Saved</div>
+      <!-- Import section -->
+      <div class="myd-panel-section">
+        <div class="myd-panel-section-title">📋 Paste Decklist</div>
+        <div class="myd-ta-hint">One card per line, e.g. <code>4xOP07-046</code></div>
+        <textarea class="myd-ta" id="myd-ta" spellcheck="false"
+          placeholder="4xOP07-046&#10;4xOP06-047&#10;2xOP08-012&#10;…"
+          oninput="_mydTaChange()"></textarea>
+        <div class="myd-ta-saved" id="myd-ta-saved">✓ Saved</div>
+      </div>
+      <!-- Card list -->
+      <div class="myd-chips-header">
+        <span class="myd-chips-title">Cards in Deck</span>
+        <span class="myd-chips-count" id="myd-chips-count"></span>
+      </div>
       <div class="myd-chips-list" id="myd-chips-list"></div>
     </div>
     <!-- right: card board + add bar -->
     <div class="myd-cards-panel">
       <div class="myd-table" id="myd-table">
-        <div class="myd-empty">
+        <div class="myd-empty" id="myd-empty-state">
           <div class="myd-empty-icon">🃏</div>
-          <div class="myd-empty-text">Paste your decklist on the left</div>
+          <div class="myd-empty-title">Build Your Deck</div>
+          <div class="myd-empty-text">A standard deck has 50 cards — 1 Leader + 49 others. Get started with one of the options below:</div>
+          <div class="myd-start-options">
+            <button class="myd-start-opt" onclick="document.getElementById('myd-ta').focus()">
+              <div class="myd-start-opt-num">1</div>
+              <div class="myd-start-opt-body">
+                <div class="myd-start-opt-title">Paste a full decklist</div>
+                <div class="myd-start-opt-desc">Copy a decklist from an online source, paste in the box on the left</div>
+              </div>
+              <span class="myd-start-opt-arrow">›</span>
+            </button>
+            <button class="myd-start-opt" onclick="document.getElementById('myd-add-inp').focus()">
+              <div class="myd-start-opt-num">2</div>
+              <div class="myd-start-opt-body">
+                <div class="myd-start-opt-title">Search &amp; add cards one by one</div>
+                <div class="myd-start-opt-desc">Use the search bar below — try a card name, crew type (e.g. "Straw Hat"), or card ID</div>
+              </div>
+              <span class="myd-start-opt-arrow">›</span>
+            </button>
+            <button class="myd-start-opt" onclick="closMyDeckViewer();openNewDeckPicker()">
+              <div class="myd-start-opt-num">3</div>
+              <div class="myd-start-opt-body">
+                <div class="myd-start-opt-title">Start from a reference deck</div>
+                <div class="myd-start-opt-desc">Load a tournament-proven decklist and customise it</div>
+              </div>
+              <span class="myd-start-opt-arrow">›</span>
+            </button>
+          </div>
         </div>
       </div>
       <!-- add/search bar -->
       <div class="myd-add-bar">
-        <input class="myd-add-inp" id="myd-add-inp"
-          placeholder="Search card by name, colour, type… or paste ID"
-          oninput="_mydSearchInput(this.value)"
-          onkeydown="_mydAddKeydown(event)">
-        <button class="myd-add-btn" onclick="_mydAddFromInput()">+ Add</button>
+        <div class="myd-add-bar-label">🔍 Search &amp; Add Cards</div>
+        <div class="myd-add-bar-row">
+          <input class="myd-add-inp" id="myd-add-inp"
+            placeholder="Card name, crew type, or ID (e.g. OP07-046)…"
+            oninput="_mydSearchInput(this.value)"
+            onkeydown="_mydAddKeydown(event)">
+          <button class="myd-add-btn" onclick="_mydAddFromInput()">Add</button>
+        </div>
         <div class="myd-search-dd" id="myd-search-dd"></div>
       </div>
     </div>
@@ -7213,14 +7278,21 @@ function _mydRenderCards() {
   const deckTotal  = deckCards.reduce((s,c) => s + c.count, 0);
   const allTotal   = cards.reduce((s,c) => s + c.count, 0);
 
-  if (totalEl) totalEl.textContent = allTotal ? `${allTotal} cards` : '';
+  // Update progress bar + count label
+  const TARGET = 50;
+  if (totalEl) {
+    if (!allTotal) { totalEl.textContent = ''; totalEl.className = 'myd-count'; }
+    else if (allTotal === TARGET) { totalEl.textContent = `${allTotal} / ${TARGET} ✓`; totalEl.className = 'myd-count ok'; }
+    else { totalEl.textContent = `${allTotal} / ${TARGET}`; totalEl.className = allTotal > TARGET ? 'myd-count warn' : 'myd-count'; }
+  }
+  const fill = document.getElementById('myd-progress-fill');
+  if (fill) fill.style.width = Math.min(100, (allTotal / TARGET) * 100) + '%';
 
   function renderCard(c) {
     return `<div class="myd-stack">
       <div class="myd-stack-inner"
            onclick="_mydShowCardPopup('${c.id}','${cardImg(c.id)}',event)">
-        <img class="myd-card-img" src="${cardImg(c.id)}" alt="${c.id}" loading="lazy"
-          onload="this.style.opacity='1'" style="opacity:0;transition:opacity 0.25s">
+        <img class="myd-card-img" src="${cardImg(c.id)}" alt="${c.id}" loading="lazy">
         <div class="myd-count-badge">${c.count}×</div>
       </div>
       <div class="myd-card-controls">
@@ -7333,14 +7405,16 @@ async function _mydLoadTypes(ids) {
       const data = await res.json();
       if (Array.isArray(data)) {
         for (const card of data) {
-          const id = card.card_id;
+          const id = card.card_id || card.card_set_id;
           if (!id) continue;
-          if (card.card_type)  _mydCardTypeCache[id]    = card.card_type;
-          if (card.cost != null) _mydCardCostCache[id]  = card.cost;
-          if (card.card_name)  _mydCardNameCache[id]    = card.card_name;
-          if (card.card_color) _mydCardColorCache[id]   = card.card_color;
-          // counter field — API may use 'counter' or 'counter_plus_power'
-          const ctr = card.counter ?? card.counter_plus_power ?? null;
+          if (card.card_type)  _mydCardTypeCache[id]  = card.card_type;
+          // cost — API may use 'cost' or 'card_cost'
+          const costVal = card.cost ?? card.card_cost ?? null;
+          if (costVal != null) _mydCardCostCache[id] = costVal;
+          if (card.card_name)  _mydCardNameCache[id]  = card.card_name;
+          if (card.card_color) _mydCardColorCache[id] = card.card_color;
+          // counter — API may use several field names
+          const ctr = card.counter ?? card.counter_plus_power ?? card.card_counter ?? null;
           if (ctr != null) _mydCardCounterCache[id] = ctr;
           else if (!_mydCardCounterCache[id]) _mydCardCounterCache[id] = 0;
         }
@@ -7486,6 +7560,12 @@ function _mydRenderChips() {
   if (!list) return;
   const text = ta ? ta.value : '';
   const { cards } = text.trim() ? parseDeckList(text) : { cards: [] };
+  // Update chips count label
+  const ccEl = document.getElementById('myd-chips-count');
+  if (ccEl) {
+    const total = cards.reduce((s,c) => s + c.count, 0);
+    ccEl.textContent = total ? `${total} cards` : '';
+  }
   if (!cards.length) { list.innerHTML = ''; return; }
 
   // Sort by cost ascending (unknown cost = 99 → bottom), leader always first
@@ -7622,10 +7702,11 @@ async function _mydSearchInput(val) {
         const id = r.card_set_id || r.card_id;
         if (!id) continue;
         if (r.card_type)   _mydCardTypeCache[id]    = r.card_type;
-        if (r.cost != null) _mydCardCostCache[id]   = r.cost;
+        const cstVal = r.cost ?? r.card_cost ?? null;
+        if (cstVal != null) _mydCardCostCache[id]   = cstVal;
         if (r.card_name)   _mydCardNameCache[id]    = r.card_name;
         if (r.card_color)  _mydCardColorCache[id]   = r.card_color;
-        const ctr = r.counter ?? r.counter_plus_power ?? null;
+        const ctr = r.counter ?? r.counter_plus_power ?? r.card_counter ?? null;
         if (ctr != null) _mydCardCounterCache[id] = ctr;
       }
       _mydRenderSearchResults(dd, all, nameQ || params.join(' ') || q);
