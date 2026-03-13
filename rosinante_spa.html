@@ -1277,6 +1277,27 @@ th.sort-active { color: var(--gl-gold-h); }
 .dim-parse-hint { font-size: 0.6rem; color: var(--gl-text-faint); margin-top: 5px; }
 .dim-parse-hint span { color: var(--gl-gold); }
 
+/* ── NEW DECK PICKER ── */
+#new-deck-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.88); z-index: 500; display: none; align-items: flex-end; justify-content: center; padding: 0; }
+#new-deck-modal.open { display: flex; }
+.nd-sheet { background: var(--gl-surface); border-radius: var(--r-xl) var(--r-xl) 0 0; width: 100%; max-width: 600px; max-height: 85vh; display: flex; flex-direction: column; overflow: hidden; }
+.nd-handle { width: 36px; height: 4px; background: var(--gl-border-2); border-radius: 2px; margin: 12px auto 0; flex-shrink: 0; }
+.nd-header { display: flex; align-items: center; justify-content: space-between; padding: 14px 18px 6px; }
+.nd-title { font-size: 0.88rem; font-weight: 700; color: var(--gl-gold); font-family: var(--font-display); letter-spacing: 0.05em; }
+.nd-close { background: none; border: none; color: var(--gl-text-faint); font-size: 1.3rem; cursor: pointer; line-height: 1; padding: 2px 4px; }
+.nd-close:hover { color: var(--gl-text); }
+.nd-sub { font-size: 0.62rem; color: var(--gl-text-faint); padding: 2px 18px 10px; border-bottom: 1px solid var(--gl-border); }
+.nd-list { overflow-y: auto; padding: 10px 12px 28px; display: flex; flex-direction: column; gap: 8px; }
+.nd-item { display: flex; align-items: center; gap: 12px; background: var(--gl-surface-2); border: 1px solid var(--gl-border-2); border-radius: var(--r-lg); padding: 10px 14px; cursor: pointer; transition: border-color 0.15s, background 0.15s; }
+.nd-item:hover { border-color: var(--gl-gold-dim); background: var(--gl-surface-3); }
+.nd-item:active { transform: scale(0.985); }
+.nd-img { width: 52px; border-radius: 5px; flex-shrink: 0; display: block; aspect-ratio: 0.715; object-fit: cover; background: var(--gl-surface-3); }
+.nd-info { flex: 1; min-width: 0; }
+.nd-name { font-size: 0.75rem; font-weight: 600; color: var(--gl-text); }
+.nd-meta { font-size: 0.6rem; color: var(--gl-gold); margin-top: 3px; opacity: 0.9; }
+.nd-date { font-size: 0.55rem; color: var(--gl-text-faint); margin-top: 1px; }
+.nd-arrow { font-size: 1rem; color: var(--gl-text-faint); flex-shrink: 0; }
+
 /* ── MY DECK VIEWER ── */
 #screen-my-deck { background: var(--gl-bg); flex-direction: column; z-index: 20; }
 #screen-my-deck.active { display: flex; }
@@ -1582,18 +1603,8 @@ th.sort-active { color: var(--gl-gold-h); }
   </div>
 
   <div id="home-manage-hint"></div>
-
-  <!-- My Decks section — leaders with a saved deck -->
-  <div id="home-mydecks-wrap" style="display:none">
-    <div class="home-section-label">My Decks</div>
-    <div class="leader-grid" id="my-decks-grid"></div>
-  </div>
-
-  <!-- All Leaders section -->
-  <div id="home-leaders-wrap">
-    <div class="home-section-label" id="home-leaders-label">Choose a Leader</div>
-    <div class="leader-grid" id="leader-grid"></div>
-  </div>
+  <div class="home-section-label">My Decks</div>
+  <div class="leader-grid" id="my-decks-grid"></div>
 
   <footer style="text-align:center;margin-top:2.5rem;padding-bottom:1rem">
     <a href="https://www.perplexity.ai/computer" target="_blank" rel="noopener noreferrer"
@@ -1857,6 +1868,19 @@ th.sort-active { color: var(--gl-gold-h); }
         <div class="myd-search-dd" id="myd-search-dd"></div>
       </div>
     </div>
+  </div>
+</div>
+
+<!-- ════ NEW DECK PICKER MODAL ════ -->
+<div id="new-deck-modal" onclick="if(event.target===this)this.classList.remove('open')">
+  <div class="nd-sheet" onclick="event.stopPropagation()">
+    <div class="nd-handle"></div>
+    <div class="nd-header">
+      <div class="nd-title">Choose a Starting Point</div>
+      <button class="nd-close" onclick="document.getElementById('new-deck-modal').classList.remove('open')">×</button>
+    </div>
+    <div class="nd-sub">Pick a reference decklist to build from — you can edit it before saving</div>
+    <div class="nd-list" id="new-deck-list"></div>
   </div>
 </div>
 
@@ -6134,33 +6158,31 @@ function toggleHideLeader(key) {
 }
 
 function renderLeaderGrid() {
-  const grid      = document.getElementById('leader-grid');
-  const deckGrid  = document.getElementById('my-decks-grid');
-  const decksWrap = document.getElementById('home-mydecks-wrap');
-  const leadWrap  = document.getElementById('home-leaders-wrap');
-  const leadLabel = document.getElementById('home-leaders-label');
+  const grid = document.getElementById('my-decks-grid');
+  if (!grid) return;
   grid.innerHTML = '';
-  if (deckGrid) deckGrid.innerHTML = '';
 
   // manage-mode hint
   const hint = document.getElementById('home-manage-hint');
   if (hint) hint.innerHTML = _homeEditMode
     ? '<div class="home-manage-hint">Tap a leader to show / hide it</div>' : '';
 
-  function buildCard(key) {
+  // Show only leaders that have a saved deck (or all in manage mode)
+  Object.keys(LEADERS).forEach(key => {
     const L = LEADERS[key];
     const isHidden = allHiddenLeaders.has(key);
-    const hasDeck  = !_homeEditMode && !!allMyDecks[L.cardId];
+    const hasDeck  = !!allMyDecks[L.cardId];
+    if (!_homeEditMode && !hasDeck) return;   // skip leaders with no deck
+    if (!_homeEditMode && isHidden) return;
+
     const card = document.createElement('div');
-    card.className = 'leader-card'
-      + (isHidden ? ' hidden-leader' : '')
-      + (hasDeck  ? ' has-deck' : '');
+    card.className = 'leader-card has-deck' + (isHidden ? ' hidden-leader' : '');
     card.dataset.key = key;
     card.onclick = _homeEditMode ? () => toggleHideLeader(key) : () => selectLeader(key);
 
-    const imgUrl = 'https://en.onepiece-cardgame.com/images/cardlist/card/' + L.cardId + '.png';
     const img = document.createElement('img');
-    img.src = imgUrl; img.alt = L.name;
+    img.src = 'https://en.onepiece-cardgame.com/images/cardlist/card/' + L.cardId + '.png';
+    img.alt = L.name;
     img.onerror = function(){ this.style.display='none'; };
 
     const nameDiv = document.createElement('div');
@@ -6179,20 +6201,11 @@ function renderLeaderGrid() {
       statsDiv.innerHTML = `<span class="lc-stats-nudge" onclick="event.stopPropagation();openLogModal('','',event)">+ Log a game</span>`;
     } else {
       const wrClass = rec.wr >= 55 ? 'good' : rec.wr >= 45 ? 'ok' : 'bad';
-      statsDiv.innerHTML = `<span class="lc-stats-rec">${rec.w}W ${rec.l}L</span> <span class="lc-stats-wr ${wrClass}">${rec.wr}%</span>`;
-    }
-
-    // Deck badge (for decked cards) or dot in manage mode
-    if (hasDeck) {
-      const badge = document.createElement('div');
-      badge.className = 'lc-deck-badge';
-      badge.textContent = '✓ Deck saved';
-      statsDiv.appendChild(badge);
+      statsDiv.innerHTML = `<span class="lc-stats-rec">${rec.w}W ${rec.l}L</span><span class="lc-stats-wr ${wrClass}"> ${rec.wr}%</span>`;
     }
 
     // Delete button for custom leaders in manage mode
-    const isCustom = !!allCustomLeaders[key];
-    if (_homeEditMode && isCustom) {
+    if (_homeEditMode && allCustomLeaders[key]) {
       const delBtn = document.createElement('button');
       delBtn.className = 'lc-custom-del';
       delBtn.title = 'Remove leader';
@@ -6205,38 +6218,98 @@ function renderLeaderGrid() {
     card.appendChild(nameDiv);
     card.appendChild(idDiv);
     card.appendChild(statsDiv);
-    return { card, hasDeck };
-  }
-
-  let deckCount = 0;
-  Object.keys(LEADERS).forEach(key => {
-    const L = LEADERS[key];
-    const isHidden = allHiddenLeaders.has(key);
-    if (!_homeEditMode && isHidden) return;
-
-    const { card, hasDeck } = buildCard(key);
-
-    if (hasDeck && deckGrid && !_homeEditMode) {
-      deckGrid.appendChild(card);
-      deckCount++;
-    } else {
-      grid.appendChild(card);
-    }
+    grid.appendChild(card);
   });
 
-  // "Add new leader" tile — always last in the all-leaders grid
+  // "New Deck" tile — always last
   if (!_homeEditMode) {
     const addTile = document.createElement('div');
     addTile.className = 'leader-card-add';
-    addTile.onclick = openAddLeader;
-    addTile.innerHTML = `<div class="leader-card-add-icon">+</div><div class="leader-card-add-label">New Leader</div>`;
+    addTile.onclick = openNewDeckPicker;
+    addTile.innerHTML = `<div class="leader-card-add-icon">+</div><div class="leader-card-add-label">New Deck</div>`;
     grid.appendChild(addTile);
   }
+}
 
-  // Show/hide My Decks section & update All Leaders label
-  if (decksWrap) decksWrap.style.display = deckCount > 0 ? '' : 'none';
-  if (leadWrap)  leadWrap.classList.toggle('home-section-gap', deckCount > 0);
-  if (leadLabel) leadLabel.textContent = deckCount > 0 ? 'Other Leaders' : 'Choose a Leader';
+// ── NEW DECK PICKER ─────────────────────────────────────────
+function openNewDeckPicker() {
+  const modal = document.getElementById('new-deck-modal');
+  const list  = document.getElementById('new-deck-list');
+  if (!modal || !list) return;
+
+  // Build picker list from DECKLISTS reference decks
+  list.innerHTML = Object.keys(DECKLISTS).map(dk => {
+    const d = DECKLISTS[dk];
+    if (!d || !d.leader) return '';
+    const meta = [d.player, d.placement].filter(Boolean).join(' · ');
+    const cardCount = (d.sections || []).reduce((s, sec) =>
+      s + (sec.cards || []).reduce((ss, c) => ss + c.count, 0), 0);
+    return `<div class="nd-item" onclick="openNewDeckFromRef('${dk}','${d.leader}')">
+      <img class="nd-img" src="${cardImg(d.leader)}" alt="${d.leaderName || d.leader}" loading="lazy" onerror="this.style.opacity='0.3'">
+      <div class="nd-info">
+        <div class="nd-name">${d.leaderName || d.leader}</div>
+        ${meta ? `<div class="nd-meta">${meta}</div>` : ''}
+        <div class="nd-date">${[d.date, d.location, cardCount ? cardCount + ' cards' : ''].filter(Boolean).join(' · ')}</div>
+      </div>
+      <div class="nd-arrow">›</div>
+    </div>`;
+  }).join('');
+
+  modal.classList.add('open');
+}
+
+function _decklistToText(deckKey) {
+  const d = DECKLISTS[deckKey];
+  if (!d) return '';
+  const lines = [];
+  for (const sec of (d.sections || [])) {
+    for (const card of (sec.cards || [])) {
+      if (card.id && card.count) lines.push(`${card.count}x${card.id}`);
+    }
+  }
+  return lines.join('\n');
+}
+
+function openNewDeckFromRef(deckKey, leaderCardId) {
+  document.getElementById('new-deck-modal').classList.remove('open');
+  const refText = _decklistToText(deckKey);
+
+  // Set up matchup screen context so "Back" / "Save" navigate there
+  const leadersKey = Object.keys(LEADERS).find(k => LEADERS[k].cardId === leaderCardId);
+  if (leadersKey) {
+    currentLeaderKey = leadersKey;
+    const L = LEADERS[leadersKey];
+    const titleEl = document.getElementById('matchup-title');
+    const subEl   = document.getElementById('matchup-sub');
+    if (titleEl) titleEl.textContent = L.title;
+    if (subEl)   subEl.textContent   = L.sub;
+    rebuildMatchupTable();
+    // Prime the My Deck bar for when they arrive at matchup
+    const mdbBar = document.getElementById('my-deck-bar');
+    const mdbImg = document.getElementById('mdb-img');
+    if (mdbBar && mdbImg && L.cardId) {
+      mdbImg.src = cardImg(L.cardId);
+      mdbImg.classList.remove('loaded');
+      mdbImg.onload = () => mdbImg.classList.add('loaded');
+      mdbBar.onclick = () => showMyDeckViewer(L.cardId);
+      mdbBar.style.display = '';
+    }
+  }
+
+  // Open deck viewer pre-loaded with reference cards
+  _mydCurrentCardId = leaderCardId;
+  let leaderTitle = leaderCardId;
+  for (const k of Object.keys(LEADERS)) {
+    if (LEADERS[k].cardId === leaderCardId) { leaderTitle = LEADERS[k].title || leaderCardId; break; }
+  }
+  document.getElementById('myd-title').textContent = leaderTitle;
+  const ta = document.getElementById('myd-ta');
+  ta.value = refText;
+  document.getElementById('myd-ta-saved').classList.remove('show');
+  _mydRenderCards();
+  _mydRenderChips();
+  document.querySelectorAll('.screen').forEach(s => { s.classList.remove('active'); s.style.display = ''; });
+  document.getElementById('screen-my-deck').classList.add('active');
 }
 
 // ── BOTTOM NAV ───────────────────────────────────────────────
@@ -7147,8 +7220,9 @@ function _mydSaveNow() {
   const { cards } = parseDeckList(ta.value);
   allMyDecks[_mydCurrentCardId] = { cards, savedAt: Date.now() };
   _saveMyDecks(); syncToSupabase(); _refreshMyDeckBar();
-  const saved = document.getElementById('myd-ta-saved');
-  if (saved) { saved.classList.add('show'); setTimeout(() => saved.classList.remove('show'), 1800); }
+  renderLeaderGrid(); // refresh home so new deck shows up
+  // Navigate to matchup/opponent screen
+  setTimeout(() => closMyDeckViewer(), 600);
 }
 
 // ── DECK CARD SEARCH ──────────────────────────────────────────
