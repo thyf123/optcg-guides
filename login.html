@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Join the Crew — Grand Line</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap" rel="stylesheet">
+<link href="https://api.fontshare.com/v2/css?f[]=general-sans@400,500,600,700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:        #0a0a14;
+    --surface:   #12121e;
+    --border:    rgba(255,255,255,0.08);
+    --gold:      #c9a84c;
+    --gold-dim:  rgba(201,168,76,0.15);
+    --text:      #e8e8f0;
+    --text-dim:  rgba(232,232,240,0.5);
+    --red:       #e05050;
+    --green:     #4caf82;
+    --radius:    12px;
+  }
+
+  body {
+    font-family: 'General Sans', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 24px 16px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* Star field background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      radial-gradient(1px 1px at 20% 30%, rgba(255,255,255,0.6) 0%, transparent 100%),
+      radial-gradient(1px 1px at 80% 10%, rgba(255,255,255,0.5) 0%, transparent 100%),
+      radial-gradient(1px 1px at 50% 70%, rgba(255,255,255,0.4) 0%, transparent 100%),
+      radial-gradient(1px 1px at 10% 80%, rgba(255,255,255,0.5) 0%, transparent 100%),
+      radial-gradient(1px 1px at 90% 60%, rgba(255,255,255,0.3) 0%, transparent 100%),
+      radial-gradient(1.5px 1.5px at 35% 15%, rgba(255,255,255,0.4) 0%, transparent 100%),
+      radial-gradient(1px 1px at 65% 85%, rgba(255,255,255,0.5) 0%, transparent 100%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* Gold glow blob */
+  body::after {
+    content: '';
+    position: fixed;
+    width: 600px; height: 600px;
+    background: radial-gradient(circle, rgba(201,168,76,0.06) 0%, transparent 70%);
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* Back link */
+  .back {
+    position: fixed;
+    top: 20px; left: 20px;
+    color: var(--text-dim);
+    text-decoration: none;
+    font-size: 0.85rem;
+    font-weight: 500;
+    display: flex; align-items: center; gap: 6px;
+    transition: color 0.2s;
+    z-index: 10;
+  }
+  .back:hover { color: var(--text); }
+  .back svg { width: 16px; height: 16px; }
+
+  /* Card */
+  .card {
+    position: relative; z-index: 1;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 40px 36px;
+    width: 100%;
+    max-width: 420px;
+    box-shadow: 0 24px 80px rgba(0,0,0,0.5), 0 0 0 1px rgba(201,168,76,0.06);
+  }
+
+  /* Logo */
+  .logo {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 32px;
+    text-decoration: none;
+  }
+  .logo-anchor {
+    width: 36px; height: 36px;
+    background: var(--gold-dim);
+    border: 1px solid rgba(201,168,76,0.3);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.1rem;
+  }
+  .logo-name {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.4rem;
+    letter-spacing: 0.05em;
+    color: var(--text);
+    line-height: 1;
+  }
+  .logo-name span { color: var(--gold); }
+
+  /* Tab switcher */
+  .tabs {
+    display: grid; grid-template-columns: 1fr 1fr;
+    background: rgba(255,255,255,0.04);
+    border-radius: 10px;
+    padding: 3px;
+    margin-bottom: 28px;
+  }
+  .tab {
+    padding: 9px;
+    border: none; background: none;
+    color: var(--text-dim);
+    font-family: 'General Sans', sans-serif;
+    font-size: 0.9rem; font-weight: 600;
+    cursor: pointer; border-radius: 8px;
+    transition: all 0.2s;
+  }
+  .tab.active {
+    background: rgba(201,168,76,0.12);
+    color: var(--gold);
+  }
+
+  /* Form */
+  .form { display: flex; flex-direction: column; gap: 14px; }
+
+  label {
+    display: flex; flex-direction: column; gap: 6px;
+    font-size: 0.82rem; font-weight: 600;
+    color: var(--text-dim);
+    text-transform: uppercase; letter-spacing: 0.06em;
+  }
+
+  input[type="email"],
+  input[type="password"],
+  input[type="text"] {
+    padding: 11px 14px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text);
+    font-family: 'General Sans', sans-serif;
+    font-size: 0.95rem;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    outline: none;
+  }
+  input:focus {
+    border-color: rgba(201,168,76,0.4);
+    box-shadow: 0 0 0 3px rgba(201,168,76,0.08);
+  }
+  input::placeholder { color: rgba(232,232,240,0.25); }
+
+  /* Submit button */
+  .btn-submit {
+    margin-top: 6px;
+    padding: 13px;
+    background: var(--gold);
+    border: none; border-radius: var(--radius);
+    color: #0a0a14;
+    font-family: 'General Sans', sans-serif;
+    font-size: 0.95rem; font-weight: 700;
+    cursor: pointer; letter-spacing: 0.02em;
+    transition: opacity 0.2s, transform 0.15s;
+  }
+  .btn-submit:hover:not(:disabled) { opacity: 0.88; }
+  .btn-submit:active:not(:disabled) { transform: scale(0.98); }
+  .btn-submit:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  /* Divider */
+  .divider {
+    display: flex; align-items: center; gap: 12px;
+    color: var(--text-dim); font-size: 0.78rem; margin: 4px 0;
+  }
+  .divider::before, .divider::after {
+    content: ''; flex: 1; height: 1px; background: var(--border);
+  }
+
+  /* Message */
+  .msg {
+    padding: 11px 14px;
+    border-radius: var(--radius);
+    font-size: 0.85rem; font-weight: 500;
+    display: none;
+  }
+  .msg.error   { background: rgba(224,80,80,0.12); border: 1px solid rgba(224,80,80,0.3); color: #f08080; display: block; }
+  .msg.success { background: rgba(76,175,130,0.12); border: 1px solid rgba(76,175,130,0.3); color: #7ed4b0; display: block; }
+
+  /* Footer text */
+  .footer-text {
+    text-align: center; margin-top: 22px;
+    font-size: 0.8rem; color: var(--text-dim);
+  }
+  .footer-text a { color: var(--gold); text-decoration: none; }
+  .footer-text a:hover { text-decoration: underline; }
+
+  /* Loading spinner on button */
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .spinner {
+    display: inline-block;
+    width: 14px; height: 14px;
+    border: 2px solid rgba(10,10,20,0.3);
+    border-top-color: #0a0a14;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    vertical-align: middle; margin-right: 6px;
+  }
+</style>
+</head>
+<body>
+
+<a href="/" class="back">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M19 12H5M12 19l-7-7 7-7"/>
+  </svg>
+  Back to home
+</a>
+
+<div class="card">
+  <a href="/" class="logo">
+    <div class="logo-anchor">⚓</div>
+    <div class="logo-name">Grand<span>Line</span></div>
+  </a>
+
+  <div class="tabs">
+    <button class="tab active" id="tab-signup" onclick="switchTab('signup')">Join the Crew</button>
+    <button class="tab" id="tab-login" onclick="switchTab('login')">Log In</button>
+  </div>
+
+  <div id="msg" class="msg"></div>
+
+  <!-- Sign Up form -->
+  <form class="form" id="form-signup" onsubmit="handleSignup(event)">
+    <label>Email <input type="email" id="su-email" placeholder="your@email.com" required autocomplete="email"></label>
+    <label>Password <input type="password" id="su-pass" placeholder="At least 8 characters" required minlength="8" autocomplete="new-password"></label>
+    <button type="submit" class="btn-submit" id="btn-signup">Create account</button>
+    <div class="footer-text">Already have an account? <a href="#" onclick="switchTab('login');return false;">Log in →</a></div>
+  </form>
+
+  <!-- Log In form -->
+  <form class="form" id="form-login" style="display:none" onsubmit="handleLogin(event)">
+    <label>Email <input type="email" id="li-email" placeholder="your@email.com" required autocomplete="email"></label>
+    <label>Password <input type="password" id="li-pass" placeholder="Your password" required autocomplete="current-password"></label>
+    <button type="submit" class="btn-submit" id="btn-login">Log in</button>
+    <div class="footer-text">No account? <a href="#" onclick="switchTab('signup');return false;">Join the Crew →</a></div>
+  </form>
+</div>
+
+<script>
+  // ── Supabase init ────────────────────────────────────────────
+  const SB_URL = window._SB_URL || '';
+  const SB_KEY = window._SB_KEY || '';
+  let _sb = null;
+  if (SB_URL && SB_KEY) {
+    _sb = supabase.createClient(SB_URL, SB_KEY);
+  }
+
+  // ── Tab switching ────────────────────────────────────────────
+  function switchTab(tab) {
+    const isSignup = tab === 'signup';
+    document.getElementById('tab-signup').classList.toggle('active',  isSignup);
+    document.getElementById('tab-login').classList.toggle('active',  !isSignup);
+    document.getElementById('form-signup').style.display = isSignup ? '' : 'none';
+    document.getElementById('form-login').style.display  = isSignup ? 'none' : '';
+    clearMsg();
+  }
+
+  // ── Message helpers ──────────────────────────────────────────
+  function showMsg(text, type) {
+    const el = document.getElementById('msg');
+    el.textContent = text;
+    el.className = 'msg ' + type;
+  }
+  function clearMsg() {
+    const el = document.getElementById('msg');
+    el.className = 'msg';
+  }
+  function setLoading(btnId, loading, label) {
+    const btn = document.getElementById(btnId);
+    btn.disabled = loading;
+    btn.innerHTML = loading ? '<span class="spinner"></span>One moment…' : label;
+  }
+
+  // ── Sign Up ──────────────────────────────────────────────────
+  async function handleSignup(e) {
+    e.preventDefault();
+    if (!_sb) { showMsg('Auth not configured — contact the crew captain.', 'error'); return; }
+    const email = document.getElementById('su-email').value.trim();
+    const pass  = document.getElementById('su-pass').value;
+    setLoading('btn-signup', true, 'Create account');
+    clearMsg();
+    const { error } = await _sb.auth.signUp({ email, password: pass });
+    setLoading('btn-signup', false, 'Create account');
+    if (error) { showMsg(error.message, 'error'); return; }
+    showMsg('✓ Account created! Heading to your dashboard…', 'success');
+    setTimeout(() => window.location.href = '/app', 1200);
+  }
+
+  // ── Log In ───────────────────────────────────────────────────
+  async function handleLogin(e) {
+    e.preventDefault();
+    if (!_sb) { showMsg('Auth not configured — contact the crew captain.', 'error'); return; }
+    const email = document.getElementById('li-email').value.trim();
+    const pass  = document.getElementById('li-pass').value;
+    setLoading('btn-login', true, 'Log in');
+    clearMsg();
+    const { error } = await _sb.auth.signInWithPassword({ email, password: pass });
+    setLoading('btn-login', false, 'Log in');
+    if (error) { showMsg(error.message, 'error'); return; }
+    showMsg('✓ Welcome back! Loading your dashboard…', 'success');
+    setTimeout(() => window.location.href = '/app', 1000);
+  }
+
+  // ── Auto-redirect if already logged in ───────────────────────
+  if (_sb) {
+    _sb.auth.getSession().then(({ data }) => {
+      if (data.session) window.location.href = '/app';
+    });
+  }
+
+  // ── Check URL param for default tab ──────────────────────────
+  if (new URLSearchParams(location.search).get('mode') === 'login') switchTab('login');
+</script>
+</body>
+</html>
