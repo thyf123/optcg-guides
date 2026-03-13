@@ -1330,16 +1330,15 @@ th.sort-active { color: var(--gl-gold-h); }
 .myd-section-label { font-size: 0.58rem; font-weight: 700; color: rgba(255,255,255,0.5); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 8px; position: relative; z-index: 1; }
 /* cards grid */
 .myd-cards-grid { display: flex; flex-wrap: wrap; gap: 14px 10px; position: relative; z-index: 1; }
-.myd-stack { position: relative; transition: transform 0.15s; }
-.myd-stack:hover { transform: translateY(-5px); z-index: 20; }
+.myd-stack { position: relative; padding-bottom: 30px; }
 .myd-stack-inner { position: relative; cursor: pointer; }
-.myd-card-img { width: 110px; border-radius: 5px; display: block; box-shadow: 0 4px 14px rgba(0,0,0,0.65); }
+.myd-stack-inner:hover img { transform: translateY(-3px); }
+.myd-card-img { width: 110px; border-radius: 5px; display: block; box-shadow: 0 4px 14px rgba(0,0,0,0.65); transition: transform 0.15s; }
 .myd-copy { position: absolute; top: 0; left: 0; width: 110px; border-radius: 5px; box-shadow: 0 4px 14px rgba(0,0,0,0.5); }
 .myd-count-badge { position: absolute; bottom: 5px; right: 3px; background: rgba(0,0,0,0.85); color: var(--gl-gold); font-size: 0.6rem; font-weight: 700; border-radius: 4px; padding: 1px 5px; line-height: 1.4; pointer-events: none; z-index: 11; }
-/* per-card controls — shown on hover */
-.myd-card-controls { position: absolute; bottom: -26px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 3px; opacity: 0; transition: opacity 0.15s; pointer-events: none; white-space: nowrap; z-index: 30; }
-.myd-stack:hover .myd-card-controls { opacity: 1; pointer-events: auto; }
-.myd-ctrl-btn { background: rgba(10,12,18,0.92); color: var(--gl-text); border: 1px solid rgba(255,255,255,0.2); border-radius: 3px; width: 20px; height: 20px; font-size: 0.78rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; line-height: 1; flex-shrink: 0; }
+/* per-card controls — always visible */
+.myd-card-controls { position: absolute; bottom: 2px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 3px; opacity: 1; pointer-events: auto; white-space: nowrap; z-index: 30; }
+.myd-ctrl-btn { background: rgba(10,12,18,0.92); color: var(--gl-text); border: 1px solid rgba(255,255,255,0.2); border-radius: 3px; width: 22px; height: 22px; font-size: 0.78rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; line-height: 1; flex-shrink: 0; }
 .myd-ctrl-btn:hover { background: var(--gl-gold); color: #000; border-color: var(--gl-gold); }
 .myd-ctrl-del { color: #e05858; border-color: #e05858; }
 .myd-ctrl-del:hover { background: #e05858; color: #fff; border-color: #e05858; }
@@ -1511,17 +1510,11 @@ th.sort-active { color: var(--gl-gold-h); }
   .myd-table { overflow-y: visible; flex: 0 0 auto; padding: var(--sp-2); }
   .myd-add-bar { position: sticky; bottom: calc(68px + env(safe-area-inset-bottom)); background: var(--gl-bg); padding: 6px 0 4px; z-index: 20; }
 
-  /* ── Card controls: always visible on touch (no hover) ── */
-  .myd-card-controls {
-    opacity: 1;
-    pointer-events: auto;
-    bottom: -32px;
-  }
-  /* Bigger touch targets for +/−/× buttons */
+  /* ── Card controls: bigger touch targets on mobile ── */
   .myd-ctrl-btn { width: 28px; height: 28px; font-size: 0.85rem; }
   .myd-ctrl-count { font-size: 0.7rem; min-width: 18px; }
-  /* Extra bottom margin so controls don't overlap next row */
-  .myd-stack { margin-bottom: 36px; }
+  /* More padding so controls are fully inside the stack bounds */
+  .myd-stack { padding-bottom: 36px; }
 
   /* ── Smaller cards on mobile (3 per row) ── */
   .myd-card-img { width: 90px; }
