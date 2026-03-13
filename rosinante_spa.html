@@ -6712,24 +6712,12 @@ function selectLeader(key) {
   const mdbImg  = document.getElementById('mdb-img');
   const mdbName = document.getElementById('mdb-name');
   if (mdbBar) {
-    if (hasImported || myDeckKey) {
+    if (myLeaderCardId) {
+      // Always route My Deck bar to the deck viewer/editor (works for both empty and imported decks)
       mdbImg.src = cardImg(myLeaderCardId);
       mdbImg.classList.remove('loaded');
       mdbImg.onload = () => mdbImg.classList.add('loaded');
-      mdbName.textContent = L.title || (myDeckKey ? DECKLISTS[myDeckKey].leaderName : myLeaderCardId);
-      if (hasImported) {
-        mdbBar.onclick = () => showMyDeckViewer(myLeaderCardId);
-      } else {
-        mdbBar.onclick = () => openMyDeck(myDeckKey);
-      }
-      mdbBar.style.display = '';
-    } else if (myLeaderCardId) {
-      // No deck yet — show an "import" prompt bar
-      mdbImg.src = cardImg(myLeaderCardId);
-      mdbImg.classList.remove('loaded');
-      mdbImg.onload = () => mdbImg.classList.add('loaded');
-      mdbName.textContent = 'Tap to import your deck →';
-      mdbBar.onclick = () => openDeckImport(myLeaderCardId, L.title);
+      mdbBar.onclick = () => showMyDeckViewer(myLeaderCardId);
       mdbBar.style.display = '';
     } else {
       mdbBar.style.display = 'none';
@@ -6751,15 +6739,14 @@ function selectLeader(key) {
 
 
 function openMyDeck(deckKey) {
-  // If user has an imported deck for this leader, show the visual viewer
+  // Always go to the visual deck viewer/editor (can build from scratch or paste)
   const L = LEADERS[currentLeaderKey];
-  if (L && allMyDecks[L.cardId]) {
+  if (L && L.cardId) {
     showMyDeckViewer(L.cardId);
     return;
   }
-  // Otherwise fall back to the hardcoded deck view
-  if (!deckKey) return;
-  showDeck(deckKey);
+  // Fallback: hardcoded deck view
+  if (deckKey) showDeck(deckKey);
 }
 
 // ── DECK IMPORT / VIEWER ──────────────────────────────────────
