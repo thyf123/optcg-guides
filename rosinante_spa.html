@@ -7927,45 +7927,54 @@ function renderDeck(d, matchup, deckKey) {
     </div>
     ${matchupInfoHtml}`;
 
-  // Enforce section order: non-event/stage first, then event/stage always last
-  const _isEventStage = s => /event|stage/i.test(s.title);
-  const _sortByCost = cards => [...cards].sort((a,b) => {
-    if (a.cost == null && b.cost == null) return 0;
-    if (a.cost == null) return 1;
-    if (b.cost == null) return -1;
-    return a.cost - b.cost;
-  });
-  const _orderedSections = [
-    ...d.sections.filter(s => !_isEventStage(s)),
-    ...d.sections.filter(s =>  _isEventStage(s))
-  ];
+  // Flatten all non-leader cards from all sections
+  const _allDeckCards = d.sections.flatMap(s => s.cards);
 
-  let _cardIdx = 0;
-  _orderedSections.forEach(sec => {
-    const sTotal = sec.cards.reduce((a,c)=>a+c.count,0);
-    html += `<div class="sec-wrap">
+  // Sort helper: prefer API cost cache, fall back to DECKLISTS cost field
+  const _sortByCost = cards => [...cards].sort((a,b) => {
+    const ca = _mydCardCostCache[a.id] ?? a.cost ?? 999;
+    const cb = _mydCardCostCache[b.id] ?? b.cost ?? 999;
+    return ca - cb;
+  });
+
+  // Group cards by API-fetched type (shared cache with My Deck viewer)
+  const _grpChar    = _allDeckCards.filter(c => _mydCardTypeCache[c.id] === 'Character');
+  const _grpEvent   = _allDeckCards.filter(c => _mydCardTypeCache[c.id] === 'Event');
+  const _grpStage   = _allDeckCards.filter(c => _mydCardTypeCache[c.id] === 'Stage');
+  const _grpUnknown = _allDeckCards.filter(c => !_mydCardTypeCache[c.id]);
+
+  function _renderSection(label, cards) {
+    if (!cards.length) return '';
+    const sTotal = cards.reduce((a,c) => a + c.count, 0);
+    let sh = `<div class="sec-wrap">
       <div class="sec-hdr">
-        <span class="sec-title">${sec.title}</span>
+        <span class="sec-title">${label}</span>
         <span class="sec-cnt">×${sTotal}</span>
       </div>
       <div class="card-grid">`;
-    // Always sort by cost ascending; cards without cost field sort to end
-    _sortByCost(sec.cards).forEach(card => {
-      const src = cardImg(card.id);
-      const delay = Math.min(_cardIdx * 18, 220);
-      _cardIdx++;
-      const costBadge = card.cost != null ? `<div class="b-cost">${card.cost}</div>` : '';
-      html += `<div class="card-item" style="animation-delay:${delay}ms" onclick="toggleCardZoom(event,this,'${card.id}')">
-        <img src="${src}"
-          onload="this.classList.add('loaded')"
-          onerror="console.error('IMG FAIL (card):', this.src); this.onerror=null;"
-          alt="${card.name}">
+    _sortByCost(cards).forEach((card, idx) => {
+      const src  = cardImg(card.id);
+      const delay = Math.min(idx * 18, 220);
+      const cost  = _mydCardCostCache[card.id] ?? card.cost ?? null;
+      const costBadge = cost != null ? `<div class="b-cost">${cost}</div>` : '';
+      sh += `<div class="card-item" style="animation-delay:${delay}ms" onclick="toggleCardZoom(event,this,'${card.id}')">
+        <img src="${src}" onload="this.classList.add('loaded')"
+          onerror="this.onerror=null;" alt="${card.name}">
         <div class="b-count">×${card.count}</div>
         ${costBadge}
       </div>`;
     });
-    html += `</div></div>`;
-  });
+    sh += `</div></div>`;
+    return sh;
+  }
+
+  html += _renderSection('Characters', _grpChar);
+  html += _renderSection('Events', _grpEvent);
+  html += _renderSection('Stages', _grpStage);
+  // Unknown types — show immediately, re-render after API fetch
+  if (_grpUnknown.length) {
+    html += _renderSection('Other', _grpUnknown);
+  }
 
   html += `<div class="total-bar">
     <span class="tl">Total cards</span>
@@ -8021,6 +8030,36 @@ function renderDeck(d, matchup, deckKey) {
   if (ta) { ta.value = existingNote; _setupAtMention(ta, deckKey, matchup); }
   // render history
   _refreshMySection(deckKey);
+
+  // Async: fetch types for any unknown cards, then re-render sections in-place
+  const _unknownIds = _allDeckCards
+    .filter(c => !_mydCardTypeCache[c.id])
+    .map(c => c.id);
+  if (_unknownIds.length) {
+    _mydLoadTypes(_unknownIds).then(() => {
+      // Re-render only the card sections (not the whole page)
+      const dc = document.getElementById('deck-content');
+      if (!dc) return;
+      // Replace section content using same grouping logic
+      const re_char    = _allDeckCards.filter(c => _mydCardTypeCache[c.id] === 'Character');
+      const re_event   = _allDeckCards.filter(c => _mydCardTypeCache[c.id] === 'Event');
+      const re_stage   = _allDeckCards.filter(c => _mydCardTypeCache[c.id] === 'Stage');
+      const re_unknown = _allDeckCards.filter(c => !_mydCardTypeCache[c.id]);
+      const newSections = _renderSection('Characters', re_char)
+        + _renderSection('Events', re_event)
+        + _renderSection('Stages', re_stage)
+        + (re_unknown.length ? _renderSection('Other', re_unknown) : '');
+      // Splice into existing DOM — find first sec-wrap and replace everything up to total-bar
+      const totalBar = dc.querySelector('.total-bar');
+      const firstSec = dc.querySelector('.sec-wrap');
+      if (totalBar && firstSec) {
+        // Remove all sec-wraps
+        dc.querySelectorAll('.sec-wrap').forEach(el => el.remove());
+        // Insert new sections before total-bar
+        totalBar.insertAdjacentHTML('beforebegin', newSections);
+      }
+    });
+  }
 }
 // ── STAR FIELD GENERATOR ──────────────────────────────────────
 (function() {
