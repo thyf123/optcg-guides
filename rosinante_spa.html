@@ -1308,7 +1308,7 @@ th.sort-active { color: var(--gl-gold-h); }
 /* split layout */
 .myd-layout { display: flex; gap: 10px; flex: 1; overflow: hidden; min-height: 0; }
 /* left: text editor panel */
-.myd-text-panel { width: 165px; flex-shrink: 0; display: flex; flex-direction: column; gap: 5px; }
+.myd-text-panel { width: 210px; flex-shrink: 0; display: flex; flex-direction: column; gap: 5px; }
 .myd-ta-label { font-size: 0.55rem; font-weight: 700; color: var(--gl-gold); text-transform: uppercase; letter-spacing: 0.1em; }
 .myd-ta { flex: 0 0 62px; background: var(--gl-surface-2); border: 1px solid var(--gl-border-2); border-radius: var(--r-md); color: var(--gl-text); font-family: monospace; font-size: 0.65rem; line-height: 1.8; padding: 6px 8px; resize: none; }
 .myd-ta:focus { outline: none; border-color: var(--gl-gold-dim); }
@@ -1349,11 +1349,27 @@ th.sort-active { color: var(--gl-gold-h); }
 .myd-add-inp:focus { outline: none; border-color: var(--gl-gold-dim); }
 .myd-add-btn { background: var(--gl-gold); color: #0a0c12; border: none; border-radius: var(--r-md); padding: 0 12px; font-size: 0.7rem; font-weight: 700; cursor: pointer; white-space: nowrap; }
 .myd-add-btn:hover { background: var(--gl-gold-h); }
-.myd-search-dd { position: absolute; bottom: calc(100% + 4px); left: 0; right: 0; background: var(--gl-surface-2); border: 1px solid var(--gl-border-2); border-radius: var(--r-md); overflow: hidden; z-index: 200; max-height: 200px; overflow-y: auto; display: none; }
-.myd-search-item { display: flex; align-items: center; gap: 8px; padding: 6px 10px; cursor: pointer; font-size: 0.68rem; }
+.myd-search-dd { position: absolute; bottom: calc(100% + 4px); left: 0; right: 0; background: var(--gl-surface); border: 1px solid var(--gl-border-2); border-radius: var(--r-md); overflow: hidden; z-index: 200; max-height: 340px; overflow-y: auto; display: none; box-shadow: 0 -8px 32px rgba(0,0,0,0.7); }
+.myd-search-header { font-size: 0.48rem; color: var(--gl-text-faint); text-transform: uppercase; letter-spacing: 0.08em; padding: 7px 10px 4px; border-bottom: 1px solid var(--gl-border-2); }
+/* grid view for many results */
+.myd-search-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 6px; padding: 8px; }
+.myd-search-card { position: relative; cursor: pointer; border-radius: 5px; overflow: hidden; border: 1px solid transparent; transition: border-color 0.12s; }
+.myd-search-card:hover { border-color: var(--gl-gold-dim); }
+.myd-search-card.added { border-color: var(--gl-gold); }
+.myd-search-card img { width: 100%; display: block; border-radius: 4px; }
+.myd-search-card-cost { position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%; background: rgba(0,0,0,0.85); border: 1.5px solid rgba(255,255,255,0.3); display: flex; align-items: center; justify-content: center; font-size: 0.55rem; font-weight: 800; color: #fff; }
+.myd-search-card-name { font-size: 0.45rem; color: var(--gl-text-muted); text-align: center; padding: 2px 2px 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.myd-search-card-check { position: absolute; inset: 0; background: rgba(212,175,55,0.22); display: none; align-items: center; justify-content: center; font-size: 1.2rem; border-radius: 4px; }
+.myd-search-card.added .myd-search-card-check { display: flex; }
+/* list view for few results */
+.myd-search-item { display: flex; align-items: center; gap: 8px; padding: 7px 10px; cursor: pointer; font-size: 0.68rem; border-bottom: 1px solid rgba(255,255,255,0.04); }
+.myd-search-item:last-child { border-bottom: none; }
 .myd-search-item:hover { background: var(--gl-surface-3); }
-.myd-search-item img { width: 30px; border-radius: 2px; flex-shrink: 0; }
-.myd-search-item-id { color: var(--gl-text-faint); font-family: monospace; font-size: 0.6rem; }
+.myd-search-item img { width: 36px; border-radius: 3px; flex-shrink: 0; aspect-ratio: 0.715; object-fit: cover; }
+.myd-search-item-name { font-size: 0.65rem; color: var(--gl-text); font-weight: 500; }
+.myd-search-item-id { color: var(--gl-text-faint); font-family: monospace; font-size: 0.55rem; margin-top: 1px; }
+.myd-search-item-add { background: var(--gl-surface-3); border: 1px solid var(--gl-border-2); border-radius: 4px; color: var(--gl-gold); font-size: 0.6rem; padding: 2px 7px; cursor: pointer; flex-shrink: 0; margin-left: auto; }
+.myd-search-item-add:hover { background: rgba(212,175,55,0.18); }
 /* save btn */
 .myd-save-btn { background: var(--gl-surface-2); border: 1px solid var(--gl-border-2); border-radius: var(--r-md); color: var(--gl-text-muted); font-size: 0.65rem; padding: 4px 10px; cursor: pointer; }
 .myd-save-btn:hover { border-color: var(--gl-gold-dim); color: var(--gl-gold); }
@@ -1361,18 +1377,45 @@ th.sort-active { color: var(--gl-gold-h); }
 .myd-empty-icon { font-size: 2.5rem; opacity: 0.3; }
 .myd-empty-text { font-size: 0.72rem; color: var(--gl-text-faint); text-align: center; }
 /* card chips list (left panel) */
-.myd-chips-list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 4px; min-height: 0; }
-.myd-chip { display: flex; align-items: center; gap: 5px; background: var(--gl-surface-2); border: 1px solid var(--gl-border-2); border-radius: 6px; padding: 4px 5px; transition: border-color 0.15s, background 0.15s; cursor: pointer; }
-.myd-chip:hover { border-color: var(--gl-gold-dim); background: var(--gl-surface-3); }
-.myd-chip.selected { border-color: var(--gl-gold); background: rgba(212,175,55,0.12); }
-.myd-chip-img { width: 30px; border-radius: 3px; flex-shrink: 0; display: block; }
+.myd-chips-list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 3px; min-height: 0; }
+.myd-chip { display: flex; align-items: center; gap: 7px; background: var(--gl-surface-2); border: 1px solid var(--gl-border-2); border-radius: 7px; padding: 5px 7px 5px 5px; transition: border-color 0.15s, background 0.15s; cursor: pointer; min-height: 44px; }
+.myd-chip:hover { background: var(--gl-surface-3); }
+.myd-chip.selected { outline: 2px solid var(--gl-gold); outline-offset: -1px; }
+/* cost circle — styled like card cost badge */
+.myd-chip-cost-circle { width: 26px; height: 26px; border-radius: 50%; background: rgba(0,0,0,0.7); border: 2px solid rgba(255,255,255,0.25); display: flex; align-items: center; justify-content: center; font-size: 0.72rem; font-weight: 800; color: #fff; flex-shrink: 0; font-family: inherit; }
+.myd-chip-img { width: 34px; border-radius: 3px; flex-shrink: 0; display: block; }
 .myd-chip-info { flex: 1; min-width: 0; overflow: hidden; }
-.myd-chip-id { font-size: 0.52rem; font-family: monospace; color: var(--gl-text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.myd-chip-type { font-size: 0.46rem; color: var(--gl-text-faint); margin-top: 1px; }
-.myd-chip-cost { font-size: 0.46rem; color: var(--gl-gold); margin-top: 1px; }
-.myd-chip-cnt { font-size: 0.62rem; font-weight: 700; color: var(--gl-gold); flex-shrink: 0; }
-.myd-chip-rm { background: none; border: none; color: var(--gl-text-faint); cursor: pointer; font-size: 0.72rem; padding: 0 1px; line-height: 1; flex-shrink: 0; }
+.myd-chip-name { font-size: 0.62rem; font-weight: 600; color: var(--gl-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.myd-chip-meta { font-size: 0.48rem; color: var(--gl-text-faint); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.myd-chip-cnt { font-size: 0.65rem; font-weight: 700; color: var(--gl-gold); flex-shrink: 0; min-width: 18px; text-align: right; }
+.myd-chip-rm { background: none; border: none; color: rgba(255,255,255,0.25); cursor: pointer; font-size: 0.85rem; padding: 0 2px; line-height: 1; flex-shrink: 0; transition: color 0.1s; }
 .myd-chip-rm:hover { color: #e05858; }
+/* deck analysis panel */
+.myd-analysis { background: var(--gl-surface-2); border: 1px solid var(--gl-border-2); border-radius: var(--r-lg); padding: 14px 16px; margin-top: 16px; }
+.myd-analysis-title { font-size: 0.58rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--gl-gold); margin-bottom: 12px; }
+.myd-analysis-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+.myd-stat-pill { display: flex; flex-direction: column; align-items: center; background: var(--gl-surface-3); border: 1px solid var(--gl-border-2); border-radius: 8px; padding: 6px 10px; min-width: 58px; flex: 1; }
+.myd-stat-val { font-size: 1rem; font-weight: 800; color: var(--gl-text); line-height: 1.1; }
+.myd-stat-lbl { font-size: 0.44rem; color: var(--gl-text-faint); text-transform: uppercase; letter-spacing: 0.07em; margin-top: 3px; text-align: center; }
+.myd-analysis-sub { font-size: 0.52rem; font-weight: 700; color: rgba(255,255,255,0.45); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 7px; }
+/* cost curve chart */
+.myd-cost-curve { display: flex; align-items: flex-end; gap: 4px; height: 56px; margin-bottom: 4px; }
+.myd-cost-col { display: flex; flex-direction: column; align-items: center; gap: 2px; flex: 1; }
+.myd-cost-bar-wrap { flex: 1; display: flex; align-items: flex-end; width: 100%; }
+.myd-cost-bar { width: 100%; border-radius: 3px 3px 0 0; background: var(--gl-gold); opacity: 0.75; min-height: 3px; transition: height 0.3s; }
+.myd-cost-bar-cnt { font-size: 0.42rem; color: var(--gl-text-muted); text-align: center; line-height: 1.2; }
+.myd-cost-labels { display: flex; gap: 4px; }
+.myd-cost-label { font-size: 0.42rem; color: var(--gl-text-faint); text-align: center; flex: 1; }
+/* type + counter pills row */
+.myd-type-pills { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+.myd-type-pill { display: flex; align-items: center; gap: 5px; border-radius: 20px; padding: 4px 10px; font-size: 0.55rem; font-weight: 700; border: 1px solid; }
+.myd-type-pill-char { background: rgba(74,144,217,0.12); border-color: rgba(74,144,217,0.4); color: #7ab8e8; }
+.myd-type-pill-event { background: rgba(220,60,60,0.12); border-color: rgba(220,60,60,0.4); color: #e87a7a; }
+.myd-type-pill-stage { background: rgba(60,180,80,0.12); border-color: rgba(60,180,80,0.4); color: #7acf8a; }
+.myd-type-pill-other { background: rgba(140,140,140,0.12); border-color: rgba(140,140,140,0.3); color: #aaa; }
+.myd-counter-pills { display: flex; gap: 6px; flex-wrap: wrap; }
+.myd-counter-pill { display: flex; align-items: center; gap: 5px; border-radius: 20px; padding: 4px 10px; font-size: 0.55rem; font-weight: 700; border: 1px solid rgba(212,175,55,0.3); background: rgba(212,175,55,0.08); color: var(--gl-gold); }
+.myd-counter-pill-none { border-color: rgba(140,140,140,0.3); background: rgba(140,140,140,0.08); color: #999; }
 /* sort bar (right panel header) */
 .myd-sort-bar { display: flex; align-items: center; gap: 5px; margin-bottom: 10px; flex-wrap: wrap; }
 .myd-sort-lbl { font-size: 0.5rem; color: var(--gl-text-faint); text-transform: uppercase; letter-spacing: 0.08em; margin-right: 2px; }
@@ -5034,6 +5077,22 @@ let _mydCardCostCache = {};
 try { _mydCardCostCache = JSON.parse(localStorage.getItem('optcg-card-costs') || '{}'); } catch(e) {}
 function _mydSaveCostCache() { try { localStorage.setItem('optcg-card-costs', JSON.stringify(_mydCardCostCache)); } catch(e) {} }
 
+let _mydCardNameCache = {};
+try { _mydCardNameCache = JSON.parse(localStorage.getItem('optcg-card-names') || '{}'); } catch(e) {}
+function _mydSaveNameCache() { try { localStorage.setItem('optcg-card-names', JSON.stringify(_mydCardNameCache)); } catch(e) {} }
+
+let _mydCardColorCache = {};
+try { _mydCardColorCache = JSON.parse(localStorage.getItem('optcg-card-colors') || '{}'); } catch(e) {}
+function _mydSaveColorCache() { try { localStorage.setItem('optcg-card-colors', JSON.stringify(_mydCardColorCache)); } catch(e) {} }
+
+let _mydCardCounterCache = {};
+try { _mydCardCounterCache = JSON.parse(localStorage.getItem('optcg-card-counters') || '{}'); } catch(e) {}
+function _mydSaveCounterCache() { try { localStorage.setItem('optcg-card-counters', JSON.stringify(_mydCardCounterCache)); } catch(e) {} }
+
+// Card color → CSS accent helpers
+const _MYD_COLOR_BORDER = { Red:'#e05858', Blue:'#4a90d9', Green:'#4caf70', Purple:'#9c5fc7', Yellow:'#c8a820', Black:'#888' };
+const _MYD_COLOR_BG     = { Red:'rgba(220,60,60,0.13)', Blue:'rgba(60,130,220,0.13)', Green:'rgba(60,180,80,0.13)', Purple:'rgba(160,60,210,0.13)', Yellow:'rgba(200,168,32,0.13)', Black:'rgba(120,120,120,0.13)' };
+
 let _mydSortMode = 'type';   // 'type' | 'cost'
 let _mydSelectedChipId = null;
 
@@ -7254,7 +7313,8 @@ function _mydRenderCards() {
     + section('Characters', characters)
     + section('Events', events)
     + section('Stages', stages)
-    + (unknown.length ? section('Other', unknown) : '');
+    + (unknown.length ? section('Other', unknown) : '')
+    + _mydRenderAnalysis(deckCards);
 
   // Async: fetch missing types and re-render
   const allIds = deckCards.map(c => c.id);
@@ -7273,14 +7333,25 @@ async function _mydLoadTypes(ids) {
       const data = await res.json();
       if (Array.isArray(data)) {
         for (const card of data) {
-          if (card.card_id && card.card_type) _mydCardTypeCache[card.card_id] = card.card_type;
-          if (card.card_id && card.cost != null) _mydCardCostCache[card.card_id] = card.cost;
+          const id = card.card_id;
+          if (!id) continue;
+          if (card.card_type)  _mydCardTypeCache[id]    = card.card_type;
+          if (card.cost != null) _mydCardCostCache[id]  = card.cost;
+          if (card.card_name)  _mydCardNameCache[id]    = card.card_name;
+          if (card.card_color) _mydCardColorCache[id]   = card.card_color;
+          // counter field — API may use 'counter' or 'counter_plus_power'
+          const ctr = card.counter ?? card.counter_plus_power ?? null;
+          if (ctr != null) _mydCardCounterCache[id] = ctr;
+          else if (!_mydCardCounterCache[id]) _mydCardCounterCache[id] = 0;
         }
       }
     } catch(e) {}
   }));
   _mydSaveTypeCache();
   _mydSaveCostCache();
+  _mydSaveNameCache();
+  _mydSaveColorCache();
+  _mydSaveCounterCache();
   _mydRenderCards();
   _mydRenderChips();
 }
@@ -7318,6 +7389,85 @@ function _mydSetSort(mode) {
   _mydRenderCards();
 }
 
+function _mydRenderAnalysis(deckCards) {
+  if (!deckCards || !deckCards.length) return '';
+
+  // Type counts (by card count, not unique cards)
+  let nChar = 0, nEvent = 0, nStage = 0, nOther = 0;
+  deckCards.forEach(c => {
+    const n = c.count;
+    const t = _mydCardTypeCache[c.id];
+    if (t === 'Character') nChar  += n;
+    else if (t === 'Event') nEvent += n;
+    else if (t === 'Stage') nStage += n;
+    else nOther += n;
+  });
+
+  // Cost distribution (by card count)
+  const costBuckets = {}; // cost → total count
+  let totalCost = 0, costCardCount = 0;
+  deckCards.forEach(c => {
+    const cost = _mydCardCostCache[c.id];
+    if (cost != null) {
+      const key = cost >= 10 ? '10+' : String(cost);
+      costBuckets[key] = (costBuckets[key] || 0) + c.count;
+      totalCost += cost * c.count;
+      costCardCount += c.count;
+    }
+  });
+  const avgCost = costCardCount > 0 ? (totalCost / costCardCount).toFixed(1) : '—';
+
+  // Counter breakdown
+  let ctr0 = 0, ctr1k = 0, ctr2k = 0;
+  deckCards.forEach(c => {
+    const v = _mydCardCounterCache[c.id] || 0;
+    if (v >= 2000) ctr2k += c.count;
+    else if (v >= 1000) ctr1k += c.count;
+    else ctr0 += c.count;
+  });
+  const totalCtr = (ctr1k * 1000 + ctr2k * 2000);
+  const ctrCards = ctr1k + ctr2k;
+  const avgCtr = ctrCards > 0 ? `+${(totalCtr / ctrCards / 1000).toFixed(1)}k` : '—';
+
+  // Cost curve bars
+  const costKeys = ['1','2','3','4','5','6','7','8','9','10+'];
+  const maxBucket = Math.max(...costKeys.map(k => costBuckets[k] || 0), 1);
+  const curveBars = costKeys.map(k => {
+    const cnt = costBuckets[k] || 0;
+    const pct = Math.round((cnt / maxBucket) * 100);
+    return `<div class="myd-cost-col">
+      <div class="myd-cost-bar-wrap"><div class="myd-cost-bar" style="height:${pct}%"></div></div>
+      <div class="myd-cost-bar-cnt">${cnt > 0 ? cnt : ''}</div>
+    </div>`;
+  }).join('');
+  const curveLabels = costKeys.map(k => `<div class="myd-cost-label">${k}</div>`).join('');
+
+  return `<div class="myd-analysis">
+    <div class="myd-analysis-title">Deck Analysis</div>
+
+    <div class="myd-analysis-row">
+      <div class="myd-stat-pill"><span class="myd-stat-val">${avgCost}</span><span class="myd-stat-lbl">Avg Cost</span></div>
+      <div class="myd-stat-pill"><span class="myd-stat-val">${nChar}</span><span class="myd-stat-lbl">Characters</span></div>
+      <div class="myd-stat-pill"><span class="myd-stat-val">${nEvent}</span><span class="myd-stat-lbl">Events</span></div>
+      <div class="myd-stat-pill"><span class="myd-stat-val">${nStage}</span><span class="myd-stat-lbl">Stages</span></div>
+      <div class="myd-stat-pill"><span class="myd-stat-val">${avgCtr}</span><span class="myd-stat-lbl">Avg Counter</span></div>
+    </div>
+
+    <div class="myd-analysis-sub">Cost Curve</div>
+    <div class="myd-cost-curve">${curveBars}</div>
+    <div class="myd-cost-labels">${curveLabels}</div>
+
+    <div style="margin-top:12px">
+      <div class="myd-analysis-sub" style="margin-bottom:7px">Counters</div>
+      <div class="myd-counter-pills">
+        <div class="myd-counter-pill">${ctr2k} cards with <strong>+2k</strong></div>
+        <div class="myd-counter-pill">${ctr1k} cards with <strong>+1k</strong></div>
+        <div class="myd-counter-pill myd-counter-pill-none">${ctr0} cards with no counter</div>
+      </div>
+    </div>
+  </div>`;
+}
+
 function _mydSelectChip(id) {
   _mydSelectedChipId = (_mydSelectedChipId === id) ? null : id;
   _mydRenderCards();
@@ -7337,16 +7487,40 @@ function _mydRenderChips() {
   const text = ta ? ta.value : '';
   const { cards } = text.trim() ? parseDeckList(text) : { cards: [] };
   if (!cards.length) { list.innerHTML = ''; return; }
-  list.innerHTML = cards.map(c => {
-    const t    = _mydCardTypeCache[c.id];
-    const cost = _mydCardCostCache[c.id];
-    const sel  = _mydSelectedChipId === c.id;
-    const meta = [t, cost != null ? `Cost ${cost}` : ''].filter(Boolean).join(' · ');
-    return `<div class="myd-chip${sel?' selected':''}" onclick="_mydSelectChip('${c.id}')">
+
+  // Sort by cost ascending (unknown cost = 99 → bottom), leader always first
+  const sorted = [...cards].sort((a, b) => {
+    if (a.id === _mydCurrentCardId) return -1;
+    if (b.id === _mydCurrentCardId) return 1;
+    return (_mydCardCostCache[a.id] ?? 99) - (_mydCardCostCache[b.id] ?? 99);
+  });
+
+  list.innerHTML = sorted.map(c => {
+    const t       = _mydCardTypeCache[c.id] || '';
+    const cost    = _mydCardCostCache[c.id];
+    const name    = _mydCardNameCache[c.id] || c.id;
+    const color   = _mydCardColorCache[c.id] || '';
+    const sel     = _mydSelectedChipId === c.id;
+    const isLeader = c.id === _mydCurrentCardId;
+    // color tint for border-left
+    const primaryColor = color.split('/')[0].trim();
+    const borderColor  = _MYD_COLOR_BORDER[primaryColor] || 'var(--gl-border-2)';
+    const bgColor      = _MYD_COLOR_BG[primaryColor] || '';
+    const costLabel    = isLeader ? 'LDR' : (cost != null ? cost : '?');
+    const costStyle    = isLeader ? 'font-size:0.45rem;letter-spacing:-0.02em' : '';
+    // meta line: type · color · counter
+    const ctr = _mydCardCounterCache[c.id];
+    const metaParts = [t, color, ctr > 0 ? `+${(ctr/1000).toFixed(0)}k` : null].filter(Boolean);
+    const meta = metaParts.join(' · ');
+    return `<div class="myd-chip${sel?' selected':''}" onclick="_mydSelectChip('${c.id}')"
+      style="border-left: 3px solid ${borderColor};${bgColor?`background:${bgColor};`:''}">
+      <div class="myd-chip-cost-circle" style="border-color:${borderColor};${bgColor?`background:rgba(0,0,0,0.5);`:''}">
+        <span style="${costStyle}">${costLabel}</span>
+      </div>
       <img class="myd-chip-img" src="${cardImg(c.id)}" alt="${c.id}" loading="lazy" onerror="this.style.opacity='0.3'">
       <div class="myd-chip-info">
-        <div class="myd-chip-id">${c.id}</div>
-        ${meta ? `<div class="myd-chip-type">${meta}</div>` : ''}
+        <div class="myd-chip-name">${name}</div>
+        ${meta ? `<div class="myd-chip-meta">${meta}</div>` : ''}
       </div>
       <div class="myd-chip-cnt">${c.count}×</div>
       <button class="myd-chip-rm" onclick="event.stopPropagation();_mydRemoveCard('${c.id}')" title="Remove">×</button>
@@ -7392,27 +7566,27 @@ function _mydSaveNow() {
 let _mydSearchTimer = null;
 const _OPTCG_SEARCH = 'https://www.optcgapi.com/api/sets/filtered/';
 
+// Track which IDs are already added in current search session
+let _mydSearchAdded = {};
+
 async function _mydSearchInput(val) {
   const dd = document.getElementById('myd-search-dd');
   if (!dd) return;
   const q = val.trim();
-  if (!q) { dd.style.display = 'none'; dd.innerHTML = ''; return; }
+  if (!q) { dd.style.display = 'none'; dd.innerHTML = ''; _mydSearchAdded = {}; return; }
 
   // Direct card ID — show instant preview
   if (/^[A-Z]{1,4}\d*-\d{3,4}$/i.test(q)) {
     const id = q.toUpperCase();
-    dd.innerHTML = `<div class="myd-search-item" onclick="_mydAddCard('${id}','${id}')">
-      <img src="${cardImg(id)}" onerror="this.style.display='none'">
-      <div><div>${id}</div><div class="myd-search-item-id">Card ID — click to add</div></div>
-    </div>`;
-    dd.style.display = 'block';
+    _mydRenderSearchResults(dd, [{ card_set_id: id, card_name: id }], 'Direct match');
     return;
   }
 
   clearTimeout(_mydSearchTimer);
   _mydSearchTimer = setTimeout(async () => {
+    dd.innerHTML = `<div class="myd-search-header">Searching…</div>`;
+    dd.style.display = 'block';
     try {
-      // Build query — detect colour/type keywords vs name
       const lower = q.toLowerCase();
       const colorMap = { red:'Red', blue:'Blue', green:'Green', yellow:'Yellow', purple:'Purple', black:'Black' };
       const typeMap  = { character:'Character', event:'Event', stage:'Stage', leader:'Leader' };
@@ -7424,34 +7598,100 @@ async function _mydSearchInput(val) {
       for (const [k,v] of Object.entries(typeMap)) {
         if (lower.includes(k)) { params.push(`card_type=${encodeURIComponent(v)}`); nameQ = nameQ.replace(new RegExp(k,'i'),'').trim(); }
       }
-      if (nameQ) params.push(`card_name=${encodeURIComponent(nameQ)}`);
 
-      const res  = await fetch(_OPTCG_SEARCH + '?' + params.join('&'));
-      const data = await res.json();
-      const results = Array.isArray(data) ? data.slice(0, 12) : [];
+      // Run name search + trait search in parallel; merge deduped
+      const nameParams = [...params, ...(nameQ ? [`card_name=${encodeURIComponent(nameQ)}`] : [])];
+      const traitParams = [...params, ...(nameQ ? [`type=${encodeURIComponent(nameQ)}`] : [])];
 
-      if (!results.length) {
-        dd.innerHTML = `<div class="myd-search-item" style="color:var(--gl-text-faint)">No results</div>`;
-      } else {
-        dd.innerHTML = results.map(r => {
-          const id = r.card_set_id || '';
-          const name = r.card_name || id;
-          const color = r.card_color || '';
-          return `<div class="myd-search-item" onclick="_mydAddCard('${id}','${name.replace(/'/g,"\\'")}')">
-            <img src="${cardImg(id)}" onerror="this.style.display='none'" loading="lazy">
-            <div>
-              <div>${name}</div>
-              <div class="myd-search-item-id">${id} · ${color}</div>
-            </div>
-          </div>`;
-        }).join('');
+      const fetches = [fetch(_OPTCG_SEARCH + '?' + nameParams.join('&'))];
+      if (nameQ) fetches.push(fetch(_OPTCG_SEARCH + '?' + traitParams.join('&')));
+
+      const responses = await Promise.all(fetches);
+      const datasets  = await Promise.all(responses.map(r => r.json()));
+      const seen = new Set();
+      const all = [];
+      for (const data of datasets) {
+        if (!Array.isArray(data)) continue;
+        for (const r of data) {
+          const id = r.card_set_id || r.card_id || '';
+          if (id && !seen.has(id)) { seen.add(id); all.push(r); }
+        }
       }
-      dd.style.display = 'block';
+      // Cache any data we got back
+      for (const r of all) {
+        const id = r.card_set_id || r.card_id;
+        if (!id) continue;
+        if (r.card_type)   _mydCardTypeCache[id]    = r.card_type;
+        if (r.cost != null) _mydCardCostCache[id]   = r.cost;
+        if (r.card_name)   _mydCardNameCache[id]    = r.card_name;
+        if (r.card_color)  _mydCardColorCache[id]   = r.card_color;
+        const ctr = r.counter ?? r.counter_plus_power ?? null;
+        if (ctr != null) _mydCardCounterCache[id] = ctr;
+      }
+      _mydRenderSearchResults(dd, all, nameQ || params.join(' ') || q);
     } catch(e) {
-      dd.innerHTML = `<div class="myd-search-item" style="color:var(--gl-text-faint)">Search failed</div>`;
+      dd.innerHTML = `<div class="myd-search-item" style="color:var(--gl-text-faint);padding:10px">Search failed — check connection</div>`;
       dd.style.display = 'block';
     }
-  }, 350);
+  }, 380);
+}
+
+function _mydRenderSearchResults(dd, all, label) {
+  if (!all.length) {
+    dd.innerHTML = `<div class="myd-search-header">No results for "${label}"</div>`;
+    dd.style.display = 'block';
+    return;
+  }
+  const total = all.length;
+  const show  = all.slice(0, 36);
+  const header = `<div class="myd-search-header">${total} result${total!==1?'s':''} for "${label}"${total>36?' — showing 36':''}</div>`;
+
+  if (total <= 8) {
+    // List view for few results
+    const items = show.map(r => {
+      const id   = r.card_set_id || r.card_id || '';
+      const name = r.card_name || id;
+      const color = r.card_color || '';
+      const cost = r.cost != null ? r.cost : (r.cost === 0 ? 0 : '');
+      const type = r.card_type || '';
+      const safe = name.replace(/'/g,"\\'");
+      return `<div class="myd-search-item" onclick="event.stopPropagation();_mydAddCard('${id}','${safe}')">
+        <img src="${cardImg(id)}" onerror="this.style.opacity='0.3'" loading="lazy">
+        <div style="flex:1;min-width:0">
+          <div class="myd-search-item-name">${name}</div>
+          <div class="myd-search-item-id">${id}${color?' · '+color:''}${type?' · '+type:''}</div>
+        </div>
+        <button class="myd-search-item-add" onclick="event.stopPropagation();_mydAddCard('${id}','${safe}')">+ Add</button>
+      </div>`;
+    }).join('');
+    dd.innerHTML = header + items;
+  } else {
+    // Grid view for many results — stay open, add multiple
+    const grid = show.map(r => {
+      const id   = r.card_set_id || r.card_id || '';
+      const name = r.card_name || id;
+      const cost = r.cost != null ? r.cost : '';
+      const safe = name.replace(/'/g,"\\'");
+      const isAdded = !!_mydSearchAdded[id];
+      return `<div class="myd-search-card${isAdded?' added':''}" id="srch-${id}"
+          onclick="event.stopPropagation();_mydSearchAddCard('${id}','${safe}')">
+        <img src="${cardImg(id)}" alt="${name}" loading="lazy" onerror="this.style.opacity='0.3'">
+        ${cost!=='' ? `<div class="myd-search-card-cost">${cost}</div>` : ''}
+        <div class="myd-search-card-name">${name}</div>
+        <div class="myd-search-card-check">✓</div>
+      </div>`;
+    }).join('');
+    dd.innerHTML = header + `<div class="myd-search-grid">${grid}</div>`;
+  }
+  dd.style.display = 'block';
+}
+
+function _mydSearchAddCard(id, name) {
+  _mydSearchAdded[id] = true;
+  _mydAddCard(id, name);
+  // Mark the card as added in grid without closing
+  const el = document.getElementById('srch-' + id);
+  if (el) el.classList.add('added');
 }
 
 function _mydAddKeydown(e) {
@@ -7475,10 +7715,15 @@ function _mydAddFromInput() {
 }
 
 function _mydAddCard(id, name) {
-  const inp = document.getElementById('myd-add-inp');
+  // In grid search mode, keep dropdown open so user can add multiple
   const dd  = document.getElementById('myd-search-dd');
-  if (inp) inp.value = '';
-  if (dd)  dd.style.display = 'none';
+  const isGrid = dd && dd.querySelector('.myd-search-grid');
+  if (!isGrid) {
+    const inp = document.getElementById('myd-add-inp');
+    if (inp) inp.value = '';
+    if (dd)  dd.style.display = 'none';
+    _mydSearchAdded = {};
+  }
   _mydChangeCount(id, 1);
 }
 
