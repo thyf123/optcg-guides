@@ -31,7 +31,7 @@ function serve(res, filePath, mime, transform) {
   try { content = fs.readFileSync(filePath, mime.startsWith('text') ? 'utf8' : null); }
   catch (e) { res.writeHead(404); res.end('Not found'); return; }
   if (transform) content = transform(content);
-  res.writeHead(200, { 'Content-Type': mime });
+  res.writeHead(200, { 'Content-Type': mime, 'Cache-Control': 'no-cache, no-store, must-revalidate' });
   res.end(content);
 }
 
