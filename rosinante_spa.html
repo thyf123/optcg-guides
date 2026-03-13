@@ -874,6 +874,12 @@ th.sort-active { color: var(--gl-gold-h); }
   color: var(--gl-gold);
 }
 .sec-cnt { font-size: 0.62rem; color: var(--gl-text-faint); }
+.sec-stats { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: var(--sp-2); margin-top: -4px; }
+.sec-stat { font-size: 0.57rem; font-weight: 700; padding: 2px 6px; border-radius: 10px; letter-spacing: 0.03em; }
+.sec-stat.ctr1k { background: rgba(74,144,217,0.15); color: #7ab8e8; border: 1px solid rgba(74,144,217,0.3); }
+.sec-stat.ctr2k { background: rgba(156,95,199,0.15); color: #c390e8; border: 1px solid rgba(156,95,199,0.3); }
+.sec-stat.avg   { background: rgba(200,168,32,0.1); color: var(--gl-text-muted); border: 1px solid rgba(200,168,32,0.2); }
+.sec-stat.noctr { background: rgba(120,120,120,0.1); color: var(--gl-text-faint); border: 1px solid rgba(120,120,120,0.2); }
 
 .card-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; }
 .card-item {
@@ -906,6 +912,15 @@ th.sort-active { color: var(--gl-gold-h); }
   border: 1px solid var(--gl-live-dim);
   pointer-events: none; line-height: 1.6;
 }
+.b-ctr {
+  position: absolute; top: 4px; right: 4px;
+  background: rgba(10,12,18,0.9); color: #c390e8;
+  font-size: 0.6rem; font-weight: 800;
+  border-radius: 3px; padding: 0 4px;
+  border: 1px solid rgba(156,95,199,0.4);
+  pointer-events: none; line-height: 1.6;
+}
+.total-ctr-row { display: flex; gap: 5px; flex-wrap: wrap; padding: 4px 0 10px; }
 
 .total-bar {
   background: var(--gl-surface);
@@ -8046,25 +8061,52 @@ function renderDeck(d, matchup, deckKey) {
   const _grpStage   = _allDeckCards.filter(c => _mydCardTypeCache[c.id] === 'Stage');
   const _grpUnknown = _allDeckCards.filter(c => !_mydCardTypeCache[c.id]);
 
+  function _ctrStats(cards) {
+    let ctr1k = 0, ctr2k = 0, ctrSum = 0, total = 0;
+    cards.forEach(card => {
+      const cnt = card.count || 1;
+      const ctr = Number(_mydCardCounterCache[card.id] ?? 0);
+      if (ctr === 1000) ctr1k += cnt;
+      else if (ctr === 2000) ctr2k += cnt;
+      ctrSum += ctr * cnt;
+      total  += cnt;
+    });
+    const avg = total > 0 ? Math.round(ctrSum / total) : 0;
+    return { ctr1k, ctr2k, avg, total };
+  }
+  function _renderCtrStats(stats) {
+    const parts = [];
+    if (stats.ctr1k > 0) parts.push(`<span class="sec-stat ctr1k">1k ×${stats.ctr1k}</span>`);
+    if (stats.ctr2k > 0) parts.push(`<span class="sec-stat ctr2k">2k ×${stats.ctr2k}</span>`);
+    const avgLabel = stats.avg >= 1000 ? (stats.avg / 1000).toFixed(1) + 'k' : stats.avg;
+    const avgCls = stats.avg === 0 ? 'noctr' : 'avg';
+    parts.push(`<span class="sec-stat ${avgCls}">avg ${avgLabel}</span>`);
+    return parts.length ? `<div class="sec-stats">${parts.join('')}</div>` : '';
+  }
   function _renderSection(label, cards) {
     if (!cards.length) return '';
     const sTotal = cards.reduce((a,c) => a + c.count, 0);
+    const stats  = _ctrStats(cards);
+    const statsHtml = _renderCtrStats(stats);
     let sh = `<div class="sec-wrap">
       <div class="sec-hdr">
         <span class="sec-title">${label}</span>
         <span class="sec-cnt">×${sTotal}</span>
       </div>
+      ${statsHtml}
       <div class="card-grid">`;
     _sortByCost(cards).forEach((card, idx) => {
       const src  = cardImg(card.id);
       const delay = Math.min(idx * 18, 220);
       const cost  = _mydCardCostCache[card.id] ?? card.cost ?? null;
       const costBadge = cost != null ? `<div class="b-cost">${cost}</div>` : '';
+      const ctr = Number(_mydCardCounterCache[card.id] ?? 0);
+      const ctrBadge = ctr > 0 ? `<div class="b-ctr">${ctr >= 1000 ? (ctr/1000).toFixed(0)+'k' : ctr}</div>` : '';
       sh += `<div class="card-item" style="animation-delay:${delay}ms" onclick="toggleCardZoom(event,this,'${card.id}')">
         <img src="${src}" onload="this.classList.add('loaded')"
           onerror="this.onerror=null;" alt="${card.name}">
         <div class="b-count">×${card.count}</div>
-        ${costBadge}
+        ${costBadge}${ctrBadge}
       </div>`;
     });
     sh += `</div></div>`;
@@ -8079,10 +8121,20 @@ function renderDeck(d, matchup, deckKey) {
     html += _renderSection('Other', _grpUnknown);
   }
 
+  // Global counter summary (across all sections)
+  const _deckStats = _ctrStats(_allDeckCards);
+  const _deckAvgLabel = _deckStats.avg >= 1000 ? (_deckStats.avg/1000).toFixed(1)+'k' : _deckStats.avg;
+  const _deckCtrSummary = [
+    _deckStats.ctr1k > 0 ? `<span class="sec-stat ctr1k">1k ×${_deckStats.ctr1k}</span>` : '',
+    _deckStats.ctr2k > 0 ? `<span class="sec-stat ctr2k">2k ×${_deckStats.ctr2k}</span>` : '',
+    `<span class="sec-stat ${_deckStats.avg===0?'noctr':'avg'}">avg ${_deckAvgLabel}/card</span>`,
+  ].filter(Boolean).join('');
+
   html += `<div class="total-bar">
     <span class="tl">Total cards</span>
     <span class="tc">${total}</span>
-  </div>`;
+  </div>
+  <div class="total-ctr-row">${_deckCtrSummary}</div>`;
 
   // source link at bottom
   html += `<a class="ext-link-bottom" href="${d.sourceUrl}" target="_blank">→ Source: onepiecetopdecks.com</a>`;
@@ -8160,6 +8212,16 @@ function renderDeck(d, matchup, deckKey) {
         dc.querySelectorAll('.sec-wrap').forEach(el => el.remove());
         // Insert new sections before total-bar
         totalBar.insertAdjacentHTML('beforebegin', newSections);
+        // Update global counter summary row
+        const ctrRow = dc.querySelector('.total-ctr-row');
+        const rs2 = _ctrStats(_allDeckCards);
+        const al2 = rs2.avg >= 1000 ? (rs2.avg/1000).toFixed(1)+'k' : rs2.avg;
+        const newCtrHtml = [
+          rs2.ctr1k > 0 ? `<span class="sec-stat ctr1k">1k ×${rs2.ctr1k}</span>` : '',
+          rs2.ctr2k > 0 ? `<span class="sec-stat ctr2k">2k ×${rs2.ctr2k}</span>` : '',
+          `<span class="sec-stat ${rs2.avg===0?'noctr':'avg'}">avg ${al2}/card</span>`,
+        ].filter(Boolean).join('');
+        if (ctrRow) ctrRow.innerHTML = newCtrHtml;
       }
     });
   }
