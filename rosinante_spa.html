@@ -11,7 +11,7 @@
  Created with Perplexity Computer · https://www.perplexity.ai/computer
 -->
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Grand Line · OPTCG Companion</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -1471,11 +1471,98 @@ th.sort-active { color: var(--gl-gold-h); }
 .bnav-btn.active { color: var(--gl-gold); }
 .bnav-btn:active { color: var(--gl-gold-h); }
 
-@media (max-width: 640px) {
+/* ═══════════════════════════════════════════════════
+   MOBILE — iPhone Safari & Chrome (≤768px)
+   ═══════════════════════════════════════════════════ */
+@media (max-width: 768px) {
+  /* Bottom nav */
   #bottom-nav { display: flex; }
-  .screen { padding-bottom: 68px; }
+  .screen { padding-bottom: calc(68px + env(safe-area-inset-bottom)); }
   .deck-fab { bottom: 72px; }
   #log-toast { bottom: 132px; }
+
+  /* ── iOS Safari: prevent auto-zoom on input focus ──
+     Safari zooms in whenever an input has font-size < 16px.
+     Setting font-size: 16px on focus (or always) prevents this. */
+  input, textarea, select { font-size: 16px !important; }
+
+  /* ── Home screen ── */
+  #screen-home { padding: var(--sp-4) var(--sp-3) calc(80px + env(safe-area-inset-bottom)); }
+  .home-header { margin-bottom: var(--sp-4); }
+  .home-wordmark { font-size: 1.2rem; }
+  .home-manage-btn, .home-logout-btn { font-size: 0.68rem; padding: 6px 10px; min-height: 36px; }
+  .leader-grid { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px; }
+  .lc-name { font-size: 0.7rem; }
+
+  /* ── Deck viewer: stack vertically ── */
+  #screen-my-deck { overflow-y: auto; }
+  .myd-layout {
+    flex-direction: column;
+    overflow: visible;
+    flex: 0 0 auto;
+    min-height: 0;
+    gap: 8px;
+  }
+  .myd-text-panel { width: 100%; flex-shrink: 0; }
+  .myd-ta { height: 64px; flex: none; font-size: 14px !important; }
+  .myd-chips-list { max-height: 110px; flex: 0 0 auto; }
+  .myd-chip-img { width: 26px; }
+  .myd-cards-panel { overflow: visible; min-height: 0; flex: 0 0 auto; }
+  .myd-table { overflow-y: visible; flex: 0 0 auto; padding: var(--sp-2); }
+  .myd-add-bar { position: sticky; bottom: calc(68px + env(safe-area-inset-bottom)); background: var(--gl-bg); padding: 6px 0 4px; z-index: 20; }
+
+  /* ── Card controls: always visible on touch (no hover) ── */
+  .myd-card-controls {
+    opacity: 1;
+    pointer-events: auto;
+    bottom: -32px;
+  }
+  /* Bigger touch targets for +/−/× buttons */
+  .myd-ctrl-btn { width: 28px; height: 28px; font-size: 0.85rem; }
+  .myd-ctrl-count { font-size: 0.7rem; min-width: 18px; }
+  /* Extra bottom margin so controls don't overlap next row */
+  .myd-stack { margin-bottom: 36px; }
+
+  /* ── Smaller cards on mobile (3 per row) ── */
+  .myd-card-img { width: 90px; }
+  .myd-copy { width: 90px; }
+  .myd-cards-grid { gap: 10px 8px; }
+  .myd-count-badge { font-size: 0.58rem; padding: 1px 4px; }
+
+  /* ── Card popup: narrower on small screens ── */
+  .myd-card-popup img { width: 200px; }
+
+  /* ── Leader card in deck viewer: smaller ── */
+  .myd-leader-img { width: 80px; }
+
+  /* ── New deck picker sheet ── */
+  .nd-sheet { max-width: 100%; border-radius: 16px 16px 0 0; }
+  .nd-img { width: 44px; }
+  .nd-name { font-size: 0.72rem; }
+
+  /* ── Deck import sheet ── */
+  .dim-sheet { max-width: 100%; }
+
+  /* ── Matchup screen ── */
+  #screen-matchup { padding: var(--sp-3) var(--sp-2) calc(72px + env(safe-area-inset-bottom)); }
+
+  /* ── Login screen ── */
+  #screen-login { padding: var(--sp-4) var(--sp-3); }
+
+  /* ── Modals ── */
+  #log-modal .log-card { margin: 0 var(--sp-3); width: calc(100% - 2*var(--sp-3)); }
+  #sb-modal .sb-card { width: calc(100% - 2*var(--sp-3)); }
+
+  /* ── Bottom nav touch targets ── */
+  .bnav-btn { min-height: 44px; padding: 8px 4px 6px; font-size: 0.62rem; }
+  .bnav-btn .bni { font-size: 1.2rem; }
+
+  /* ── My Deck bar ── */
+  .my-deck-bar { min-height: 44px; }
+
+  /* ── Misc buttons: minimum touch target ── */
+  .myd-back, .myd-save-btn { min-height: 36px; padding: 6px 10px; }
+  .nd-close { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; }
 }
 
 /* ════════════════════════════════════════════
