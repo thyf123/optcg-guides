@@ -508,6 +508,26 @@ img, picture, video, canvas, svg { display: block; max-width: 100%; }
   margin-top: 3px;
   line-height: 1.4;
 }
+
+/* My Deck bar */
+.my-deck-bar {
+  display: flex; align-items: center; gap: 10px;
+  background: var(--gl-surface); border: 1px solid var(--gl-border-2);
+  border-radius: var(--r-md); padding: 8px 10px;
+  margin-bottom: var(--sp-3); cursor: pointer;
+  transition: border-color var(--t), background var(--t);
+}
+.my-deck-bar:hover { border-color: var(--gl-gold-dim); background: var(--gl-surface-2); }
+.my-deck-bar:active { transform: scale(0.985); }
+.mdb-img {
+  width: 36px; height: auto; border-radius: 4px; flex-shrink: 0;
+  background: var(--gl-surface-3); opacity: 0; transition: opacity var(--t);
+}
+.mdb-img.loaded { opacity: 1; }
+.mdb-info { flex: 1; min-width: 0; }
+.mdb-label { font-size: 0.56rem; color: var(--gl-gold); font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; display: block; line-height: 1.2; }
+.mdb-name  { font-size: 0.75rem; color: var(--gl-text); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
+.mdb-arrow { font-size: 0.8rem; color: var(--gl-text-faint); flex-shrink: 0; }
 .stats-nav-btn {
   background: var(--gl-surface-2);
   border: 1px solid var(--gl-border-2);
@@ -1430,6 +1450,16 @@ th.sort-active { color: var(--gl-gold-h); }
       <p class="sub" id="matchup-sub">TCGMatchMaking.com · 25,255 games · 55.0% WR · EB03</p>
     </div>
     <button class="stats-nav-btn" onclick="showStats()" title="My Stats">📊</button>
+  </div>
+
+  <!-- My Deck bar -->
+  <div class="my-deck-bar" id="my-deck-bar" onclick="" style="display:none">
+    <img class="mdb-img" id="mdb-img" src="" alt="">
+    <div class="mdb-info">
+      <span class="mdb-label">My Deck</span>
+      <span class="mdb-name" id="mdb-name">—</span>
+    </div>
+    <span class="mdb-arrow">›</span>
   </div>
 
   <!-- Mode toggle -->
@@ -4602,16 +4632,19 @@ function updateStarBtns() {
 let allGames = [];
 let allNotes = {};
 let allCustomTips = {};
+let allCustomEssentials = {};
 
 try { allGames = JSON.parse(localStorage.getItem('optcg-games') || '[]'); } catch(e) {}
 try { allNotes = JSON.parse(localStorage.getItem('optcg-notes') || '{}'); } catch(e) {}
 try { allCustomTips = JSON.parse(localStorage.getItem('optcg-tips') || '{}'); } catch(e) {}
+try { allCustomEssentials = JSON.parse(localStorage.getItem('optcg-essentials') || '{}'); } catch(e) {}
 
 function _saveGames() { try { localStorage.setItem('optcg-games', JSON.stringify(allGames)); } catch(e) {} }
 function _saveNotes() { try { localStorage.setItem('optcg-notes', JSON.stringify(allNotes)); } catch(e) {} }
 
 
 function _saveTips() { try { localStorage.setItem('optcg-tips', JSON.stringify(allCustomTips)); } catch(e) {} }
+function _saveEssentials() { try { localStorage.setItem('optcg-essentials', JSON.stringify(allCustomEssentials)); } catch(e) {} }
 
 
 function _getCustomTips(deckKey) { return allCustomTips[_nk(currentLeaderKey, deckKey)] || []; }
@@ -4698,6 +4731,92 @@ function commitTip(deckKey) {
   if (text) addCustomTip(deckKey, text);
   else _renderCustomTips(deckKey);
 }
+// ── CUSTOM ESSENTIALS ─────────────────────────────────────────
+function _getCustomEssentials(deckKey) { return allCustomEssentials[_nk(currentLeaderKey, deckKey)] || []; }
+function addCustomEssential(deckKey, id, name) {
+  const k = _nk(currentLeaderKey, deckKey);
+  if (!allCustomEssentials[k]) allCustomEssentials[k] = [];
+  if (!allCustomEssentials[k].find(e => e.id === id)) {
+    allCustomEssentials[k].push({ id, name });
+  }
+  _saveEssentials();
+  syncToSupabase();
+  _renderCustomEssentials(deckKey);
+}
+function deleteCustomEssential(deckKey, idx) {
+  const k = _nk(currentLeaderKey, deckKey);
+  if (allCustomEssentials[k]) allCustomEssentials[k].splice(idx, 1);
+  _saveEssentials();
+  syncToSupabase();
+  _renderCustomEssentials(deckKey);
+}
+function _buildCustomEssentialsHtml(deckKey) {
+  const cards = _getCustomEssentials(deckKey);
+  let rows = '';
+  cards.forEach((e, i) => {
+    const imgHtml = e.id
+      ? `<img class="ess-card-img" src="${cardImg(e.id)}" alt="${e.name}" onload="this.classList.add('loaded')" onerror="this.style.opacity='0.15'">`
+      : `<div class="ess-card-placeholder">${e.name}</div>`;
+    rows += `<div class="ess-card-item" style="position:relative" onclick="toggleCardZoom(event,this,'${e.id||''}')">
+      ${imgHtml}
+      <div class="ess-card-text">
+        <div class="ess-card-name">${e.name}</div>
+        <div class="ess-card-reason" style="font-size:0.68rem;color:var(--gl-text-faint)">${e.id}</div>
+      </div>
+      <button onclick="event.stopPropagation();deleteCustomEssential('${deckKey}',${i})"
+        style="position:absolute;top:6px;right:7px;background:none;border:none;color:var(--gl-text-faint);font-size:0.9rem;cursor:pointer;padding:2px 5px;line-height:1" title="Remove">×</button>
+    </div>`;
+  });
+  const addBtn = `<button class="add-tip-btn" id="add-ess-btn" onclick="showAddEssentialInput('${deckKey}')">+ Add card</button>`;
+  const inputArea = `<div id="add-ess-area"></div>`;
+  const header = (cards.length > 0)
+    ? `<div style="font-size:0.62rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#c9a84c88;margin-bottom:6px">My Essential Cards</div>`
+    : '';
+  const grid = rows ? `<div class="ess-grid" style="margin-top:0">${rows}</div>` : '';
+  return `<div id="custom-ess-wrap-inner">${header}${grid}${inputArea}${addBtn}</div>`;
+}
+function _renderCustomEssentials(deckKey) {
+  const el = document.getElementById('custom-ess-wrap');
+  if (el) el.innerHTML = _buildCustomEssentialsHtml(deckKey);
+}
+function showAddEssentialInput(deckKey) {
+  const area = document.getElementById('add-ess-area');
+  const btn  = document.getElementById('add-ess-btn');
+  if (!area) return;
+  if (btn) btn.style.display = 'none';
+  area.innerHTML = `<div class="add-tip-row">
+    <input id="new-ess-input" class="add-tip-input" type="text" placeholder="Type @card or card ID…" autofocus>
+    <button class="add-tip-save" onclick="commitEssential('${deckKey}')">Add</button>
+  </div>`;
+  const inp = document.getElementById('new-ess-input');
+  if (inp) {
+    inp.focus();
+    inp.addEventListener('keydown', e => { if (e.key === 'Enter') commitEssential(deckKey); });
+    _setupAtMention(inp, deckKey, _currentDeckMatchup);
+  }
+}
+function commitEssential(deckKey) {
+  const inp = document.getElementById('new-ess-input');
+  if (!inp) return;
+  const text = inp.value.trim();
+  if (!text) { _renderCustomEssentials(deckKey); return; }
+  // Parse @[name](id) mention
+  const mentionMatch = text.match(/@\[([^\]]+)\]\(([^)]+)\)/);
+  if (mentionMatch) {
+    addCustomEssential(deckKey, mentionMatch[2], mentionMatch[1]);
+    return;
+  }
+  // Fallback: treat as card ID directly (e.g. OP06-033)
+  const idMatch = text.match(/\b([A-Z]{1,4}\d*-\d{3,4})\b/);
+  if (idMatch) {
+    addCustomEssential(deckKey, idMatch[1], idMatch[1]);
+    return;
+  }
+  // Treat as plain name
+  addCustomEssential(deckKey, '', text);
+}
+// ── END CUSTOM ESSENTIALS ──────────────────────────────────────
+
 function _nk(lk, dk) { return lk + ':' + dk; }
 function _gamesFor(lk, dk) { return allGames.filter(g => g.leaderKey === lk && g.deckKey === dk); }
 function personalRecord(lk, dk) {
@@ -5108,6 +5227,11 @@ async function syncFromSupabase() {
       allCustomTips = tr.payload;
       try { localStorage.setItem('optcg-tips', JSON.stringify(allCustomTips)); } catch(e) {}
     }
+    const er = rows.find(r => r.id === 'essentials');
+    if (er && er.payload && typeof er.payload === 'object') {
+      allCustomEssentials = er.payload;
+      try { localStorage.setItem('optcg-essentials', JSON.stringify(allCustomEssentials)); } catch(e) {}
+    }
 
     const hlr = rows.find(r => r.id === 'hidden-leaders');
     if (hlr && Array.isArray(hlr.payload)) {
@@ -5132,6 +5256,7 @@ async function syncToSupabase() {
         { id: 'games', payload: allGames, user_id: _userId(), updated_at: new Date().toISOString() },
         { id: 'notes', payload: allNotes, user_id: _userId(), updated_at: new Date().toISOString() },
         { id: 'tips', payload: allCustomTips, user_id: _userId(), updated_at: new Date().toISOString() },
+        { id: 'essentials', payload: allCustomEssentials, user_id: _userId(), updated_at: new Date().toISOString() },
         { id: 'hidden-leaders', payload: [...allHiddenLeaders], user_id: _userId(), updated_at: new Date().toISOString() },
       ])
     });
@@ -6149,6 +6274,27 @@ function selectLeader(key) {
   currentColor = 'all';
   _loggedOnly = false;
 
+  // Populate My Deck bar
+  const myLeaderCardId = L.cardId || null;
+  const myDeckKey = myLeaderCardId
+    ? Object.keys(DECKLISTS).find(dk => DECKLISTS[dk].leader === myLeaderCardId)
+    : null;
+  const mdbBar  = document.getElementById('my-deck-bar');
+  const mdbImg  = document.getElementById('mdb-img');
+  const mdbName = document.getElementById('mdb-name');
+  if (mdbBar) {
+    if (myDeckKey) {
+      const dl = DECKLISTS[myDeckKey];
+      mdbImg.src = cardImg(myLeaderCardId);
+      mdbImg.onload = () => mdbImg.classList.add('loaded');
+      mdbName.textContent = dl.leaderName || myDeckKey;
+      mdbBar.onclick = () => openMyDeck(myDeckKey);
+      mdbBar.style.display = '';
+    } else {
+      mdbBar.style.display = 'none';
+    }
+  }
+
   document.getElementById('table-container').classList.remove('hidden');
   document.querySelectorAll('.fbtn').forEach(b => b.classList.remove('active'));
   document.querySelector('.fbtn-all').classList.add('active');
@@ -6162,6 +6308,11 @@ function selectLeader(key) {
   _bnavSetActive('bnav-matchup');
 }
 
+
+function openMyDeck(deckKey) {
+  if (!deckKey) return;
+  showDeck(deckKey);
+}
 
 // ── ESSENTIAL CARDS GRID ─────────────────────────────────────
 function _essCardId(cardStr) {
@@ -6248,6 +6399,7 @@ function renderDeck(d, matchup, deckKey) {
       : '';
 
     const _ctHtml = _buildCustomTipsHtml(deckKey);
+    const _ceHtml = _buildCustomEssentialsHtml(deckKey);
     matchupInfoHtml = `<div class="matchup-info">
       <div class="mi-row1">
         <span class="mi-name">${matchup.name}${matchup.warn?' <span class="mi-warn">⚠</span>':''}</span>
@@ -6257,7 +6409,9 @@ function renderDeck(d, matchup, deckKey) {
         ${wrHtml}
         ${matchup.style && matchup.style !== '—' ? `<span class="mi-style">${matchup.style}</span>` : ''}
       </div>
-      ${essHtml}${tipsHtml}
+      ${essHtml}
+      <div class="mi-section" id="custom-ess-wrap">${_ceHtml}</div>
+      ${tipsHtml}
       <div class="custom-tips-section" id="custom-tips-wrap">${_ctHtml}</div>
       <div id="mi-games-wrap">${_miniGamesHtml(deckKey)}</div>
     </div><hr class="mi-divider">`;
