@@ -901,7 +901,7 @@ th.sort-active { color: var(--gl-gold-h); }
 .mi-go.go1 { background: var(--go1-bg); color: var(--go1-fg); border: 1px solid var(--go1-bd); }
 .mi-go.go2 { background: var(--go2-bg); color: var(--go2-fg); border: 1px solid var(--go2-bd); }
 .mi-wr { font-size: 0.68rem; font-weight: 700; padding: 2px 6px; border-radius: var(--r-sm); }
-.mi-style { font-size: 0.68rem; color: var(--gl-text-faint); padding-left: 6px; border-left: 1px solid var(--gl-border-2); }
+.mi-style { font-size: 0.68rem; color: var(--gl-text-muted); background: var(--gl-surface-2); border: 1px solid var(--gl-border-2); border-radius: var(--r-sm); padding: 2px 7px; font-weight: 600; letter-spacing: 0.02em; }
 .mi-section { margin-top: var(--sp-3); }
 .mi-section-title {
   font-size: 0.58rem; font-weight: 700;
@@ -4982,37 +4982,47 @@ function _pickAcItem(el) {
 }
 document.addEventListener('click', e => { if (!e.target.closest('#card-ac') && e.target !== _acTa) _hideAcDropdown(); });
 
-function showMentionCard(e, imgUrl, label) {
+// showMentionCard replaced by delegated listener in _renderMentions section above
+
+// Convert @[name](id) → tappable chip for display
+// Uses data-* attributes to avoid any escaping issues with card names containing apostrophes etc.
+function _renderMentions(text) {
+  if (!text) return '';
+  const safe = String(text).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  return safe.replace(/@\[([^\]]+)\]\(([^)]+)\)/g, (_, name, id) => {
+    const escapedId   = id.replace(/&/g,'&amp;').replace(/"/g,'&quot;');
+    const escapedName = name.replace(/&/g,'&amp;').replace(/"/g,'&quot;');
+    const escapedImg  = cardImg(id).replace(/&/g,'&amp;').replace(/"/g,'&quot;');
+    return `<span class="card-mention" data-card-img="${escapedImg}" data-card-label="${escapedId} · ${escapedName}">${name} <span style="font-size:0.75em;opacity:0.65">${id}</span></span>`;
+  });
+}
+
+// Delegated click handler for card mention chips
+document.addEventListener('click', function(e) {
+  const chip = e.target.closest('.card-mention');
+  if (!chip) return;
   e.stopPropagation();
   const existing = document.getElementById('mention-popup');
   if (existing) { existing.remove(); return; }
+  const imgUrl = chip.dataset.cardImg;
+  const label  = chip.dataset.cardLabel;
   const pop = document.createElement('div');
   pop.id = 'mention-popup';
   pop.innerHTML = `<img src="${imgUrl}" alt=""><div class="mp-label">${label}</div>`;
   document.body.appendChild(pop);
-  // Position near tapped element, clamped to viewport
-  const r = e.target.closest('.card-mention').getBoundingClientRect();
+  const r = chip.getBoundingClientRect();
   const pw = 236, ph = 280;
   let left = r.left, top = r.bottom + 6;
   if (left + pw > window.innerWidth - 8) left = window.innerWidth - pw - 8;
   if (left < 8) left = 8;
   if (top + ph > window.innerHeight - 8) top = r.top - ph - 6;
   pop.style.left = left + 'px';
-  pop.style.top = top + 'px';
+  pop.style.top  = top  + 'px';
   setTimeout(() => {
     const close = ev => { if (!pop.contains(ev.target)) { pop.remove(); document.removeEventListener('click', close); } };
     document.addEventListener('click', close);
   }, 0);
-}
-
-// Convert @[name](id) → tappable chip for display
-function _renderMentions(text) {
-  if (!text) return '';
-  const safe = String(text).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-  return safe.replace(/@\[([^\]]+)\]\(([^)]+)\)/g, (_, name, id) =>
-    `<span class="card-mention" onclick="showMentionCard(event,'${cardImg(id)}','${id} · ${name}')">${name} <span style="font-size:0.75em;opacity:0.65">${id}</span></span>`
-  );
-}
+});
 
 // ── SUPABASE SYNC ─────────────────────────────────────────────
 // _sbUrl, _sbKey, and _userId() are provided by the auth layer above
