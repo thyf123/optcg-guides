@@ -1207,6 +1207,38 @@ th.sort-active { color: var(--gl-gold-h); }
 .log-btn:hover { opacity: 1; }
 
 /* Settings modal (kept for legacy sync, now hidden behind auth) */
+/* ── ADD LEADER MODAL ── */
+#add-leader-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.88); z-index: 500; display: none; align-items: flex-end; justify-content: center; }
+#add-leader-modal.open { display: flex; }
+.alm-sheet { background: var(--gl-surface); border-radius: var(--r-xl) var(--r-xl) 0 0; width: 100%; max-width: 420px; padding: var(--sp-5) var(--sp-4) calc(var(--sp-5) + env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: var(--sp-3); }
+.alm-handle { width: 36px; height: 4px; background: var(--gl-border-2); border-radius: 2px; margin: 0 auto; }
+.alm-title { font-size: 0.85rem; font-weight: 700; color: var(--gl-gold); font-family: var(--font-display); letter-spacing: 0.05em; }
+.alm-sub { font-size: 0.65rem; color: var(--gl-text-faint); margin-top: -8px; line-height: 1.5; }
+.alm-preview { display: flex; align-items: center; gap: 12px; background: var(--gl-surface-2); border: 1px solid var(--gl-border-2); border-radius: var(--r-md); padding: 10px; min-height: 72px; }
+.alm-preview-img { width: 50px; border-radius: 5px; flex-shrink: 0; opacity: 0; transition: opacity 0.2s; }
+.alm-preview-img.visible { opacity: 1; }
+.alm-preview-empty { width: 50px; height: 70px; border-radius: 5px; background: var(--gl-surface-3); border: 1px dashed var(--gl-border-2); flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; color: var(--gl-text-faint); }
+.alm-preview-info { flex: 1; }
+.alm-preview-name { font-size: 0.75rem; color: var(--gl-text); font-weight: 600; }
+.alm-preview-id { font-size: 0.6rem; color: var(--gl-text-faint); margin-top: 2px; font-family: monospace; }
+.alm-input { background: var(--gl-surface-2); border: 1px solid var(--gl-border-2); border-radius: var(--r-md); color: var(--gl-text); font-size: 0.78rem; font-family: monospace; padding: 10px 12px; width: 100%; box-sizing: border-box; letter-spacing: 0.05em; text-transform: uppercase; }
+.alm-input:focus { outline: none; border-color: var(--gl-gold-dim); }
+.alm-input::placeholder { text-transform: none; font-family: var(--font-body); letter-spacing: 0; color: var(--gl-text-faint); opacity: 0.7; }
+.alm-name-input { background: var(--gl-surface-2); border: 1px solid var(--gl-border-2); border-radius: var(--r-md); color: var(--gl-text); font-size: 0.78rem; padding: 10px 12px; width: 100%; box-sizing: border-box; }
+.alm-name-input:focus { outline: none; border-color: var(--gl-gold-dim); }
+.alm-err { font-size: 0.62rem; color: #e05858; min-height: 1em; }
+.alm-row { display: flex; gap: 8px; }
+.alm-btn-save { flex: 1; background: var(--gl-gold); color: #0a0c12; border: none; border-radius: var(--r-md); font-size: 0.78rem; font-weight: 700; padding: 11px; cursor: pointer; }
+.alm-btn-save:disabled { opacity: 0.4; cursor: not-allowed; }
+.alm-btn-cancel { background: var(--gl-surface-2); color: var(--gl-text-muted); border: 1px solid var(--gl-border-2); border-radius: var(--r-md); font-size: 0.78rem; padding: 11px 18px; cursor: pointer; }
+/* Add leader tile in grid */
+.leader-card-add { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; background: var(--gl-surface); border: 1.5px dashed var(--gl-border-2); border-radius: var(--r-lg); cursor: pointer; aspect-ratio: 0.715; transition: border-color var(--t), background var(--t); min-height: 140px; }
+.leader-card-add:hover { border-color: var(--gl-gold-dim); background: var(--gl-surface-2); }
+.leader-card-add-icon { font-size: 1.6rem; color: var(--gl-text-faint); line-height: 1; }
+.leader-card-add-label { font-size: 0.6rem; color: var(--gl-text-faint); font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; }
+/* Custom leader delete button in manage mode */
+.lc-custom-del { position: absolute; top: 4px; left: 4px; background: rgba(224,88,88,0.85); color: #fff; border: none; border-radius: 50%; width: 18px; height: 18px; font-size: 0.7rem; line-height: 1; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 5; }
+
 /* ── DECK IMPORT MODAL ── */
 #deck-import-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.88); z-index: 500; display: none; align-items: flex-end; justify-content: center; padding: 0; }
 #deck-import-modal.open { display: flex; }
@@ -1656,6 +1688,31 @@ th.sort-active { color: var(--gl-gold-h); }
   <div class="modal-lbl" id="modal-lbl"></div>
 </div>
 
+<!-- ════ ADD LEADER MODAL ════ -->
+<div id="add-leader-modal" onclick="_almBgClick(event)">
+  <div class="alm-sheet" onclick="event.stopPropagation()">
+    <div class="alm-handle"></div>
+    <div class="alm-title">Add Leader</div>
+    <div class="alm-sub">Enter the card ID of your leader — the image will preview automatically</div>
+    <div class="alm-preview" id="alm-preview">
+      <div class="alm-preview-empty" id="alm-preview-empty">🃏</div>
+      <img class="alm-preview-img" id="alm-preview-img" src="" alt="" style="display:none">
+      <div class="alm-preview-info">
+        <div class="alm-preview-name" id="alm-preview-name">—</div>
+        <div class="alm-preview-id" id="alm-preview-id"></div>
+      </div>
+    </div>
+    <input class="alm-input" id="alm-id-input" type="text" placeholder="e.g. OP09-001" maxlength="12"
+      oninput="_almIdChange(this.value)" onpaste="_almIdChange(this.value)">
+    <input class="alm-name-input" id="alm-name-input" type="text" placeholder="Display name (optional)">
+    <div class="alm-err" id="alm-err"></div>
+    <div class="alm-row">
+      <button class="alm-btn-cancel" onclick="closeAddLeader()">Cancel</button>
+      <button class="alm-btn-save" id="alm-save-btn" onclick="saveAddLeader()" disabled>Add Leader</button>
+    </div>
+  </div>
+</div>
+
 <!-- ════ DECK IMPORT MODAL ════ -->
 <div id="deck-import-modal" onclick="_dimBgClick(event)">
   <div class="dim-sheet" onclick="event.stopPropagation()">
@@ -1820,8 +1877,10 @@ async function _doLogout() {
 function _onAuthSuccess(user) {
   _currentUser = user;
   _setLoginStatus('', '');
+  _bootCustomLeaders();
   showHome();
   syncFromSupabase().then(() => {
+    _bootCustomLeaders(); // re-inject after sync in case new ones pulled from server
     if (document.getElementById('screen-matchup').classList.contains('active')) {
       _refreshYouCells();
     }
@@ -4721,18 +4780,128 @@ let allGames = [];
 let allNotes = {};
 let allCustomTips = {};
 let allCustomEssentials = {};
-let allMyDecks = {};  // keyed by leader cardId → { cards: [{count, id}], name }
+let allMyDecks = {};        // keyed by leader cardId → { cards: [{count, id}] }
+let allCustomLeaders = {};  // keyed by cardId → { cardId, name, addedAt }
 
 try { allGames = JSON.parse(localStorage.getItem('optcg-games') || '[]'); } catch(e) {}
 try { allNotes = JSON.parse(localStorage.getItem('optcg-notes') || '{}'); } catch(e) {}
 try { allCustomTips = JSON.parse(localStorage.getItem('optcg-tips') || '{}'); } catch(e) {}
 try { allCustomEssentials = JSON.parse(localStorage.getItem('optcg-essentials') || '{}'); } catch(e) {}
 try { allMyDecks = JSON.parse(localStorage.getItem('optcg-my-decks') || '{}'); } catch(e) {}
+try { allCustomLeaders = JSON.parse(localStorage.getItem('optcg-custom-leaders') || '{}'); } catch(e) {}
 
 function _saveGames() { try { localStorage.setItem('optcg-games', JSON.stringify(allGames)); } catch(e) {} }
 function _saveNotes() { try { localStorage.setItem('optcg-notes', JSON.stringify(allNotes)); } catch(e) {} }
 function _saveMyDecks() { try { localStorage.setItem('optcg-my-decks', JSON.stringify(allMyDecks)); } catch(e) {} }
+function _saveCustomLeaders() { try { localStorage.setItem('optcg-custom-leaders', JSON.stringify(allCustomLeaders)); } catch(e) {} }
 
+// ── ADD LEADER MODAL ──────────────────────────────────────────
+let _almPreviewTimer = null;
+
+function openAddLeader() {
+  const modal = document.getElementById('add-leader-modal');
+  document.getElementById('alm-id-input').value = '';
+  document.getElementById('alm-name-input').value = '';
+  document.getElementById('alm-err').textContent = '';
+  document.getElementById('alm-save-btn').disabled = true;
+  document.getElementById('alm-preview-empty').style.display = '';
+  document.getElementById('alm-preview-img').style.display = 'none';
+  document.getElementById('alm-preview-name').textContent = '—';
+  document.getElementById('alm-preview-id').textContent = '';
+  modal.classList.add('open');
+  setTimeout(() => document.getElementById('alm-id-input').focus(), 150);
+}
+
+function closeAddLeader() {
+  document.getElementById('add-leader-modal').classList.remove('open');
+}
+
+function _almBgClick(e) {
+  if (e.target === document.getElementById('add-leader-modal')) closeAddLeader();
+}
+
+function _almIdChange(raw) {
+  clearTimeout(_almPreviewTimer);
+  const val = raw.toUpperCase().replace(/[^A-Z0-9-]/g, '');
+  document.getElementById('alm-id-input').value = val;
+  document.getElementById('alm-err').textContent = '';
+  document.getElementById('alm-save-btn').disabled = true;
+  if (!val.match(/^[A-Z]{1,4}\d*-\d{3,4}$/)) {
+    document.getElementById('alm-preview-name').textContent = val ? 'Invalid ID format' : '—';
+    document.getElementById('alm-preview-id').textContent = '';
+    document.getElementById('alm-preview-empty').style.display = '';
+    document.getElementById('alm-preview-img').style.display = 'none';
+    return;
+  }
+  // Check duplicate
+  const existingBuiltin = Object.values(LEADERS).find(l => l.cardId === val);
+  if (existingBuiltin) {
+    document.getElementById('alm-err').textContent = 'This leader is already in the list.';
+    return;
+  }
+  // Preview image with debounce
+  _almPreviewTimer = setTimeout(() => {
+    const img = document.getElementById('alm-preview-img');
+    const empty = document.getElementById('alm-preview-empty');
+    const nameEl = document.getElementById('alm-preview-name');
+    const idEl = document.getElementById('alm-preview-id');
+    img.onload = () => {
+      img.classList.add('visible');
+      empty.style.display = 'none';
+      img.style.display = '';
+      nameEl.textContent = document.getElementById('alm-name-input').value.trim() || val;
+      idEl.textContent = val;
+      document.getElementById('alm-save-btn').disabled = false;
+    };
+    img.onerror = () => {
+      document.getElementById('alm-err').textContent = 'Card not found — check the ID.';
+      img.style.display = 'none';
+      empty.style.display = '';
+    };
+    img.classList.remove('visible');
+    img.src = cardImg(val);
+  }, 400);
+}
+
+function saveAddLeader() {
+  const cardId = document.getElementById('alm-id-input').value.trim().toUpperCase();
+  const name   = document.getElementById('alm-name-input').value.trim() || cardId;
+  if (!cardId) return;
+  // Build a minimal LEADERS-compatible entry and inject it at runtime
+  const key = 'custom_' + cardId.replace(/-/g,'_').toLowerCase();
+  allCustomLeaders[key] = { cardId, name, addedAt: Date.now() };
+  _injectCustomLeader(key, allCustomLeaders[key]);
+  _saveCustomLeaders();
+  syncToSupabase();
+  closeAddLeader();
+  renderLeaderGrid();
+}
+
+function _injectCustomLeader(key, cl) {
+  if (LEADERS[key]) return; // already injected
+  LEADERS[key] = {
+    cardId: cl.cardId,
+    name: cl.name,
+    title: cl.name,
+    sub: cl.cardId,
+    matchups: [],
+    colorMap: {}
+  };
+}
+
+function deleteCustomLeader(key) {
+  delete allCustomLeaders[key];
+  delete LEADERS[key];
+  _saveCustomLeaders();
+  syncToSupabase();
+  renderLeaderGrid();
+}
+
+// Inject any persisted custom leaders on boot
+function _bootCustomLeaders() {
+  Object.keys(allCustomLeaders).forEach(k => _injectCustomLeader(k, allCustomLeaders[k]));
+}
+// ── END ADD LEADER ─────────────────────────────────────────────
 
 function _saveTips() { try { localStorage.setItem('optcg-tips', JSON.stringify(allCustomTips)); } catch(e) {} }
 function _saveEssentials() { try { localStorage.setItem('optcg-essentials', JSON.stringify(allCustomEssentials)); } catch(e) {} }
@@ -5328,6 +5497,11 @@ async function syncFromSupabase() {
       allMyDecks = mdr.payload;
       try { localStorage.setItem('optcg-my-decks', JSON.stringify(allMyDecks)); } catch(e) {}
     }
+    const clr = rows.find(r => r.id === 'custom-leaders');
+    if (clr && clr.payload && typeof clr.payload === 'object') {
+      allCustomLeaders = clr.payload;
+      try { localStorage.setItem('optcg-custom-leaders', JSON.stringify(allCustomLeaders)); } catch(e) {}
+    }
 
     const hlr = rows.find(r => r.id === 'hidden-leaders');
     if (hlr && Array.isArray(hlr.payload)) {
@@ -5354,6 +5528,7 @@ async function syncToSupabase() {
         { id: 'tips', payload: allCustomTips, user_id: _userId(), updated_at: new Date().toISOString() },
         { id: 'essentials', payload: allCustomEssentials, user_id: _userId(), updated_at: new Date().toISOString() },
         { id: 'my-decks', payload: allMyDecks, user_id: _userId(), updated_at: new Date().toISOString() },
+        { id: 'custom-leaders', payload: allCustomLeaders, user_id: _userId(), updated_at: new Date().toISOString() },
         { id: 'hidden-leaders', payload: [...allHiddenLeaders], user_id: _userId(), updated_at: new Date().toISOString() },
       ])
     });
@@ -5585,7 +5760,7 @@ LEADERS.rosinante.colorMap = ROSINANTE_COLORS;
 LEADERS.boa.colorMap = BOA_COLORS;
 
 let currentLeaderKey = 'rosinante';
-function getLM() { return LEADERS[currentLeaderKey].matchups; }
+function getLM() { return (LEADERS[currentLeaderKey] && LEADERS[currentLeaderKey].matchups) || []; }
 function getLCM() { return LEADERS[currentLeaderKey].colorMap || ROSINANTE_COLORS; }
 
 let currentMode = 'table';
@@ -5853,12 +6028,31 @@ function renderLeaderGrid() {
       deckDot.title = 'Deck imported';
       card.appendChild(deckDot);
     }
+    // Delete button for custom leaders in manage mode
+    const isCustom = !!allCustomLeaders[key];
+    if (_homeEditMode && isCustom) {
+      const delBtn = document.createElement('button');
+      delBtn.className = 'lc-custom-del';
+      delBtn.title = 'Remove leader';
+      delBtn.textContent = '×';
+      delBtn.onclick = (e) => { e.stopPropagation(); deleteCustomLeader(key); };
+      card.appendChild(delBtn);
+    }
     card.appendChild(img);
     card.appendChild(nameDiv);
     card.appendChild(idDiv);
     card.appendChild(statsDiv);
     grid.appendChild(card);
   });
+
+  // "Add new leader" tile — always last
+  if (!_homeEditMode) {
+    const addTile = document.createElement('div');
+    addTile.className = 'leader-card-add';
+    addTile.onclick = openAddLeader;
+    addTile.innerHTML = `<div class="leader-card-add-icon">+</div><div class="leader-card-add-label">New Leader</div>`;
+    grid.appendChild(addTile);
+  }
 }
 
 // ── BOTTOM NAV ───────────────────────────────────────────────
