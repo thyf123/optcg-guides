@@ -924,30 +924,30 @@ th.sort-active { color: var(--gl-gold-h); }
 }
 .ext-link-bottom:hover { color: var(--gl-text-muted); }
 
-/* Essential card list */
-.ess-grid { display: flex; flex-direction: column; gap: 10px; margin-top: var(--sp-3); }
+/* Essential cards — 3-per-row compact grid */
+.ess-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: var(--sp-2); }
 .ess-card-item {
-  display: flex; align-items: flex-start; gap: 12px;
+  display: flex; flex-direction: column; align-items: stretch;
   background: var(--gl-surface-2); border: 1px solid var(--gl-border-2);
-  border-radius: var(--r-md); padding: 10px;
+  border-radius: var(--r-md); overflow: hidden;
   cursor: pointer; position: relative; transition: border-color var(--t);
 }
 .ess-card-item:hover { border-color: var(--gl-gold-dim); }
 .ess-card-img {
-  width: 72px; flex-shrink: 0; aspect-ratio: 0.715;
-  object-fit: cover; border-radius: var(--r-sm);
+  width: 100%; aspect-ratio: 0.715;
+  object-fit: cover; border-radius: 0;
   background: var(--gl-surface-3); display: block;
   opacity: 0; transition: opacity var(--t);
 }
 .ess-card-img.loaded { opacity: 1; }
-.ess-card-text { flex: 1; min-width: 0; }
-.ess-card-name { font-size: 0.78rem; color: var(--gl-gold-h); font-weight: 700; line-height: 1.25; margin-bottom: 5px; }
-.ess-card-reason { font-size: 0.72rem; color: var(--gl-text-muted); line-height: 1.5; }
+.ess-card-text { padding: 6px 7px 7px; }
+.ess-card-name { font-size: 0.62rem; color: var(--gl-gold-h); font-weight: 700; line-height: 1.3; margin-bottom: 3px; }
+.ess-card-reason { font-size: 0.56rem; color: var(--gl-text-muted); line-height: 1.45; }
 .ess-card-placeholder {
-  width: 72px; flex-shrink: 0; aspect-ratio: 0.715;
-  background: var(--gl-surface-3); border-radius: var(--r-sm);
+  width: 100%; aspect-ratio: 0.715;
+  background: var(--gl-surface-3);
   display: flex; align-items: center; justify-content: center;
-  font-size: 0.6rem; color: var(--gl-text-faint); text-align: center; padding: 4px;
+  font-size: 0.6rem; color: var(--gl-text-faint); text-align: center; padding: 8px;
 }
 
 /* Matchup info panel on deck page */
