@@ -101,12 +101,34 @@
 html, body { height: 100%; overflow: hidden; }
 body {
   font-family: var(--font-body);
-  background: var(--gl-bg);
+  /* Radial glow background matching the Grand Line landing page */
+  background:
+    radial-gradient(ellipse 80% 60% at 75% 30%, rgba(74,158,255,0.05) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 40% at 15% 85%, rgba(201,168,76,0.07) 0%, transparent 55%),
+    radial-gradient(ellipse 100% 80% at 50% 110%, rgba(10,12,18,0.8) 0%, transparent 70%),
+    linear-gradient(170deg, #0a0c12 0%, #0d1020 45%, #0a1428 100%);
+  background-attachment: fixed;
   color: var(--gl-text);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   font-size: 0.875rem;
   line-height: 1.5;
+}
+
+/* ── STAR FIELD ── */
+#gl-stars {
+  position: fixed; inset: 0; z-index: 0;
+  pointer-events: none; overflow: hidden;
+}
+.gl-star {
+  position: absolute; border-radius: 50%;
+  background: rgba(201,168,76,0.55);
+  animation: glTwinkle var(--dur, 3s) ease-in-out infinite;
+  animation-delay: var(--delay, 0s);
+}
+@keyframes glTwinkle {
+  0%, 100% { opacity: 0.15; transform: scale(1); }
+  50%       { opacity: 0.7;  transform: scale(1.4); }
 }
 button { cursor: pointer; background: none; border: none; font: inherit; color: inherit; }
 input, textarea, select { font: inherit; color: inherit; }
@@ -116,7 +138,7 @@ a:hover { color: var(--gl-gold-h); }
 img, picture, video, canvas, svg { display: block; max-width: 100%; }
 
 /* ── APP SHELL ── */
-#app { position: fixed; inset: 0; overflow: hidden; }
+#app { position: fixed; inset: 0; overflow: hidden; z-index: 1; }
 
 /* ── SCREENS ── */
 .screen {
@@ -742,7 +764,7 @@ th.sort-active { color: var(--gl-gold-h); }
 /* ════════════════════════════════════════════
    DECK SCREEN
    ════════════════════════════════════════════ */
-#screen-deck { background: var(--gl-bg); }
+#screen-deck { background: transparent; }
 
 .deck-topbar {
   display: flex;
@@ -1272,6 +1294,7 @@ th.sort-active { color: var(--gl-gold-h); }
 </head>
 
 <body>
+<div id="gl-stars"></div>
 <div id="app">
 <div id="sync-dot"></div>
 <div id="dbg"></div>
@@ -6349,6 +6372,19 @@ function renderDeck(d, matchup, deckKey) {
   // render history
   _refreshMySection(deckKey);
 }
+// ── STAR FIELD GENERATOR ──────────────────────────────────────
+(function() {
+  const container = document.getElementById('gl-stars');
+  if (!container) return;
+  for (let i = 0; i < 55; i++) {
+    const s = document.createElement('div');
+    s.className = 'gl-star';
+    const size = Math.random() * 2.2 + 0.8;
+    s.style.cssText = `width:${size}px;height:${size}px;left:${Math.random()*100}%;top:${Math.random()*100}%;--dur:${2+Math.random()*5}s;--delay:${Math.random()*5}s;opacity:${0.1+Math.random()*0.4}`;
+    container.appendChild(s);
+  }
+})();
+
 // Init: check for existing auth session; if found show home, else show login
 _checkExistingSession();
 </script>
