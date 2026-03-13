@@ -1362,15 +1362,33 @@ th.sort-active { color: var(--gl-gold-h); }
 .myd-empty-text { font-size: 0.72rem; color: var(--gl-text-faint); text-align: center; }
 /* card chips list (left panel) */
 .myd-chips-list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 4px; min-height: 0; }
-.myd-chip { display: flex; align-items: center; gap: 5px; background: var(--gl-surface-2); border: 1px solid var(--gl-border-2); border-radius: 6px; padding: 4px 5px; transition: border-color 0.15s; }
-.myd-chip:hover { border-color: var(--gl-gold-dim); }
+.myd-chip { display: flex; align-items: center; gap: 5px; background: var(--gl-surface-2); border: 1px solid var(--gl-border-2); border-radius: 6px; padding: 4px 5px; transition: border-color 0.15s, background 0.15s; cursor: pointer; }
+.myd-chip:hover { border-color: var(--gl-gold-dim); background: var(--gl-surface-3); }
+.myd-chip.selected { border-color: var(--gl-gold); background: rgba(212,175,55,0.12); }
 .myd-chip-img { width: 30px; border-radius: 3px; flex-shrink: 0; display: block; }
 .myd-chip-info { flex: 1; min-width: 0; overflow: hidden; }
 .myd-chip-id { font-size: 0.52rem; font-family: monospace; color: var(--gl-text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .myd-chip-type { font-size: 0.46rem; color: var(--gl-text-faint); margin-top: 1px; }
+.myd-chip-cost { font-size: 0.46rem; color: var(--gl-gold); margin-top: 1px; }
 .myd-chip-cnt { font-size: 0.62rem; font-weight: 700; color: var(--gl-gold); flex-shrink: 0; }
 .myd-chip-rm { background: none; border: none; color: var(--gl-text-faint); cursor: pointer; font-size: 0.72rem; padding: 0 1px; line-height: 1; flex-shrink: 0; }
 .myd-chip-rm:hover { color: #e05858; }
+/* sort bar (right panel header) */
+.myd-sort-bar { display: flex; align-items: center; gap: 5px; margin-bottom: 10px; flex-wrap: wrap; }
+.myd-sort-lbl { font-size: 0.5rem; color: var(--gl-text-faint); text-transform: uppercase; letter-spacing: 0.08em; margin-right: 2px; }
+.myd-sort-btn { font-size: 0.55rem; padding: 3px 9px; border-radius: 20px; border: 1px solid var(--gl-border-2); background: var(--gl-surface-2); color: var(--gl-text-muted); cursor: pointer; transition: all 0.15s; font-family: inherit; }
+.myd-sort-btn:hover { border-color: var(--gl-gold-dim); color: var(--gl-text); }
+.myd-sort-btn.active { background: rgba(212,175,55,0.18); border-color: var(--gl-gold); color: var(--gl-gold); font-weight: 700; }
+/* selected card preview panel (top of right panel) */
+.myd-preview-card { display: flex; align-items: flex-start; gap: 12px; background: rgba(212,175,55,0.07); border: 1px solid rgba(212,175,55,0.3); border-radius: 10px; padding: 10px 12px; margin-bottom: 14px; }
+.myd-preview-card img { width: 96px; border-radius: 6px; display: block; box-shadow: 0 4px 16px rgba(0,0,0,0.6); flex-shrink: 0; }
+.myd-preview-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.myd-preview-id { font-size: 0.6rem; font-family: monospace; color: var(--gl-text-faint); }
+.myd-preview-type { font-size: 0.62rem; color: var(--gl-gold); font-weight: 600; }
+.myd-preview-cost-row { font-size: 0.68rem; color: var(--gl-text-muted); }
+.myd-preview-cost-val { color: var(--gl-text); font-weight: 700; font-size: 1rem; }
+.myd-preview-close { background: none; border: none; color: rgba(255,255,255,0.35); cursor: pointer; font-size: 1rem; padding: 0; line-height: 1; flex-shrink: 0; align-self: flex-start; margin-left: auto; }
+.myd-preview-close:hover { color: #fff; }
 /* card popup (non-fullscreen preview) */
 .myd-card-popup { position: fixed; z-index: 350; background: rgba(10,12,18,0.97); border: 1px solid rgba(255,255,255,0.18); border-radius: 10px; padding: 10px; box-shadow: 0 16px 48px rgba(0,0,0,0.85); flex-direction: column; align-items: center; gap: 6px; pointer-events: auto; }
 .myd-card-popup img { width: 250px; border-radius: 7px; display: block; }
@@ -5012,6 +5030,13 @@ let _mydCardTypeCache = {};
 try { _mydCardTypeCache = JSON.parse(localStorage.getItem('optcg-card-types') || '{}'); } catch(e) {}
 function _mydSaveTypeCache() { try { localStorage.setItem('optcg-card-types', JSON.stringify(_mydCardTypeCache)); } catch(e) {} }
 
+let _mydCardCostCache = {};
+try { _mydCardCostCache = JSON.parse(localStorage.getItem('optcg-card-costs') || '{}'); } catch(e) {}
+function _mydSaveCostCache() { try { localStorage.setItem('optcg-card-costs', JSON.stringify(_mydCardCostCache)); } catch(e) {} }
+
+let _mydSortMode = 'type';   // 'type' | 'cost'
+let _mydSelectedChipId = null;
+
 function _saveGames() { try { localStorage.setItem('optcg-games', JSON.stringify(allGames)); } catch(e) {} }
 function _saveNotes() { try { localStorage.setItem('optcg-notes', JSON.stringify(allNotes)); } catch(e) {} }
 function _saveMyDecks() { try { localStorage.setItem('optcg-my-decks', JSON.stringify(allMyDecks)); } catch(e) {} }
@@ -7060,6 +7085,7 @@ let _mydSaveTimer = null;
 
 function showMyDeckViewer(leaderCardId) {
   _mydCurrentCardId = leaderCardId;
+  _mydSelectedChipId = null;
   let leaderTitle = leaderCardId;
   for (const k of Object.keys(LEADERS)) {
     if (LEADERS[k].cardId === leaderCardId) { leaderTitle = LEADERS[k].title || leaderCardId; break; }
@@ -7169,18 +7195,53 @@ function _mydRenderCards() {
       </div>
     </div>`;
 
+  // Sort bar HTML
+  const sortBar = `<div class="myd-sort-bar">
+    <span class="myd-sort-lbl">Sort:</span>
+    <button class="myd-sort-btn${_mydSortMode==='type'?' active':''}" onclick="_mydSetSort('type')">By Type</button>
+    <button class="myd-sort-btn${_mydSortMode==='cost'?' active':''}" onclick="_mydSetSort('cost')">By Cost</button>
+  </div>`;
+
+  // Preview panel HTML (shown when a chip is selected)
+  let previewHtml = '';
+  if (_mydSelectedChipId) {
+    const pid = _mydSelectedChipId;
+    const ptype = _mydCardTypeCache[pid] || '';
+    const pcost = _mydCardCostCache[pid];
+    previewHtml = `<div class="myd-preview-card">
+      <img src="${cardImg(pid)}" alt="${pid}" onerror="this.style.opacity='0.3'">
+      <div class="myd-preview-info">
+        <div class="myd-preview-id">${pid}</div>
+        ${ptype ? `<div class="myd-preview-type">${ptype}</div>` : ''}
+        ${pcost != null ? `<div class="myd-preview-cost-row">Cost <span class="myd-preview-cost-val">${pcost}</span></div>` : ''}
+      </div>
+      <button class="myd-preview-close" onclick="event.stopPropagation();_mydClearPreview()" title="Close">×</button>
+    </div>`;
+  }
+
   if (!deckCards.length) {
-    table.innerHTML = leaderHtml + `<div class="myd-empty" style="min-height:100px">
+    table.innerHTML = previewHtml + sortBar + leaderHtml + `<div class="myd-empty" style="min-height:100px">
       <div class="myd-empty-text">Paste your decklist on the left or use the search bar below to add cards</div>
     </div>`;
     return;
   }
 
-  // Group by type (using cached types)
+  // Sort helper: by cost asc, unknown cost last
+  function byCost(a, b) {
+    const ca = _mydCardCostCache[a.id] ?? 999;
+    const cb = _mydCardCostCache[b.id] ?? 999;
+    return ca - cb;
+  }
+
+  // Group by type
   const characters = deckCards.filter(c => _mydCardTypeCache[c.id] === 'Character');
   const events     = deckCards.filter(c => _mydCardTypeCache[c.id] === 'Event');
   const stages     = deckCards.filter(c => _mydCardTypeCache[c.id] === 'Stage');
   const unknown    = deckCards.filter(c => !_mydCardTypeCache[c.id]);
+
+  if (_mydSortMode === 'cost') {
+    characters.sort(byCost); events.sort(byCost); stages.sort(byCost); unknown.sort(byCost);
+  }
 
   function section(label, list) {
     if (!list.length) return '';
@@ -7189,9 +7250,10 @@ function _mydRenderCards() {
     <div class="myd-cards-grid" style="margin-bottom:16px">${list.map(renderCard).join('')}</div>`;
   }
 
-  table.innerHTML = leaderHtml
+  table.innerHTML = previewHtml + sortBar + leaderHtml
     + section('Characters', characters)
-    + section('Events & Stages', [...events, ...stages])
+    + section('Events', events)
+    + section('Stages', stages)
     + (unknown.length ? section('Other', unknown) : '');
 
   // Async: fetch missing types and re-render
@@ -7212,11 +7274,13 @@ async function _mydLoadTypes(ids) {
       if (Array.isArray(data)) {
         for (const card of data) {
           if (card.card_id && card.card_type) _mydCardTypeCache[card.card_id] = card.card_type;
+          if (card.card_id && card.cost != null) _mydCardCostCache[card.card_id] = card.cost;
         }
       }
     } catch(e) {}
   }));
   _mydSaveTypeCache();
+  _mydSaveCostCache();
   _mydRenderCards();
   _mydRenderChips();
 }
@@ -7249,6 +7313,23 @@ function _mydHideCardPopup() {
   if (popup) popup.style.display = 'none';
 }
 
+function _mydSetSort(mode) {
+  _mydSortMode = mode;
+  _mydRenderCards();
+}
+
+function _mydSelectChip(id) {
+  _mydSelectedChipId = (_mydSelectedChipId === id) ? null : id;
+  _mydRenderCards();
+  _mydRenderChips();
+}
+
+function _mydClearPreview() {
+  _mydSelectedChipId = null;
+  _mydRenderCards();
+  _mydRenderChips();
+}
+
 function _mydRenderChips() {
   const ta   = document.getElementById('myd-ta');
   const list = document.getElementById('myd-chips-list');
@@ -7257,13 +7338,15 @@ function _mydRenderChips() {
   const { cards } = text.trim() ? parseDeckList(text) : { cards: [] };
   if (!cards.length) { list.innerHTML = ''; return; }
   list.innerHTML = cards.map(c => {
-    const t = _mydCardTypeCache[c.id];
-    const typeLabel = t ? `<div class="myd-chip-type">${t}</div>` : '';
-    return `<div class="myd-chip">
+    const t    = _mydCardTypeCache[c.id];
+    const cost = _mydCardCostCache[c.id];
+    const sel  = _mydSelectedChipId === c.id;
+    const meta = [t, cost != null ? `Cost ${cost}` : ''].filter(Boolean).join(' · ');
+    return `<div class="myd-chip${sel?' selected':''}" onclick="_mydSelectChip('${c.id}')">
       <img class="myd-chip-img" src="${cardImg(c.id)}" alt="${c.id}" loading="lazy" onerror="this.style.opacity='0.3'">
       <div class="myd-chip-info">
         <div class="myd-chip-id">${c.id}</div>
-        ${typeLabel}
+        ${meta ? `<div class="myd-chip-type">${meta}</div>` : ''}
       </div>
       <div class="myd-chip-cnt">${c.count}×</div>
       <button class="myd-chip-rm" onclick="event.stopPropagation();_mydRemoveCard('${c.id}')" title="Remove">×</button>
