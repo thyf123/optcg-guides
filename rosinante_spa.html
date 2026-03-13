@@ -1273,24 +1273,32 @@ th.sort-active { color: var(--gl-gold-h); }
 .dim-parse-hint span { color: var(--gl-gold); }
 
 /* ── MY DECK VIEWER ── */
-#screen-my-deck { background: transparent; }
-.myd-topbar { display: flex; align-items: center; gap: 10px; padding: var(--sp-3) 0 var(--sp-2); }
+#screen-my-deck { background: transparent; display: flex; flex-direction: column; }
+.myd-topbar { display: flex; align-items: center; gap: 10px; padding: var(--sp-3) 0 var(--sp-2); flex-shrink: 0; }
 .myd-back { background: none; border: none; color: var(--gl-text-muted); font-size: 1.1rem; cursor: pointer; padding: 4px 8px 4px 0; }
 .myd-title { font-size: 0.85rem; font-weight: 700; color: var(--gl-gold); font-family: var(--font-display); letter-spacing: 0.05em; flex: 1; }
 .myd-count { font-size: 0.7rem; color: var(--gl-text-faint); font-weight: 600; }
-.myd-edit-btn { background: var(--gl-surface-2); border: 1px solid var(--gl-border-2); border-radius: var(--r-sm); color: var(--gl-text-muted); font-size: 0.65rem; padding: 4px 10px; cursor: pointer; }
-.myd-controls { display: flex; align-items: center; gap: 8px; margin-bottom: var(--sp-3); flex-wrap: wrap; }
-.myd-search { flex: 1; min-width: 120px; background: var(--gl-surface-2); border: 1px solid var(--gl-border-2); border-radius: var(--r-md); color: var(--gl-text); font-size: 0.72rem; padding: 7px 11px; }
-.myd-search:focus { outline: none; border-color: var(--gl-gold-dim); }
-.myd-table { background: linear-gradient(160deg, #5c3a1e 0%, #3d2510 40%, #2a1a0c 100%); border-radius: var(--r-lg); padding: var(--sp-4); min-height: 260px; position: relative; overflow: hidden; }
+/* split layout */
+.myd-layout { display: flex; gap: 10px; flex: 1; overflow: hidden; min-height: 0; }
+/* left: text editor panel */
+.myd-text-panel { width: 130px; flex-shrink: 0; display: flex; flex-direction: column; gap: 6px; }
+.myd-ta-label { font-size: 0.55rem; font-weight: 700; color: var(--gl-gold); text-transform: uppercase; letter-spacing: 0.1em; }
+.myd-ta { flex: 1; background: var(--gl-surface-2); border: 1px solid var(--gl-border-2); border-radius: var(--r-md); color: var(--gl-text); font-family: monospace; font-size: 0.65rem; line-height: 1.8; padding: 8px 9px; resize: none; min-height: 0; }
+.myd-ta:focus { outline: none; border-color: var(--gl-gold-dim); }
+.myd-ta-hint { font-size: 0.55rem; color: var(--gl-text-faint); line-height: 1.4; }
+.myd-ta-saved { font-size: 0.55rem; color: var(--gl-success); opacity: 0; transition: opacity 0.4s; }
+.myd-ta-saved.show { opacity: 1; }
+/* right: card board */
+.myd-cards-panel { flex: 1; overflow-y: auto; min-width: 0; }
+.myd-table { background: linear-gradient(160deg, #5c3a1e 0%, #3d2510 40%, #2a1a0c 100%); border-radius: var(--r-lg); padding: var(--sp-3); min-height: 100%; position: relative; overflow: hidden; }
 .myd-table::before { content: ''; position: absolute; inset: 0; background: repeating-linear-gradient(90deg, rgba(255,255,255,0.012) 0px, transparent 1px, transparent 40px), repeating-linear-gradient(0deg, rgba(255,255,255,0.012) 0px, transparent 1px, transparent 40px); pointer-events: none; }
-.myd-cards-grid { display: flex; flex-wrap: wrap; gap: 14px 10px; position: relative; z-index: 1; }
+.myd-cards-grid { display: flex; flex-wrap: wrap; gap: 10px 8px; position: relative; z-index: 1; }
 .myd-stack { position: relative; cursor: pointer; transition: transform 0.15s; }
 .myd-stack:hover { transform: translateY(-4px); z-index: 10; }
 .myd-stack-inner { position: relative; }
-.myd-card-img { width: 68px; border-radius: 5px; display: block; box-shadow: 0 4px 12px rgba(0,0,0,0.6); }
-.myd-copy { position: absolute; top: 0; left: 0; width: 68px; border-radius: 5px; box-shadow: 0 4px 12px rgba(0,0,0,0.5); }
-.myd-count-badge { position: absolute; bottom: 5px; right: 3px; background: rgba(0,0,0,0.82); color: var(--gl-gold); font-size: 0.6rem; font-weight: 700; border-radius: 4px; padding: 1px 5px; line-height: 1.4; pointer-events: none; }
+.myd-card-img { width: 58px; border-radius: 4px; display: block; box-shadow: 0 4px 12px rgba(0,0,0,0.6); }
+.myd-copy { position: absolute; top: 0; left: 0; width: 58px; border-radius: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.5); }
+.myd-count-badge { position: absolute; bottom: 4px; right: 2px; background: rgba(0,0,0,0.82); color: var(--gl-gold); font-size: 0.58rem; font-weight: 700; border-radius: 4px; padding: 1px 4px; line-height: 1.4; pointer-events: none; }
 .myd-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 180px; gap: 10px; }
 .myd-empty-icon { font-size: 2.5rem; opacity: 0.3; }
 .myd-empty-text { font-size: 0.72rem; color: var(--gl-text-faint); text-align: center; }
@@ -1749,22 +1757,31 @@ th.sort-active { color: var(--gl-gold-h); }
   </div>
 </div>
 
-<!-- ════ SCREEN: MY DECK VIEWER ════ -->
+<!-- ════ SCREEN: MY DECK VIEWER / EDITOR ════ -->
 <div class="screen" id="screen-my-deck">
   <div class="myd-topbar">
     <button class="myd-back" onclick="closMyDeckViewer()">‹</button>
     <div class="myd-title" id="myd-title">My Deck</div>
     <span class="myd-count" id="myd-total"></span>
-    <button class="myd-edit-btn" onclick="_openDeckImportForCurrent()">Edit</button>
   </div>
-  <div class="myd-controls">
-    <input class="myd-search" id="myd-search" type="text" placeholder="Search card ID…" oninput="_mydFilter()">
-  </div>
-  <div class="myd-table" id="myd-table">
-    <div class="myd-empty">
-      <div class="myd-empty-icon">🃏</div>
-      <div class="myd-empty-text">No deck imported yet</div>
-      <button class="myd-empty-btn" onclick="_openDeckImportForCurrent()">+ Import Deck</button>
+  <div class="myd-layout">
+    <!-- left: live text editor -->
+    <div class="myd-text-panel">
+      <div class="myd-ta-label">Decklist</div>
+      <textarea class="myd-ta" id="myd-ta" spellcheck="false"
+        placeholder="4xOP07-046&#10;2xOP06-047&#10;…"
+        oninput="_mydTaChange()"></textarea>
+      <div class="myd-ta-hint">One card per line<br>e.g. <span style="color:var(--gl-gold);font-family:monospace">4xOP07-046</span></div>
+      <div class="myd-ta-saved" id="myd-ta-saved">✓ Saved</div>
+    </div>
+    <!-- right: card board -->
+    <div class="myd-cards-panel">
+      <div class="myd-table" id="myd-table">
+        <div class="myd-empty">
+          <div class="myd-empty-icon">🃏</div>
+          <div class="myd-empty-text">Paste your decklist on the left</div>
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -6769,23 +6786,30 @@ function _refreshMyDeckBar() {
 }
 
 let _mydCurrentCardId = null;
+let _mydSaveTimer = null;
 
 function showMyDeckViewer(leaderCardId) {
   _mydCurrentCardId = leaderCardId;
-  // Find leader info
   let leaderTitle = leaderCardId;
   for (const k of Object.keys(LEADERS)) {
     if (LEADERS[k].cardId === leaderCardId) { leaderTitle = LEADERS[k].title || leaderCardId; break; }
   }
   document.getElementById('myd-title').textContent = leaderTitle;
-  document.getElementById('myd-search').value = '';
-  _mydRenderCards('');
+  // Populate textarea from saved deck
+  const ta = document.getElementById('myd-ta');
+  const deck = allMyDecks[leaderCardId];
+  if (deck && deck.cards && deck.cards.length) {
+    ta.value = deck.cards.map(c => `${c.count}x${c.id}`).join('\n');
+  } else {
+    ta.value = '';
+  }
+  document.getElementById('myd-ta-saved').classList.remove('show');
+  _mydRenderCards();
   document.querySelectorAll('.screen').forEach(s => { s.classList.remove('active'); s.style.display = ''; });
   document.getElementById('screen-my-deck').classList.add('active');
 }
 
 function closMyDeckViewer() {
-  // Go back to matchup or home
   const ms = document.getElementById('screen-matchup');
   if (ms && currentLeaderKey) {
     document.querySelectorAll('.screen').forEach(s => { s.classList.remove('active'); s.style.display = ''; });
@@ -6796,31 +6820,50 @@ function closMyDeckViewer() {
   }
 }
 
-function _mydFilter() {
-  const q = (document.getElementById('myd-search').value || '').toLowerCase();
-  _mydRenderCards(q);
+function _mydTaChange() {
+  // Re-render grid immediately from textarea
+  _mydRenderCards();
+  // Debounced save
+  clearTimeout(_mydSaveTimer);
+  _mydSaveTimer = setTimeout(() => {
+    const ta = document.getElementById('myd-ta');
+    if (!ta || !_mydCurrentCardId) return;
+    const { cards } = parseDeckList(ta.value);
+    if (cards.length) {
+      allMyDecks[_mydCurrentCardId] = { cards, savedAt: Date.now() };
+      _saveMyDecks();
+      syncToSupabase();
+      _refreshMyDeckBar();
+    }
+    const saved = document.getElementById('myd-ta-saved');
+    if (saved) {
+      saved.classList.add('show');
+      setTimeout(() => saved.classList.remove('show'), 1800);
+    }
+  }, 700);
 }
 
-function _mydRenderCards(query) {
+function _mydRenderCards() {
+  const ta = document.getElementById('myd-ta');
   const table = document.getElementById('myd-table');
   const totalEl = document.getElementById('myd-total');
   if (!table) return;
-  const deck = allMyDecks[_mydCurrentCardId];
-  if (!deck || !deck.cards || !deck.cards.length) {
+
+  // Parse live from textarea
+  const text = ta ? ta.value : '';
+  const { cards } = text.trim() ? parseDeckList(text) : { cards: [] };
+
+  if (!cards.length) {
     table.innerHTML = `<div class="myd-empty">
       <div class="myd-empty-icon">🃏</div>
-      <div class="myd-empty-text">No deck imported yet</div>
-      <button class="myd-empty-btn" onclick="_openDeckImportForCurrent()">+ Import Deck</button>
+      <div class="myd-empty-text">Paste your decklist on the left</div>
     </div>`;
     if (totalEl) totalEl.textContent = '';
     return;
   }
-  const cards = query
-    ? deck.cards.filter(c => c.id.toLowerCase().includes(query))
-    : deck.cards;
-  const total = deck.cards.reduce((s,c)=>s+c.count,0);
-  const shown = cards.reduce((s,c)=>s+c.count,0);
-  if (totalEl) totalEl.textContent = query ? `${shown} / ${total}` : `${total} cards`;
+
+  const total = cards.reduce((s,c) => s + c.count, 0);
+  if (totalEl) totalEl.textContent = `${total} cards`;
 
   const stacks = cards.map(c => {
     const offset = Math.min(c.count - 1, 3);
