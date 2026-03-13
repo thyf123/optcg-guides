@@ -435,6 +435,12 @@ img, picture, video, canvas, svg { display: block; max-width: 100%; }
 .lc-stats-nudge { color: var(--gl-text-faint); font-size: 0.62rem; cursor: pointer; }
 .lc-stats-nudge:hover { color: var(--gl-text-muted); }
 .lc-deck-dot { position: absolute; top: 6px; right: 6px; width: 7px; height: 7px; border-radius: 50%; background: var(--gl-gold); opacity: 0.85; }
+/* Deck-highlighted leader cards */
+.leader-card.has-deck { border-color: rgba(201,168,76,0.35); }
+.leader-card.has-deck:hover { border-color: var(--gl-gold); }
+.lc-deck-badge { display: inline-block; font-size: 0.48rem; font-weight: 800; color: var(--gl-gold); text-transform: uppercase; letter-spacing: 0.1em; background: rgba(201,168,76,0.1); border: 1px solid rgba(201,168,76,0.3); border-radius: 3px; padding: 1px 5px; margin-top: 4px; }
+/* Section spacing on home */
+.home-section-gap { margin-top: var(--sp-6); }
 
 /* ════════════════════════════════════════════
    FAVOURITES
@@ -1576,9 +1582,18 @@ th.sort-active { color: var(--gl-gold-h); }
   </div>
 
   <div id="home-manage-hint"></div>
-  <div id="fav-section" class="fav-section"></div>
-  <div class="home-section-label">Choose a leader</div>
-  <div class="leader-grid" id="leader-grid"></div>
+
+  <!-- My Decks section — leaders with a saved deck -->
+  <div id="home-mydecks-wrap" style="display:none">
+    <div class="home-section-label">My Decks</div>
+    <div class="leader-grid" id="my-decks-grid"></div>
+  </div>
+
+  <!-- All Leaders section -->
+  <div id="home-leaders-wrap">
+    <div class="home-section-label" id="home-leaders-label">Choose a Leader</div>
+    <div class="leader-grid" id="leader-grid"></div>
+  </div>
 
   <footer style="text-align:center;margin-top:2.5rem;padding-bottom:1rem">
     <a href="https://www.perplexity.ai/computer" target="_blank" rel="noopener noreferrer"
@@ -6118,29 +6133,43 @@ function toggleHideLeader(key) {
 }
 
 function renderLeaderGrid() {
-  const grid = document.getElementById('leader-grid');
+  const grid      = document.getElementById('leader-grid');
+  const deckGrid  = document.getElementById('my-decks-grid');
+  const decksWrap = document.getElementById('home-mydecks-wrap');
+  const leadWrap  = document.getElementById('home-leaders-wrap');
+  const leadLabel = document.getElementById('home-leaders-label');
   grid.innerHTML = '';
+  if (deckGrid) deckGrid.innerHTML = '';
+
   // manage-mode hint
   const hint = document.getElementById('home-manage-hint');
   if (hint) hint.innerHTML = _homeEditMode
     ? '<div class="home-manage-hint">Tap a leader to show / hide it</div>' : '';
-  Object.keys(LEADERS).forEach(key => {
+
+  function buildCard(key) {
     const L = LEADERS[key];
     const isHidden = allHiddenLeaders.has(key);
-    if (!_homeEditMode && isHidden) return;
+    const hasDeck  = !_homeEditMode && !!allMyDecks[L.cardId];
     const card = document.createElement('div');
-    card.className = 'leader-card' + (isHidden ? ' hidden-leader' : '');
+    card.className = 'leader-card'
+      + (isHidden ? ' hidden-leader' : '')
+      + (hasDeck  ? ' has-deck' : '');
+    card.dataset.key = key;
     card.onclick = _homeEditMode ? () => toggleHideLeader(key) : () => selectLeader(key);
+
     const imgUrl = 'https://en.onepiece-cardgame.com/images/cardlist/card/' + L.cardId + '.png';
     const img = document.createElement('img');
     img.src = imgUrl; img.alt = L.name;
     img.onerror = function(){ this.style.display='none'; };
+
     const nameDiv = document.createElement('div');
     nameDiv.className = 'lc-name';
     nameDiv.textContent = L.name;
+
     const idDiv = document.createElement('div');
     idDiv.className = 'lc-id';
     idDiv.textContent = L.cardId;
+
     // stats bar
     const rec = _leaderTotalRecord(key);
     const statsDiv = document.createElement('div');
@@ -6151,13 +6180,15 @@ function renderLeaderGrid() {
       const wrClass = rec.wr >= 55 ? 'good' : rec.wr >= 45 ? 'ok' : 'bad';
       statsDiv.innerHTML = `<span class="lc-stats-rec">${rec.w}W ${rec.l}L</span> <span class="lc-stats-wr ${wrClass}">${rec.wr}%</span>`;
     }
-    // Deck indicator dot
-    if (!_homeEditMode && allMyDecks[L.cardId]) {
-      const deckDot = document.createElement('div');
-      deckDot.className = 'lc-deck-dot';
-      deckDot.title = 'Deck imported';
-      card.appendChild(deckDot);
+
+    // Deck badge (for decked cards) or dot in manage mode
+    if (hasDeck) {
+      const badge = document.createElement('div');
+      badge.className = 'lc-deck-badge';
+      badge.textContent = '✓ Deck saved';
+      statsDiv.appendChild(badge);
     }
+
     // Delete button for custom leaders in manage mode
     const isCustom = !!allCustomLeaders[key];
     if (_homeEditMode && isCustom) {
@@ -6168,14 +6199,31 @@ function renderLeaderGrid() {
       delBtn.onclick = (e) => { e.stopPropagation(); deleteCustomLeader(key); };
       card.appendChild(delBtn);
     }
+
     card.appendChild(img);
     card.appendChild(nameDiv);
     card.appendChild(idDiv);
     card.appendChild(statsDiv);
-    grid.appendChild(card);
+    return { card, hasDeck };
+  }
+
+  let deckCount = 0;
+  Object.keys(LEADERS).forEach(key => {
+    const L = LEADERS[key];
+    const isHidden = allHiddenLeaders.has(key);
+    if (!_homeEditMode && isHidden) return;
+
+    const { card, hasDeck } = buildCard(key);
+
+    if (hasDeck && deckGrid && !_homeEditMode) {
+      deckGrid.appendChild(card);
+      deckCount++;
+    } else {
+      grid.appendChild(card);
+    }
   });
 
-  // "Add new leader" tile — always last
+  // "Add new leader" tile — always last in the all-leaders grid
   if (!_homeEditMode) {
     const addTile = document.createElement('div');
     addTile.className = 'leader-card-add';
@@ -6183,6 +6231,11 @@ function renderLeaderGrid() {
     addTile.innerHTML = `<div class="leader-card-add-icon">+</div><div class="leader-card-add-label">New Leader</div>`;
     grid.appendChild(addTile);
   }
+
+  // Show/hide My Decks section & update All Leaders label
+  if (decksWrap) decksWrap.style.display = deckCount > 0 ? '' : 'none';
+  if (leadWrap)  leadWrap.classList.toggle('home-section-gap', deckCount > 0);
+  if (leadLabel) leadLabel.textContent = deckCount > 0 ? 'Other Leaders' : 'Choose a Leader';
 }
 
 // ── BOTTOM NAV ───────────────────────────────────────────────
