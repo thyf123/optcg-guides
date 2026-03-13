@@ -5403,17 +5403,20 @@ function _onAtInput() {
   const ta = _acTa; if (!ta) return;
   const val = ta.value, pos = ta.selectionStart;
   let start = -1;
-  for (let i = pos - 1; i >= Math.max(0, pos - 40); i--) {
+  for (let i = pos - 1; i >= Math.max(0, pos - 60); i--) {
     if (val[i] === '@') { start = i; break; }
-    if (val[i] === ' ' || val[i] === '\n') break;
+    if (val[i] === '\n') break; // only newlines stop the scan, not spaces
   }
   if (start < 0) { _hideAcDropdown(); return; }
-  const query = val.slice(start + 1, pos).toLowerCase();
+  const query = val.slice(start + 1, pos).toLowerCase().trim();
   _acStart = start;
   if (!query) { _hideAcDropdown(); return; }
-  const matches = _acPool.filter(c =>
-    c.name.toLowerCase().includes(query) || c.id.toLowerCase().includes(query)
-  ).slice(0, 8);
+  // Split query into words — all words must appear somewhere in the name or id
+  const terms = query.split(/\s+/).filter(Boolean);
+  const matches = _acPool.filter(c => {
+    const n = c.name.toLowerCase(), id = c.id.toLowerCase();
+    return terms.every(t => n.includes(t) || id.includes(t));
+  }).slice(0, 8);
   if (!matches.length) { _hideAcDropdown(); return; }
   _acCards = matches;
   _showAcDropdown(matches, ta);
