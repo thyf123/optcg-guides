@@ -4665,25 +4665,25 @@ function personalRecord(lk, dk) {
   const w = gs.filter(g => g.result === 'W').length;
   return { w, l: gs.length - w, total: gs.length };
 }
-function saveNote(deckKey, text) {
-  allNotes[_nk(currentLeaderKey, deckKey)] = text;
+function saveNote(leaderKey, deckKey, text) {
+  allNotes[_nk(leaderKey, deckKey)] = text;
   _saveNotes();
   syncToSupabase();
 }
-function saveNoteDeck(deckKey) {
+function saveNoteDeck(leaderKey, deckKey) {
   const ta = document.getElementById('my-notes-ta');
   if (!ta) return;
-  saveNote(deckKey, ta.value);
+  saveNote(leaderKey, deckKey, ta.value);
   const flash = document.getElementById('note-saved-flash');
   if (flash) {
     flash.classList.add('show');
     setTimeout(() => flash.classList.remove('show'), 1800);
   }
 }
-function clearNote(deckKey) {
+function clearNote(leaderKey, deckKey) {
   const ta = document.getElementById('my-notes-ta');
   if (ta) ta.value = '';
-  saveNote(deckKey, '');
+  saveNote(leaderKey, deckKey, '');
   const flash = document.getElementById('note-saved-flash');
   if (flash) {
     flash.classList.add('show');
@@ -6288,7 +6288,10 @@ function renderDeck(d, matchup, deckKey) {
     fab.onclick = (e) => openLogModal(deckKey, _mNameTop, e);
   }
   // append my-section
-  const existingNote = allNotes[_nk(currentLeaderKey, deckKey)] || '';
+  // Snapshot leader key at render time so Save/Clear always write to the correct
+  // leader+opponent pair regardless of any subsequent global state changes.
+  const _lk = currentLeaderKey;
+  const existingNote = allNotes[_nk(_lk, deckKey)] || '';
   const _mName = (matchup ? matchup.name : deckKey).replace(/'/g, '&#39;');
   html += `
   <div class="my-section">
@@ -6297,8 +6300,8 @@ function renderDeck(d, matchup, deckKey) {
     </div>
     <textarea id="my-notes-ta" class="my-notes-area" placeholder="Your observations, what to remember next time…"></textarea>
     <div class="my-note-actions">
-      <button class="my-note-save" onclick="saveNoteDeck('${deckKey}')">Save</button>
-      <button class="my-note-clear" onclick="clearNote('${deckKey}')">Clear</button>
+      <button class="my-note-save" onclick="saveNoteDeck('${_lk}', '${deckKey}')">Save</button>
+      <button class="my-note-clear" onclick="clearNote('${_lk}', '${deckKey}')">Clear</button>
       <span class="my-note-saved" id="note-saved-flash">Saved ✓</span>
     </div>
     <div style="display:flex;justify-content:space-between;align-items:center;margin:14px 0 6px">
