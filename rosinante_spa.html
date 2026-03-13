@@ -435,6 +435,7 @@ img, picture, video, canvas, svg { display: block; max-width: 100%; }
 .lc-stats-wr.bad   { color: var(--wr-bad-fg); }
 .lc-stats-nudge { color: var(--gl-text-faint); font-size: 0.62rem; cursor: pointer; }
 .lc-stats-nudge:hover { color: var(--gl-text-muted); }
+.lc-deck-dot { position: absolute; top: 6px; right: 6px; width: 7px; height: 7px; border-radius: 50%; background: var(--gl-gold); opacity: 0.85; }
 
 /* ════════════════════════════════════════════
    FAVOURITES
@@ -1206,6 +1207,51 @@ th.sort-active { color: var(--gl-gold-h); }
 .log-btn:hover { opacity: 1; }
 
 /* Settings modal (kept for legacy sync, now hidden behind auth) */
+/* ── DECK IMPORT MODAL ── */
+#deck-import-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.88); z-index: 500; display: none; align-items: flex-end; justify-content: center; padding: 0; }
+#deck-import-modal.open { display: flex; }
+.dim-sheet { background: var(--gl-surface); border-radius: var(--r-xl) var(--r-xl) 0 0; width: 100%; max-width: 540px; padding: var(--sp-5) var(--sp-4) calc(var(--sp-5) + env(safe-area-inset-bottom)); max-height: 90vh; display: flex; flex-direction: column; }
+.dim-handle { width: 36px; height: 4px; background: var(--gl-border-2); border-radius: 2px; margin: 0 auto var(--sp-4); flex-shrink: 0; }
+.dim-title { font-size: 0.85rem; font-weight: 700; color: var(--gl-gold); font-family: var(--font-display); letter-spacing: 0.05em; margin-bottom: 2px; }
+.dim-sub { font-size: 0.65rem; color: var(--gl-text-faint); margin-bottom: var(--sp-3); line-height: 1.5; }
+.dim-leader-row { display: flex; align-items: center; gap: 10px; background: var(--gl-surface-2); border: 1px solid var(--gl-border-2); border-radius: var(--r-md); padding: 8px 10px; margin-bottom: var(--sp-3); }
+.dim-leader-img { width: 40px; border-radius: 4px; flex-shrink: 0; }
+.dim-leader-name { font-size: 0.75rem; color: var(--gl-text); font-weight: 600; }
+.dim-leader-id { font-size: 0.6rem; color: var(--gl-text-faint); }
+.dim-ta { width: 100%; min-height: 160px; background: var(--gl-surface-2); border: 1px solid var(--gl-border-2); border-radius: var(--r-md); color: var(--gl-text); font-size: 0.72rem; font-family: monospace; padding: 10px 12px; resize: vertical; line-height: 1.7; box-sizing: border-box; }
+.dim-ta:focus { outline: none; border-color: var(--gl-gold-dim); }
+.dim-ta::placeholder { color: var(--gl-text-faint); opacity: 0.6; }
+.dim-row { display: flex; gap: 8px; margin-top: var(--sp-3); flex-shrink: 0; }
+.dim-btn-save { flex: 1; background: var(--gl-gold); color: #0a0c12; border: none; border-radius: var(--r-md); font-size: 0.78rem; font-weight: 700; padding: 11px; cursor: pointer; }
+.dim-btn-save:active { opacity: 0.85; }
+.dim-btn-cancel { background: var(--gl-surface-2); color: var(--gl-text-muted); border: 1px solid var(--gl-border-2); border-radius: var(--r-md); font-size: 0.78rem; padding: 11px 18px; cursor: pointer; }
+.dim-parse-hint { font-size: 0.6rem; color: var(--gl-text-faint); margin-top: 5px; }
+.dim-parse-hint span { color: var(--gl-gold); }
+
+/* ── MY DECK VIEWER ── */
+#screen-my-deck { background: transparent; }
+.myd-topbar { display: flex; align-items: center; gap: 10px; padding: var(--sp-3) 0 var(--sp-2); }
+.myd-back { background: none; border: none; color: var(--gl-text-muted); font-size: 1.1rem; cursor: pointer; padding: 4px 8px 4px 0; }
+.myd-title { font-size: 0.85rem; font-weight: 700; color: var(--gl-gold); font-family: var(--font-display); letter-spacing: 0.05em; flex: 1; }
+.myd-count { font-size: 0.7rem; color: var(--gl-text-faint); font-weight: 600; }
+.myd-edit-btn { background: var(--gl-surface-2); border: 1px solid var(--gl-border-2); border-radius: var(--r-sm); color: var(--gl-text-muted); font-size: 0.65rem; padding: 4px 10px; cursor: pointer; }
+.myd-controls { display: flex; align-items: center; gap: 8px; margin-bottom: var(--sp-3); flex-wrap: wrap; }
+.myd-search { flex: 1; min-width: 120px; background: var(--gl-surface-2); border: 1px solid var(--gl-border-2); border-radius: var(--r-md); color: var(--gl-text); font-size: 0.72rem; padding: 7px 11px; }
+.myd-search:focus { outline: none; border-color: var(--gl-gold-dim); }
+.myd-table { background: linear-gradient(160deg, #5c3a1e 0%, #3d2510 40%, #2a1a0c 100%); border-radius: var(--r-lg); padding: var(--sp-4); min-height: 260px; position: relative; overflow: hidden; }
+.myd-table::before { content: ''; position: absolute; inset: 0; background: repeating-linear-gradient(90deg, rgba(255,255,255,0.012) 0px, transparent 1px, transparent 40px), repeating-linear-gradient(0deg, rgba(255,255,255,0.012) 0px, transparent 1px, transparent 40px); pointer-events: none; }
+.myd-cards-grid { display: flex; flex-wrap: wrap; gap: 14px 10px; position: relative; z-index: 1; }
+.myd-stack { position: relative; cursor: pointer; transition: transform 0.15s; }
+.myd-stack:hover { transform: translateY(-4px); z-index: 10; }
+.myd-stack-inner { position: relative; }
+.myd-card-img { width: 68px; border-radius: 5px; display: block; box-shadow: 0 4px 12px rgba(0,0,0,0.6); }
+.myd-copy { position: absolute; top: 0; left: 0; width: 68px; border-radius: 5px; box-shadow: 0 4px 12px rgba(0,0,0,0.5); }
+.myd-count-badge { position: absolute; bottom: 5px; right: 3px; background: rgba(0,0,0,0.82); color: var(--gl-gold); font-size: 0.6rem; font-weight: 700; border-radius: 4px; padding: 1px 5px; line-height: 1.4; pointer-events: none; }
+.myd-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 180px; gap: 10px; }
+.myd-empty-icon { font-size: 2.5rem; opacity: 0.3; }
+.myd-empty-text { font-size: 0.72rem; color: var(--gl-text-faint); text-align: center; }
+.myd-empty-btn { background: var(--gl-gold); color: #0a0c12; border: none; border-radius: var(--r-md); font-size: 0.75rem; font-weight: 700; padding: 9px 20px; cursor: pointer; margin-top: 4px; }
+
 #sb-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.82); z-index: 400; display: none; align-items: center; justify-content: center; padding: var(--sp-4); }
 .sb-card { background: var(--gl-surface); border: 1px solid var(--gl-border-2); border-radius: var(--r-xl); padding: var(--sp-6); width: 340px; max-width: 100%; box-shadow: 0 24px 64px rgba(0,0,0,0.6); }
 .sb-title { font-size: 0.9rem; color: var(--gl-gold); font-weight: 700; margin-bottom: 4px; font-family: var(--font-display); letter-spacing: 0.05em; }
@@ -1608,6 +1654,48 @@ th.sort-active { color: var(--gl-gold-h); }
   <div class="modal-spinner" id="modal-spinner"></div>
   <img id="modal-img" src="" alt="">
   <div class="modal-lbl" id="modal-lbl"></div>
+</div>
+
+<!-- ════ DECK IMPORT MODAL ════ -->
+<div id="deck-import-modal" onclick="_dimBgClick(event)">
+  <div class="dim-sheet" onclick="event.stopPropagation()">
+    <div class="dim-handle"></div>
+    <div class="dim-title">Import Deck</div>
+    <div class="dim-sub">Paste your decklist — one card per line in <span style="color:var(--gl-gold);font-family:monospace">4xOP07-046</span> format</div>
+    <div class="dim-leader-row" id="dim-leader-row">
+      <img class="dim-leader-img" id="dim-leader-img" src="" alt="">
+      <div>
+        <div class="dim-leader-name" id="dim-leader-name">—</div>
+        <div class="dim-leader-id" id="dim-leader-id"></div>
+      </div>
+    </div>
+    <textarea class="dim-ta" id="dim-ta" placeholder="1xOP14-041&#10;4xOP07-046&#10;4xOP06-047&#10;…"></textarea>
+    <div class="dim-parse-hint" id="dim-parse-hint"></div>
+    <div class="dim-row">
+      <button class="dim-btn-cancel" onclick="closeDeckImport()">Cancel</button>
+      <button class="dim-btn-save" onclick="saveDeckImport()">Save Deck</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════ SCREEN: MY DECK VIEWER ════ -->
+<div class="screen" id="screen-my-deck">
+  <div class="myd-topbar">
+    <button class="myd-back" onclick="closMyDeckViewer()">‹</button>
+    <div class="myd-title" id="myd-title">My Deck</div>
+    <span class="myd-count" id="myd-total"></span>
+    <button class="myd-edit-btn" onclick="_openDeckImportForCurrent()">Edit</button>
+  </div>
+  <div class="myd-controls">
+    <input class="myd-search" id="myd-search" type="text" placeholder="Search card ID…" oninput="_mydFilter()">
+  </div>
+  <div class="myd-table" id="myd-table">
+    <div class="myd-empty">
+      <div class="myd-empty-icon">🃏</div>
+      <div class="myd-empty-text">No deck imported yet</div>
+      <button class="myd-empty-btn" onclick="_openDeckImportForCurrent()">+ Import Deck</button>
+    </div>
+  </div>
 </div>
 
 </div><!-- #app -->
@@ -4633,14 +4721,17 @@ let allGames = [];
 let allNotes = {};
 let allCustomTips = {};
 let allCustomEssentials = {};
+let allMyDecks = {};  // keyed by leader cardId → { cards: [{count, id}], name }
 
 try { allGames = JSON.parse(localStorage.getItem('optcg-games') || '[]'); } catch(e) {}
 try { allNotes = JSON.parse(localStorage.getItem('optcg-notes') || '{}'); } catch(e) {}
 try { allCustomTips = JSON.parse(localStorage.getItem('optcg-tips') || '{}'); } catch(e) {}
 try { allCustomEssentials = JSON.parse(localStorage.getItem('optcg-essentials') || '{}'); } catch(e) {}
+try { allMyDecks = JSON.parse(localStorage.getItem('optcg-my-decks') || '{}'); } catch(e) {}
 
 function _saveGames() { try { localStorage.setItem('optcg-games', JSON.stringify(allGames)); } catch(e) {} }
 function _saveNotes() { try { localStorage.setItem('optcg-notes', JSON.stringify(allNotes)); } catch(e) {} }
+function _saveMyDecks() { try { localStorage.setItem('optcg-my-decks', JSON.stringify(allMyDecks)); } catch(e) {} }
 
 
 function _saveTips() { try { localStorage.setItem('optcg-tips', JSON.stringify(allCustomTips)); } catch(e) {} }
@@ -5232,6 +5323,11 @@ async function syncFromSupabase() {
       allCustomEssentials = er.payload;
       try { localStorage.setItem('optcg-essentials', JSON.stringify(allCustomEssentials)); } catch(e) {}
     }
+    const mdr = rows.find(r => r.id === 'my-decks');
+    if (mdr && mdr.payload && typeof mdr.payload === 'object') {
+      allMyDecks = mdr.payload;
+      try { localStorage.setItem('optcg-my-decks', JSON.stringify(allMyDecks)); } catch(e) {}
+    }
 
     const hlr = rows.find(r => r.id === 'hidden-leaders');
     if (hlr && Array.isArray(hlr.payload)) {
@@ -5257,6 +5353,7 @@ async function syncToSupabase() {
         { id: 'notes', payload: allNotes, user_id: _userId(), updated_at: new Date().toISOString() },
         { id: 'tips', payload: allCustomTips, user_id: _userId(), updated_at: new Date().toISOString() },
         { id: 'essentials', payload: allCustomEssentials, user_id: _userId(), updated_at: new Date().toISOString() },
+        { id: 'my-decks', payload: allMyDecks, user_id: _userId(), updated_at: new Date().toISOString() },
         { id: 'hidden-leaders', payload: [...allHiddenLeaders], user_id: _userId(), updated_at: new Date().toISOString() },
       ])
     });
@@ -5748,6 +5845,13 @@ function renderLeaderGrid() {
     } else {
       const wrClass = rec.wr >= 55 ? 'good' : rec.wr >= 45 ? 'ok' : 'bad';
       statsDiv.innerHTML = `<span class="lc-stats-rec">${rec.w}W ${rec.l}L</span> <span class="lc-stats-wr ${wrClass}">${rec.wr}%</span>`;
+    }
+    // Deck indicator dot
+    if (!_homeEditMode && allMyDecks[L.cardId]) {
+      const deckDot = document.createElement('div');
+      deckDot.className = 'lc-deck-dot';
+      deckDot.title = 'Deck imported';
+      card.appendChild(deckDot);
     }
     card.appendChild(img);
     card.appendChild(nameDiv);
@@ -6279,16 +6383,29 @@ function selectLeader(key) {
   const myDeckKey = myLeaderCardId
     ? Object.keys(DECKLISTS).find(dk => DECKLISTS[dk].leader === myLeaderCardId)
     : null;
+  const hasImported = myLeaderCardId && allMyDecks[myLeaderCardId];
   const mdbBar  = document.getElementById('my-deck-bar');
   const mdbImg  = document.getElementById('mdb-img');
   const mdbName = document.getElementById('mdb-name');
   if (mdbBar) {
-    if (myDeckKey) {
-      const dl = DECKLISTS[myDeckKey];
+    if (hasImported || myDeckKey) {
       mdbImg.src = cardImg(myLeaderCardId);
+      mdbImg.classList.remove('loaded');
       mdbImg.onload = () => mdbImg.classList.add('loaded');
-      mdbName.textContent = dl.leaderName || myDeckKey;
-      mdbBar.onclick = () => openMyDeck(myDeckKey);
+      mdbName.textContent = L.title || (myDeckKey ? DECKLISTS[myDeckKey].leaderName : myLeaderCardId);
+      if (hasImported) {
+        mdbBar.onclick = () => showMyDeckViewer(myLeaderCardId);
+      } else {
+        mdbBar.onclick = () => openMyDeck(myDeckKey);
+      }
+      mdbBar.style.display = '';
+    } else if (myLeaderCardId) {
+      // No deck yet — show an "import" prompt bar
+      mdbImg.src = cardImg(myLeaderCardId);
+      mdbImg.classList.remove('loaded');
+      mdbImg.onload = () => mdbImg.classList.add('loaded');
+      mdbName.textContent = 'Tap to import your deck →';
+      mdbBar.onclick = () => openDeckImport(myLeaderCardId, L.title);
       mdbBar.style.display = '';
     } else {
       mdbBar.style.display = 'none';
@@ -6310,9 +6427,191 @@ function selectLeader(key) {
 
 
 function openMyDeck(deckKey) {
+  // If user has an imported deck for this leader, show the visual viewer
+  const L = LEADERS[currentLeaderKey];
+  if (L && allMyDecks[L.cardId]) {
+    showMyDeckViewer(L.cardId);
+    return;
+  }
+  // Otherwise fall back to the hardcoded deck view
   if (!deckKey) return;
   showDeck(deckKey);
 }
+
+// ── DECK IMPORT / VIEWER ──────────────────────────────────────
+let _dimLeaderCardId = null;  // which leader the import modal is for
+
+function openDeckImport(leaderCardId, leaderName) {
+  _dimLeaderCardId = leaderCardId;
+  const modal = document.getElementById('deck-import-modal');
+  const img   = document.getElementById('dim-leader-img');
+  const name  = document.getElementById('dim-leader-name');
+  const lid   = document.getElementById('dim-leader-id');
+  const ta    = document.getElementById('dim-ta');
+  const hint  = document.getElementById('dim-parse-hint');
+  img.src  = cardImg(leaderCardId);
+  name.textContent = leaderName || leaderCardId;
+  lid.textContent  = leaderCardId;
+  // Pre-fill with existing deck if any
+  const existing = allMyDecks[leaderCardId];
+  if (existing && existing.cards) {
+    ta.value = existing.cards.map(c => `${c.count}x${c.id}`).join('\n');
+  } else {
+    ta.value = '';
+  }
+  hint.textContent = '';
+  modal.classList.add('open');
+  setTimeout(() => ta.focus(), 100);
+}
+
+function _openDeckImportForCurrent() {
+  const L = LEADERS[currentLeaderKey];
+  if (!L) return;
+  openDeckImport(L.cardId, L.title || L.leaderName);
+}
+
+function closeDeckImport() {
+  document.getElementById('deck-import-modal').classList.remove('open');
+}
+
+function _dimBgClick(e) {
+  if (e.target === document.getElementById('deck-import-modal')) closeDeckImport();
+}
+
+function parseDeckList(text) {
+  const lines = text.split(/[\n,]+/).map(l => l.trim()).filter(Boolean);
+  const cards = [];
+  let errors = 0;
+  for (const line of lines) {
+    // Match formats: 4xOP07-046 | 4 OP07-046 | OP07-046 x4 | OP07-046
+    const m = line.match(/^(\d+)[x×\s]+([A-Z]{1,4}\d*-\d{3,4})$/i)
+           || line.match(/^([A-Z]{1,4}\d*-\d{3,4})[x×\s]+(\d+)$/i)
+           || line.match(/^([A-Z]{1,4}\d*-\d{3,4})$/i);
+    if (!m) { errors++; continue; }
+    // Normalise: first group may be count or id depending on regex branch
+    let count = 1, id;
+    if (m[1] && /^\d+$/.test(m[1])) { count = parseInt(m[1]); id = m[2].toUpperCase(); }
+    else if (m[2] && /^\d+$/.test(m[2])) { count = parseInt(m[2]); id = m[1].toUpperCase(); }
+    else { id = m[1].toUpperCase(); }
+    if (id) cards.push({ count: Math.min(count, 4), id });
+  }
+  return { cards, errors };
+}
+
+function saveDeckImport() {
+  const ta   = document.getElementById('dim-ta');
+  const hint = document.getElementById('dim-parse-hint');
+  if (!ta || !_dimLeaderCardId) return;
+  const { cards, errors } = parseDeckList(ta.value);
+  if (!cards.length) {
+    hint.innerHTML = '<span style="color:#e05858">No valid cards found. Check format: 4xOP07-046</span>';
+    return;
+  }
+  const total = cards.reduce((s, c) => s + c.count, 0);
+  allMyDecks[_dimLeaderCardId] = { cards, savedAt: Date.now() };
+  _saveMyDecks();
+  syncToSupabase();
+  closeDeckImport();
+  // Show viewer immediately
+  showMyDeckViewer(_dimLeaderCardId);
+  // Also refresh the My Deck bar if we're on the matchup screen
+  const L = LEADERS[currentLeaderKey];
+  if (L && L.cardId === _dimLeaderCardId) _refreshMyDeckBar();
+}
+
+function _refreshMyDeckBar() {
+  const L = LEADERS[currentLeaderKey];
+  if (!L) return;
+  const mdbBar = document.getElementById('my-deck-bar');
+  const mdbImg = document.getElementById('mdb-img');
+  const mdbName = document.getElementById('mdb-name');
+  if (!mdbBar) return;
+  const imported = allMyDecks[L.cardId];
+  if (imported) {
+    const total = imported.cards.reduce((s,c)=>s+c.count,0);
+    mdbImg.src = cardImg(L.cardId);
+    mdbImg.onload = () => mdbImg.classList.add('loaded');
+    mdbName.textContent = L.title || L.leaderName || L.cardId;
+    mdbBar.onclick = () => showMyDeckViewer(L.cardId);
+    mdbBar.style.display = '';
+  }
+}
+
+let _mydCurrentCardId = null;
+
+function showMyDeckViewer(leaderCardId) {
+  _mydCurrentCardId = leaderCardId;
+  // Find leader info
+  let leaderTitle = leaderCardId;
+  for (const k of Object.keys(LEADERS)) {
+    if (LEADERS[k].cardId === leaderCardId) { leaderTitle = LEADERS[k].title || leaderCardId; break; }
+  }
+  document.getElementById('myd-title').textContent = leaderTitle;
+  document.getElementById('myd-search').value = '';
+  _mydRenderCards('');
+  document.querySelectorAll('.screen').forEach(s => { s.classList.remove('active'); s.style.display = ''; });
+  document.getElementById('screen-my-deck').classList.add('active');
+}
+
+function closMyDeckViewer() {
+  // Go back to matchup or home
+  const ms = document.getElementById('screen-matchup');
+  if (ms && currentLeaderKey) {
+    document.querySelectorAll('.screen').forEach(s => { s.classList.remove('active'); s.style.display = ''; });
+    ms.classList.add('active');
+    _bnavSetActive('bnav-matchup');
+  } else {
+    showHome();
+  }
+}
+
+function _mydFilter() {
+  const q = (document.getElementById('myd-search').value || '').toLowerCase();
+  _mydRenderCards(q);
+}
+
+function _mydRenderCards(query) {
+  const table = document.getElementById('myd-table');
+  const totalEl = document.getElementById('myd-total');
+  if (!table) return;
+  const deck = allMyDecks[_mydCurrentCardId];
+  if (!deck || !deck.cards || !deck.cards.length) {
+    table.innerHTML = `<div class="myd-empty">
+      <div class="myd-empty-icon">🃏</div>
+      <div class="myd-empty-text">No deck imported yet</div>
+      <button class="myd-empty-btn" onclick="_openDeckImportForCurrent()">+ Import Deck</button>
+    </div>`;
+    if (totalEl) totalEl.textContent = '';
+    return;
+  }
+  const cards = query
+    ? deck.cards.filter(c => c.id.toLowerCase().includes(query))
+    : deck.cards;
+  const total = deck.cards.reduce((s,c)=>s+c.count,0);
+  const shown = cards.reduce((s,c)=>s+c.count,0);
+  if (totalEl) totalEl.textContent = query ? `${shown} / ${total}` : `${total} cards`;
+
+  const stacks = cards.map(c => {
+    const offset = Math.min(c.count - 1, 3);
+    let copies = '';
+    for (let i = offset; i > 0; i--) {
+      copies += `<img class="myd-copy" src="${cardImg(c.id)}" alt=""
+        style="top:${-i*3}px;left:${i*3}px;z-index:${10-i}">`;
+    }
+    return `<div class="myd-stack" onclick="openModal('${cardImg(c.id)}','${c.id}')">
+      <div class="myd-stack-inner" style="padding-top:${offset*3}px;padding-left:${offset*3}px">
+        ${copies}
+        <img class="myd-card-img" src="${cardImg(c.id)}" alt="${c.id}"
+          onload="this.style.opacity='1'" style="opacity:0;transition:opacity 0.2s;position:relative;z-index:10">
+        ${c.count > 1 ? `<div class="myd-count-badge">${c.count}×</div>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+
+  table.innerHTML = `<div class="myd-cards-grid">${stacks}</div>`;
+}
+
+// ── END DECK IMPORT / VIEWER ───────────────────────────────────
 
 // ── ESSENTIAL CARDS GRID ─────────────────────────────────────
 function _essCardId(cardStr) {
