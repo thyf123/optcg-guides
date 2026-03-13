@@ -925,30 +925,56 @@ th.sort-active { color: var(--gl-gold-h); }
 .ext-link-bottom:hover { color: var(--gl-text-muted); }
 
 /* Essential cards — 3-per-row compact grid */
-.ess-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: var(--sp-2); }
+.ess-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin-top: var(--sp-2); }
 .ess-card-item {
-  display: flex; flex-direction: column; align-items: stretch;
-  background: var(--gl-surface-2); border: 1px solid var(--gl-border-2);
-  border-radius: var(--r-md); overflow: hidden;
-  cursor: pointer; position: relative; transition: border-color var(--t);
+  position: relative; border-radius: var(--r-sm); overflow: hidden;
+  background: var(--gl-surface-3); cursor: pointer;
+  aspect-ratio: 0.715; transition: box-shadow var(--t);
 }
-.ess-card-item:hover { border-color: var(--gl-gold-dim); }
+.ess-card-item:hover { box-shadow: 0 0 0 2px var(--gl-gold-dim); }
 .ess-card-img {
-  width: 100%; aspect-ratio: 0.715;
-  object-fit: cover; border-radius: 0;
-  background: var(--gl-surface-3); display: block;
+  width: 100%; height: 100%;
+  object-fit: cover; display: block;
   opacity: 0; transition: opacity var(--t);
 }
 .ess-card-img.loaded { opacity: 1; }
-.ess-card-text { padding: 6px 7px 7px; }
-.ess-card-name { font-size: 0.62rem; color: var(--gl-gold-h); font-weight: 700; line-height: 1.3; margin-bottom: 3px; }
-.ess-card-reason { font-size: 0.56rem; color: var(--gl-text-muted); line-height: 1.45; }
+.ess-card-text {
+  position: absolute; bottom: 0; left: 0; right: 0;
+  background: linear-gradient(0deg, rgba(0,0,0,0.82) 0%, transparent 100%);
+  padding: 16px 4px 4px;
+}
+.ess-card-name { font-size: 0.52rem; color: #fff; font-weight: 700; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ess-card-reason { display: none; }
 .ess-card-placeholder {
-  width: 100%; aspect-ratio: 0.715;
+  width: 100%; height: 100%;
   background: var(--gl-surface-3);
   display: flex; align-items: center; justify-content: center;
-  font-size: 0.6rem; color: var(--gl-text-faint); text-align: center; padding: 8px;
+  font-size: 0.55rem; color: var(--gl-text-faint); text-align: center; padding: 6px;
 }
+.ess-del-btn {
+  position: absolute; top: 4px; right: 4px;
+  background: rgba(0,0,0,0.7); border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 50%; width: 20px; height: 20px;
+  color: #e88; font-size: 0.75rem; font-weight: 700;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  padding: 0; line-height: 1; z-index: 5;
+}
+.ess-del-btn:hover { background: rgba(200,60,60,0.85); border-color: #e88; color: #fff; }
+.ess-restore-btn {
+  position: absolute; top: 4px; right: 4px;
+  background: rgba(0,0,0,0.7); border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 50%; width: 20px; height: 20px;
+  color: #8be; font-size: 0.75rem; font-weight: 700;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  padding: 0; line-height: 1; z-index: 5;
+}
+.ess-restore-btn:hover { background: rgba(60,120,200,0.85); border-color: #8be; color: #fff; }
+.ess-card-item.ess-hidden { opacity: 0.35; }
+.ess-section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+.ess-add-slot { border: 2px dashed var(--gl-border-2); background: transparent; cursor: pointer; }
+.ess-add-slot:hover { border-color: var(--gl-gold-dim); color: var(--gl-gold); }
+.ess-edit-reason-input { width: 100%; background: var(--gl-surface-3); border: 1px solid var(--gl-border-2); border-radius: var(--r-sm); color: var(--gl-text); font-size: 0.62rem; padding: 4px 7px; margin-top: 4px; outline: none; }
+.ess-edit-reason-input:focus { border-color: var(--gl-gold-dim); }
 
 /* Matchup info panel on deck page */
 .matchup-info {
@@ -5123,6 +5149,7 @@ let allGames = [];
 let allNotes = {};
 let allCustomTips = {};
 let allCustomEssentials = {};
+let allHiddenEssentials = {};   // keyed by leaderKey:deckKey → Set of card indices to hide
 let allMyDecks = {};        // keyed by leader cardId → { cards: [{count, id}] }
 let allCustomLeaders = {};  // keyed by cardId → { cardId, name, addedAt }
 
@@ -5130,8 +5157,11 @@ try { allGames = JSON.parse(localStorage.getItem('optcg-games') || '[]'); } catc
 try { allNotes = JSON.parse(localStorage.getItem('optcg-notes') || '{}'); } catch(e) {}
 try { allCustomTips = JSON.parse(localStorage.getItem('optcg-tips') || '{}'); } catch(e) {}
 try { allCustomEssentials = JSON.parse(localStorage.getItem('optcg-essentials') || '{}'); } catch(e) {}
+try { allHiddenEssentials = JSON.parse(localStorage.getItem('optcg-hidden-ess') || '{}'); } catch(e) {}
 try { allMyDecks = JSON.parse(localStorage.getItem('optcg-my-decks') || '{}'); } catch(e) {}
 try { allCustomLeaders = JSON.parse(localStorage.getItem('optcg-custom-leaders') || '{}'); } catch(e) {}
+
+let _essEditMode = false;
 
 // Card type cache — keyed by card ID → 'Character'|'Event'|'Stage'|'Leader'
 let _mydCardTypeCache = {};
@@ -5385,13 +5415,54 @@ function commitTip(deckKey) {
   if (text) addCustomTip(deckKey, text);
   else _renderCustomTips(deckKey);
 }
+// ── HIDDEN BUILT-IN ESSENTIALS ────────────────────────────────
+function _saveHiddenEssentials() {
+  localStorage.setItem('optcg-hidden-ess', JSON.stringify(allHiddenEssentials));
+}
+function _hideEssCard(deckKey, label) {
+  const k = _nk(currentLeaderKey, deckKey);
+  if (!allHiddenEssentials[k]) allHiddenEssentials[k] = [];
+  if (!allHiddenEssentials[k].includes(label)) allHiddenEssentials[k].push(label);
+  _saveHiddenEssentials();
+  _rerenderEssSection(deckKey);
+}
+function _restoreEssCard(deckKey, label) {
+  const k = _nk(currentLeaderKey, deckKey);
+  if (allHiddenEssentials[k]) {
+    allHiddenEssentials[k] = allHiddenEssentials[k].filter(l => l !== label);
+  }
+  _saveHiddenEssentials();
+  _rerenderEssSection(deckKey);
+}
+function toggleEssEditMode(deckKey) {
+  _essEditMode = !_essEditMode;
+  _rerenderEssSection(deckKey);
+}
+function _buildBuiltinEssHtml(essential, deckKey) {
+  if (!essential || !essential.length) return '';
+  const k = _nk(currentLeaderKey, deckKey);
+  const hidden = allHiddenEssentials[k] || [];
+  const anyHidden = hidden.length > 0;
+  const editLabel = _essEditMode ? 'Done' : (anyHidden ? 'Edit (' + hidden.length + ' hidden)' : 'Edit');
+  const header = `<div class="ess-section-header">
+    <div class="mi-section-title" style="margin-bottom:0">Essential Cards</div>
+    <button class="tips-edit-btn${_essEditMode?' active':''}" onclick="toggleEssEditMode('${deckKey}')">${editLabel}</button>
+  </div>`;
+  return header + _essCardGrid(essential, deckKey);
+}
+function _rerenderEssSection(deckKey) {
+  const el = document.getElementById('builtin-ess-wrap');
+  if (el && _currentDeckMatchup && _currentDeckMatchup.essential) {
+    el.innerHTML = _buildBuiltinEssHtml(_currentDeckMatchup.essential, deckKey);
+  }
+}
 // ── CUSTOM ESSENTIALS ─────────────────────────────────────────
 function _getCustomEssentials(deckKey) { return allCustomEssentials[_nk(currentLeaderKey, deckKey)] || []; }
-function addCustomEssential(deckKey, id, name) {
+function addCustomEssential(deckKey, id, name, reason) {
   const k = _nk(currentLeaderKey, deckKey);
   if (!allCustomEssentials[k]) allCustomEssentials[k] = [];
   if (!allCustomEssentials[k].find(e => e.id === id)) {
-    allCustomEssentials[k].push({ id, name });
+    allCustomEssentials[k].push({ id, name, reason: reason || '' });
   }
   _saveEssentials();
   syncToSupabase();
@@ -5404,70 +5475,90 @@ function deleteCustomEssential(deckKey, idx) {
   syncToSupabase();
   _renderCustomEssentials(deckKey);
 }
+const ESS_MAX_CUSTOM = 3;
 function _buildCustomEssentialsHtml(deckKey) {
   const cards = _getCustomEssentials(deckKey);
+  const slots = cards.slice(0, ESS_MAX_CUSTOM);
   let rows = '';
-  cards.forEach((e, i) => {
+  slots.forEach((e, i) => {
     const imgHtml = e.id
       ? `<img class="ess-card-img" src="${cardImg(e.id)}" alt="${e.name}" onload="this.classList.add('loaded')" onerror="this.style.opacity='0.15'">`
-      : `<div class="ess-card-placeholder">${e.name}</div>`;
-    rows += `<div class="ess-card-item" style="position:relative" onclick="toggleCardZoom(event,this,'${e.id||''}')">
+      : `<div class="ess-card-placeholder">${e.name||'?'}</div>`;
+    rows += `<div class="ess-card-item" onclick="toggleCardZoom(event,this,'${e.id||''}')">
       ${imgHtml}
-      <div class="ess-card-text">
-        <div class="ess-card-name">${e.name}</div>
-        <div class="ess-card-reason" style="font-size:0.68rem;color:var(--gl-text-faint)">${e.id}</div>
-      </div>
-      <button onclick="event.stopPropagation();deleteCustomEssential('${deckKey}',${i})"
-        style="position:absolute;top:6px;right:7px;background:none;border:none;color:var(--gl-text-faint);font-size:0.9rem;cursor:pointer;padding:2px 5px;line-height:1" title="Remove">×</button>
+      <div class="ess-card-text"><div class="ess-card-name">${e.name}</div></div>
+      <button class="ess-del-btn" onclick="event.stopPropagation();deleteCustomEssential('${deckKey}',${i})" title="Remove">×</button>
     </div>`;
   });
-  const addBtn = `<button class="add-tip-btn" id="add-ess-btn" onclick="showAddEssentialInput('${deckKey}')">+ Add card</button>`;
-  const inputArea = `<div id="add-ess-area"></div>`;
-  const header = (cards.length > 0)
-    ? `<div style="font-size:0.62rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#c9a84c88;margin-bottom:6px">My Essential Cards</div>`
-    : '';
-  const grid = rows ? `<div class="ess-grid" style="margin-top:0">${rows}</div>` : '';
-  return `<div id="custom-ess-wrap-inner">${header}${grid}${inputArea}${addBtn}</div>`;
+  // Add empty slots up to max (show + button in first empty slot)
+  if (slots.length < ESS_MAX_CUSTOM) {
+    rows += `<div class="ess-card-item ess-add-slot" onclick="showAddEssentialInput('${deckKey}')" title="Add card">
+      <div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:4px;color:var(--gl-text-faint)">
+        <span style="font-size:1.3rem;line-height:1">+</span>
+        <span style="font-size:0.5rem">Add card</span>
+      </div>
+    </div>`;
+  }
+  const inputArea = `<div id="add-ess-area" style="margin-top:5px"></div>`;
+  const header = `<div style="font-size:0.6rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#c9a84c88;margin-bottom:5px">My picks (${slots.length}/${ESS_MAX_CUSTOM})</div>`;
+  const grid = `<div class="ess-grid" style="margin-top:0">${rows}</div>`;
+  return `<div id="custom-ess-wrap-inner">${header}${grid}${inputArea}</div>`;
 }
 function _renderCustomEssentials(deckKey) {
   const el = document.getElementById('custom-ess-wrap');
   if (el) el.innerHTML = _buildCustomEssentialsHtml(deckKey);
 }
 function showAddEssentialInput(deckKey) {
+  const cards = _getCustomEssentials(deckKey);
+  if (cards.length >= ESS_MAX_CUSTOM) return; // slot limit reached
   const area = document.getElementById('add-ess-area');
-  const btn  = document.getElementById('add-ess-btn');
   if (!area) return;
-  if (btn) btn.style.display = 'none';
-  area.innerHTML = `<div class="add-tip-row">
-    <input id="new-ess-input" class="add-tip-input" type="text" placeholder="Type @card or card ID…" autofocus>
-    <button class="add-tip-save" onclick="commitEssential('${deckKey}')">Add</button>
+  area.innerHTML = `<div class="add-tip-row" style="flex-direction:column;gap:4px;align-items:stretch">
+    <div style="display:flex;gap:5px">
+      <input id="new-ess-input" class="add-tip-input" type="text" placeholder="@name or card ID (e.g. OP06-033)…" autofocus style="flex:1;font-size:0.72rem">
+      <button class="add-tip-save" onclick="commitEssential('${deckKey}')">Add</button>
+      <button class="add-tip-save" style="background:transparent;border-color:var(--gl-border-2);color:var(--gl-text-faint)" onclick="_renderCustomEssentials('${deckKey}')">✕</button>
+    </div>
+    <input id="new-ess-reason" class="ess-edit-reason-input" type="text" placeholder="Why pick this card? (optional)">
   </div>`;
   const inp = document.getElementById('new-ess-input');
   if (inp) {
     inp.focus();
-    inp.addEventListener('keydown', e => { if (e.key === 'Enter') commitEssential(deckKey); });
+    inp.addEventListener('keydown', e => {
+      if (e.key === 'Enter') { e.preventDefault(); const r = document.getElementById('new-ess-reason'); if (r) r.focus(); else commitEssential(deckKey); }
+      if (e.key === 'Escape') _renderCustomEssentials(deckKey);
+    });
     _setupAtMention(inp, deckKey, _currentDeckMatchup);
+  }
+  const reasonInp = document.getElementById('new-ess-reason');
+  if (reasonInp) {
+    reasonInp.addEventListener('keydown', e => {
+      if (e.key === 'Enter') commitEssential(deckKey);
+      if (e.key === 'Escape') _renderCustomEssentials(deckKey);
+    });
   }
 }
 function commitEssential(deckKey) {
   const inp = document.getElementById('new-ess-input');
+  const reasonInp = document.getElementById('new-ess-reason');
   if (!inp) return;
   const text = inp.value.trim();
+  const reason = reasonInp ? reasonInp.value.trim() : '';
   if (!text) { _renderCustomEssentials(deckKey); return; }
   // Parse @[name](id) mention
   const mentionMatch = text.match(/@\[([^\]]+)\]\(([^)]+)\)/);
   if (mentionMatch) {
-    addCustomEssential(deckKey, mentionMatch[2], mentionMatch[1]);
+    addCustomEssential(deckKey, mentionMatch[2], mentionMatch[1], reason);
     return;
   }
   // Fallback: treat as card ID directly (e.g. OP06-033)
   const idMatch = text.match(/\b([A-Z]{1,4}\d*-\d{3,4})\b/);
   if (idMatch) {
-    addCustomEssential(deckKey, idMatch[1], idMatch[1]);
+    addCustomEssential(deckKey, idMatch[1], idMatch[1], reason);
     return;
   }
   // Treat as plain name
-  addCustomEssential(deckKey, '', text);
+  addCustomEssential(deckKey, '', text, reason);
 }
 // ── END CUSTOM ESSENTIALS ──────────────────────────────────────
 
@@ -7835,22 +7926,34 @@ function _essCardLabel(cardStr) {
   // "7-cost Law (OP12-073)" → "7-cost Law"
   return cardStr.replace(/\s*\([^)]*\)\s*/g, '').trim() || cardStr;
 }
-function _essCardGrid(essential) {
+function _essCardGrid(essential, deckKey) {
   if (!essential || !essential.length) return '';
+  const k = deckKey ? _nk(currentLeaderKey, deckKey) : null;
+  const hidden = k && allHiddenEssentials[k] ? allHiddenEssentials[k] : [];
   const items = essential.map(e => {
     const id = _essCardId(e.card);
     const label = _essCardLabel(e.card);
+    const isHidden = hidden.includes(label);
+    // In non-edit mode, skip hidden cards entirely
+    if (isHidden && !_essEditMode) return '';
     const imgHtml = id
       ? `<img class="ess-card-img" src="${cardImg(id)}" alt="${label}"
            onload="this.classList.add('loaded')"
            onerror="this.style.opacity='0.15'">`
       : `<div class="ess-card-placeholder">${label}</div>`;
-    return `<div class="ess-card-item" onclick="toggleCardZoom(event,this,'${id||''}')">
+    const safeLabel = label.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+    const actionBtn = _essEditMode && deckKey
+      ? (isHidden
+          ? `<button class="ess-restore-btn" onclick="event.stopPropagation();_restoreEssCard('${deckKey}','${safeLabel}')" title="Restore">↩</button>`
+          : `<button class="ess-del-btn" onclick="event.stopPropagation();_hideEssCard('${deckKey}','${safeLabel}')" title="Hide">×</button>`)
+      : '';
+    return `<div class="ess-card-item${isHidden?' ess-hidden':''}" style="position:relative" onclick="toggleCardZoom(event,this,'${id||''}')">
       ${imgHtml}
       <div class="ess-card-text">
         <div class="ess-card-name">${label}</div>
-        <div class="ess-card-reason">${e.reason}</div>
+        <div class="ess-card-reason">${e.reason||''}</div>
       </div>
+      ${actionBtn}
     </div>`;
   }).join('');
   return `<div class="ess-grid">${items}</div>`;
@@ -7862,6 +7965,7 @@ function renderDeck(d, matchup, deckKey) {
   _currentDeckMatchup = matchup;
   _currentDeckKey = deckKey;
   _tipsEditMode = false;
+  _essEditMode = false;
   const total = d.sections.reduce((a,s)=>a+s.cards.reduce((b,c)=>b+c.count,0),0);
 
   // color pips for leader
@@ -7881,9 +7985,8 @@ function renderDeck(d, matchup, deckKey) {
 
     let essHtml = '';
     if (matchup.essential && matchup.essential.length) {
-      essHtml = `<div class="mi-section">
-        <div class="mi-section-title">Essential Cards</div>
-        ${_essCardGrid(matchup.essential)}
+      essHtml = `<div class="mi-section" id="builtin-ess-wrap">
+        ${_buildBuiltinEssHtml(matchup.essential, deckKey)}
       </div>`;
     }
 
