@@ -4858,6 +4858,7 @@ function toggleFav(key) {
 
 function renderFavs() {
   const sec = document.getElementById('fav-section');
+  if (!sec) return; // element removed from layout
   if (!favs.length) { sec.style.display = 'none'; return; }
   sec.style.display = 'block';
   let html = '<div class="fav-title">★ Favourites</div><div class="fav-grid">';
