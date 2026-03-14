@@ -5503,7 +5503,12 @@ function _buildCustomTipsHtml(deckKey) {
 }
 function _renderCustomTips(deckKey) {
   const el = document.getElementById('custom-tips-wrap');
-  if (el) el.innerHTML = _buildCustomTipsHtml(deckKey);
+  if (!el) return;
+  el.innerHTML = _buildCustomTipsHtml(deckKey);
+  // Wire @mention autotag on all edit inputs (shown in edit mode)
+  el.querySelectorAll('.cti-edit-input').forEach(inp => {
+    _setupAtMention(inp, deckKey, _currentDeckMatchup);
+  });
 }
 function showAddTipInput(deckKey) {
   const area = document.getElementById('add-tip-area');
@@ -5515,7 +5520,7 @@ function showAddTipInput(deckKey) {
   const inp = document.getElementById('new-tip-input');
   if (inp) {
     inp.focus();
-    inp.addEventListener('keydown', e => { if (e.key === 'Enter') commitTip('${deckKey}'); });
+    inp.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); commitTip(deckKey); } });
     _setupAtMention(inp, deckKey, _currentDeckMatchup);
   }
 }
