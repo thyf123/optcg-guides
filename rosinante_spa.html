@@ -7635,11 +7635,43 @@ function _mydRenderCards() {
   if (missingAny.length) _mydLoadTypes(missingAny);
 }
 
+// Populate local caches from an array of card objects (works for both Supabase and OPTCG API format)
+function _mydCacheCards(cards) {
+  for (const card of cards) {
+    const id = _normId(card.id || card.card_id || card.card_set_id);
+    if (!id) continue;
+    const typeRaw = (card.card_type || card.type || '').trim();
+    if (typeRaw) _mydCardTypeCache[id] = typeRaw.charAt(0).toUpperCase() + typeRaw.slice(1).toLowerCase();
+    const costVal = card.cost ?? card.card_cost ?? card.card_price ?? null;
+    if (costVal != null) _mydCardCostCache[id] = Number(costVal);
+    if (card.card_name)  _mydCardNameCache[id]  = card.card_name;
+    if (card.card_color) _mydCardColorCache[id] = card.card_color;
+    const ctrRaw = card.counter ?? card.counter_plus_power ?? card.card_counter ?? card['counter+power'] ?? null;
+    const ctrNum = ctrRaw != null ? Number(String(ctrRaw).replace(/[^0-9]/g, '')) : null;
+    _mydCardCounterCache[id] = ctrNum != null ? ctrNum : 0;
+  }
+}
+
+const _SB_CARDS_URL = 'https://ecsvfbupidmoaekxlcau.supabase.co/rest/v1/card_metadata';
+const _SB_CARDS_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVjc3ZmYnVwaWRtb2Fla3hsY2F1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyNDUwNTIsImV4cCI6MjA4ODgyMTA1Mn0.GPOamlglofRx_4GuV9ifEHDO_Ft-eHlmaMR_LyGYosA';
+
 async function _mydFetchSet(setId) {
   try {
+    // 1. Try our own Supabase database first — reliable, no rate limits, no CORS
+    try {
+      const r = await fetch(
+        `${_SB_CARDS_URL}?set_id=eq.${encodeURIComponent(setId)}&select=id,card_type,cost,counter,card_name,card_color`,
+        { headers: { 'apikey': _SB_CARDS_KEY, 'Authorization': 'Bearer ' + _SB_CARDS_KEY } }
+      );
+      const rows = await r.json();
+      if (Array.isArray(rows) && rows.length > 0) {
+        _mydCacheCards(rows);
+        return; // got data from our own DB — done
+      }
+    } catch(e) {}
+
+    // 2. Supabase empty or unavailable — fall back to OPTCG API via Railway proxy
     const directUrl = `https://www.optcgapi.com/api/sets/filtered/?card_set_id=${encodeURIComponent(setId)}`;
-    // Use our own server proxy first (works on Railway, no CORS)
-    // Fall back to direct (works on GitHub Pages) then corsproxy.io
     let data;
     try {
       const r = await fetch(`/api/cards?set=${encodeURIComponent(setId)}`);
@@ -7655,24 +7687,8 @@ async function _mydFetchSet(setId) {
         data = await r.json();
       }
     }
-    if (!Array.isArray(data)) return;
-    for (const card of data) {
-      const id = _normId(card.card_id || card.card_set_id);
-      if (!id) continue;
-      const typeRaw = (card.card_type || card.type || '').trim();
-      if (typeRaw) _mydCardTypeCache[id] = typeRaw.charAt(0).toUpperCase() + typeRaw.slice(1).toLowerCase();
-      const costVal = card.cost ?? card.card_cost ?? card.card_price ?? null;
-      if (costVal != null) _mydCardCostCache[id] = Number(costVal);
-      if (card.card_name)  _mydCardNameCache[id]  = card.card_name;
-      if (card.card_color) _mydCardColorCache[id] = card.card_color;
-      // counter — try all known field names; store 0 only if confirmed absent
-      const ctrRaw = card.counter ?? card.counter_plus_power ?? card.card_counter ?? card['counter+power'] ?? null;
-      const ctrNum = ctrRaw != null ? Number(String(ctrRaw).replace(/[^0-9]/g, '')) : null;
-      if (ctrNum != null) _mydCardCounterCache[id] = ctrNum;
-      // If API returned data but no counter field → card has no counter (Leaders, some characters)
-      // Store 0 only after confirmed fetch (not as a pre-emptive default)
-      else _mydCardCounterCache[id] = 0;
-    }
+    if (!Array.isArray(data) || !data.length) return;
+    _mydCacheCards(data);
   } catch(e) {}
 }
 let _mydFetchAttempts = 0;
