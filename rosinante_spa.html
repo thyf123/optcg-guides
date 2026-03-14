@@ -8226,13 +8226,13 @@ function _mydAddCard(id, name) {
 // ── ESSENTIAL CARDS GRID ─────────────────────────────────────
 // Known essential card names → IDs (for cards without embedded IDs)
 const _ESS_NAME_MAP = {
-  'gamma knife':   'OP05-077',
-  'vergo':         'OP07-071',
-  'sugar':         'OP06-033',
-  'uso-hachi':     'EB01-039',
-  'koushirou':     'OP12-074',
-  'tashigi':       'OP12-079',
-  'kuina':         'OP12-075',
+  'gamma knife':   'OP05-077', // Event, cost 2
+  'vergo':         'OP05-023', // Character cost 3, most used in Law decks
+  'sugar':         'OP04-024', // Character cost 2, Dressrosa searcher
+  'uso-hachi':     'OP05-061', // Character cost 3
+  'koushirou':     'OP12-027', // Character cost 2
+  'tashigi':       'OP12-031', // Character cost 5
+  'kuina':         'OP12-026', // Character cost 4
 };
 function _essCardId(cardStr) {
   // Extract card ID from strings like "7-cost Law (OP12-073)" or "EB04-038 (6-cost Rosi & Law)"
