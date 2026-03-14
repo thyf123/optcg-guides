@@ -1388,7 +1388,9 @@ th.sort-active { color: var(--gl-gold-h); }
 .myd-section-label { font-size: 0.58rem; font-weight: 700; color: rgba(255,255,255,0.5); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 8px; position: relative; z-index: 1; }
 /* cards grid */
 .myd-cards-grid { display: flex; flex-wrap: wrap; gap: 14px 10px; position: relative; z-index: 1; }
-.myd-stack { position: relative; padding-bottom: 30px; }
+.myd-stack { position: relative; padding-bottom: 30px; transition: transform 0.18s ease, z-index 0s; }
+.myd-stack.highlighted { transform: scale(1.12); z-index: 20; }
+.myd-stack.highlighted .myd-stack-inner { box-shadow: 0 0 0 3px var(--gl-gold), 0 0 18px rgba(212,175,55,0.55); border-radius: 6px; }
 .myd-stack-inner { position: relative; cursor: pointer; }
 .myd-card-img { width: 110px; border-radius: 5px; display: block; box-shadow: 0 4px 14px rgba(0,0,0,0.65); }
 .myd-copy { position: absolute; top: 0; left: 0; width: 110px; border-radius: 5px; box-shadow: 0 4px 14px rgba(0,0,0,0.5); }
@@ -7549,7 +7551,6 @@ function _mydRenderCards() {
       <div class="myd-stack-inner"
            onclick="_mydShowCardPopup('${c.id}','${cardImg(c.id)}',event)">
         <img class="myd-card-img" src="${cardImg(c.id)}" alt="${c.id}" loading="eager">
-        <div class="myd-count-badge">${c.count}×</div>
       </div>
       <div class="myd-card-controls">
         <button class="myd-ctrl-btn myd-ctrl-del" title="Remove"
@@ -7618,11 +7619,11 @@ function _mydRenderCards() {
   }
 
   table.innerHTML = sortBar + leaderHtml
+    + _mydRenderAnalysis(deckCards)
     + section('Characters', characters)
     + section('Events', events)
     + section('Stages', stages)
-    + (unknown.length ? section('Other', unknown) : '')
-    + _mydRenderAnalysis(deckCards);
+    + (unknown.length ? section('Other', unknown) : '');
 
   _mydUpdatePreview();
 
@@ -7835,10 +7836,21 @@ function _mydRenderAnalysis(deckCards) {
 
 function _mydSelectChip(id) {
   _mydSelectedChipId = (_mydSelectedChipId === id) ? null : id;
-  // Update chip selection in-place — no full grid re-render needed
+  // Update chip highlight in list
   document.querySelectorAll('#myd-chips-list .myd-chip[data-id]').forEach(el => {
     el.classList.toggle('selected', el.dataset.id === _mydSelectedChipId);
   });
+  // Highlight + scroll to matching card in the right grid
+  document.querySelectorAll('#myd-table .myd-stack').forEach(el => {
+    el.classList.remove('highlighted');
+  });
+  if (_mydSelectedChipId) {
+    const stack = document.querySelector(`#myd-table .myd-stack[data-id="${_mydSelectedChipId}"]`);
+    if (stack) {
+      stack.classList.add('highlighted');
+      stack.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }
   _mydUpdatePreview();
 }
 
