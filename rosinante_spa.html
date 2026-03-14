@@ -5202,6 +5202,9 @@ try { allCustomLeaders = JSON.parse(localStorage.getItem('optcg-custom-leaders')
 
 let _essEditMode = false;
 
+// Central ID normalizer — always call this before any cache read/write or API lookup
+function _normId(id) { return (id || '').trim().toUpperCase(); }
+
 // Card type cache — keyed by card ID → 'Character'|'Event'|'Stage'|'Leader'
 let _mydCardTypeCache = {};
 try {
@@ -5209,7 +5212,7 @@ try {
   // Normalize: uppercase keys (card IDs), title-case values
   Object.keys(_rawTypes).forEach(k => {
     const v = String(_rawTypes[k] || '').trim();
-    if (v) _mydCardTypeCache[k.toUpperCase()] = v.charAt(0).toUpperCase() + v.slice(1).toLowerCase();
+    if (v) _mydCardTypeCache[_normId(k)] = v.charAt(0).toUpperCase() + v.slice(1).toLowerCase();
   });
 } catch(e) {}
 function _mydSaveTypeCache() { try { localStorage.setItem('optcg-card-types', JSON.stringify(_mydCardTypeCache)); } catch(e) {} }
@@ -5220,7 +5223,7 @@ try {
   // Normalize: uppercase keys; only keep valid numeric costs
   Object.keys(_rawCosts).forEach(k => {
     const v = _rawCosts[k];
-    if (v != null && !isNaN(Number(v))) _mydCardCostCache[k.toUpperCase()] = Number(v);
+    if (v != null && !isNaN(Number(v))) _mydCardCostCache[_normId(k)] = Number(v);
   });
 } catch(e) {}
 function _mydSaveCostCache() { try { localStorage.setItem('optcg-card-costs', JSON.stringify(_mydCardCostCache)); } catch(e) {} }
@@ -5228,21 +5231,21 @@ function _mydSaveCostCache() { try { localStorage.setItem('optcg-card-costs', JS
 let _mydCardNameCache = {};
 try {
   const _rawNames = JSON.parse(localStorage.getItem('optcg-card-names') || '{}');
-  Object.keys(_rawNames).forEach(k => { if (_rawNames[k]) _mydCardNameCache[k.toUpperCase()] = _rawNames[k]; });
+  Object.keys(_rawNames).forEach(k => { if (_rawNames[k]) _mydCardNameCache[_normId(k)] = _rawNames[k]; });
 } catch(e) {}
 function _mydSaveNameCache() { try { localStorage.setItem('optcg-card-names', JSON.stringify(_mydCardNameCache)); } catch(e) {} }
 
 let _mydCardColorCache = {};
 try {
   const _rawColors = JSON.parse(localStorage.getItem('optcg-card-colors') || '{}');
-  Object.keys(_rawColors).forEach(k => { if (_rawColors[k]) _mydCardColorCache[k.toUpperCase()] = _rawColors[k]; });
+  Object.keys(_rawColors).forEach(k => { if (_rawColors[k]) _mydCardColorCache[_normId(k)] = _rawColors[k]; });
 } catch(e) {}
 function _mydSaveColorCache() { try { localStorage.setItem('optcg-card-colors', JSON.stringify(_mydCardColorCache)); } catch(e) {} }
 
 let _mydCardCounterCache = {};
 try {
   const _rawCtrs = JSON.parse(localStorage.getItem('optcg-card-counters') || '{}');
-  Object.keys(_rawCtrs).forEach(k => { if (_rawCtrs[k] != null) _mydCardCounterCache[k.toUpperCase()] = _rawCtrs[k]; });
+  Object.keys(_rawCtrs).forEach(k => { if (_rawCtrs[k] != null) _mydCardCounterCache[_normId(k)] = _rawCtrs[k]; });
 } catch(e) {}
 function _mydSaveCounterCache() { try { localStorage.setItem('optcg-card-counters', JSON.stringify(_mydCardCounterCache)); } catch(e) {} }
 
@@ -7609,7 +7612,7 @@ async function _mydFetchSet(setId) {
     const data = await res.json();
     if (!Array.isArray(data)) return;
     for (const card of data) {
-      const id = (card.card_id || card.card_set_id || '').trim().toUpperCase();
+      const id = _normId(card.card_id || card.card_set_id);
       if (!id) continue;
       const typeRaw = (card.card_type || card.type || '').trim();
       if (typeRaw) _mydCardTypeCache[id] = typeRaw.charAt(0).toUpperCase() + typeRaw.slice(1).toLowerCase();
@@ -8022,13 +8025,13 @@ async function _mydSearchInput(val) {
       for (const data of datasets) {
         if (!Array.isArray(data)) continue;
         for (const r of data) {
-          const id = (r.card_set_id || r.card_id || '').trim().toUpperCase();
+          const id = _normId(r.card_set_id || r.card_id);
           if (id && !seen.has(id)) { seen.add(id); all.push({ ...r, card_id: id, card_set_id: id }); }
         }
       }
       // Cache any data we got back
       for (const r of all) {
-        const id = (r.card_set_id || r.card_id || '').trim().toUpperCase();
+        const id = _normId(r.card_set_id || r.card_id);
         if (!id) continue;
         const rTypeRaw = (r.card_type || r.type || '').trim();
         if (rTypeRaw) _mydCardTypeCache[id] = rTypeRaw.charAt(0).toUpperCase() + rTypeRaw.slice(1).toLowerCase();
