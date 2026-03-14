@@ -58,26 +58,19 @@ http.createServer((req, res) => {
   // Trigger by visiting /api/import-cards in browser (Railway's IP, not yours)
   if (url === '/api/import-cards') {
     res.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8', 'Transfer-Encoding': 'chunked', 'X-Content-Type-Options': 'nosniff' });
-    res.flushHeaders(); // stream each line immediately instead of buffering
-    res.write('Starting card import...\n');
+    res.flushHeaders();
+    res.write('Starting card import from punk-records (GitHub)...\n');
 
-    const ALL_SETS = [
-      'OP01','OP02','OP03','OP04','OP05','OP06','OP07','OP08','OP09','OP10','OP11','OP12','OP13','OP14',
-      'EB01','EB02','EB03','EB04',
-      'ST01','ST02','ST03','ST04','ST05','ST06','ST07','ST08','ST09','ST10',
-      'ST11','ST12','ST13','ST14','ST15','ST16','ST17','ST18','ST19','ST20',
-      'P'
-    ];
-
-    // Hardcoded fallback so import works even if Railway env vars aren't set
+    // Source: https://github.com/buhbbl/punk-records — static JSON, no API key, no rate limits
+    const GH_RAW = 'https://raw.githubusercontent.com/buhbbl/punk-records/main/english';
     const SB_URL_LOCAL = process.env.SUPABASE_URL || 'https://ecsvfbupidmoaekxlcau.supabase.co';
     const SB_KEY_LOCAL = process.env.SUPABASE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVjc3ZmYnVwaWRtb2Fla3hsY2F1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM0MDI0MDQsImV4cCI6MjA1ODk3ODQwNH0.iSu_Hn9a0RhJ8TjS7FMPKa5u7DPqyMF7H0GCnQYRb0o';
 
     function httpsGet(url) {
       return new Promise((resolve, reject) => {
-        https.get(url, r => {
+        https.get(url, { headers: { 'User-Agent': 'Node.js' } }, r => {
           let b = ''; r.on('data', c => b += c);
-          r.on('end', () => { try { resolve(JSON.parse(b)); } catch(e) { resolve({ _raw: b.slice(0, 200), _status: r.statusCode }); } });
+          r.on('end', () => { try { resolve(JSON.parse(b)); } catch(e) { resolve(null); } });
         }).on('error', reject);
       });
     }
@@ -101,22 +94,31 @@ http.createServer((req, res) => {
 
     (async () => {
       let total = 0;
-      for (const setId of ALL_SETS) {
+      // Step 1: get pack index
+      const packs = await httpsGet(`${GH_RAW}/packs.json`);
+      if (!packs) { res.write('ERROR: could not fetch packs.json\n'); res.end(); return; }
+      const packIds = Object.keys(packs);
+      res.write(`Found ${packIds.length} packs. Importing...\n`);
+
+      // Step 2: fetch each pack's card data
+      for (const packId of packIds) {
+        const label = packs[packId]?.title_parts?.label || packId;
         try {
-          const data = await httpsGet(`https://www.optcgapi.com/api/sets/filtered/?card_set_id=${encodeURIComponent(setId)}`);
-          if (!Array.isArray(data) || !data.length) { res.write(`${setId}: skipped (got: ${JSON.stringify(data).slice(0,120)})\n`); await new Promise(r=>setTimeout(r,800)); continue; }
-          const rows = data.map(c => {
-            const id = (c.card_id||c.card_set_id||'').trim().toUpperCase();
-            const t = (c.card_type||c.type||'').trim();
-            const ctrRaw = c.counter??c.counter_plus_power??c.card_counter??null;
-            const ctr = ctrRaw!=null ? Number(String(ctrRaw).replace(/[^0-9]/g,'')) : null;
-            return { id, card_type: t?t[0].toUpperCase()+t.slice(1).toLowerCase():null, cost:c.cost??c.card_cost??null, counter:ctr, card_name:c.card_name||null, card_color:c.card_color||null, set_id:setId };
-          }).filter(r=>r.id);
+          const cards = await httpsGet(`${GH_RAW}/data/${packId}.json`);
+          if (!Array.isArray(cards) || !cards.length) { res.write(`${label}: skipped (empty)\n`); continue; }
+          const rows = cards.map(c => {
+            const id = (c.id || '').trim().toUpperCase().replace(/_R\d+$/, ''); // strip promo variants like _r1
+            const setId = id.split('-')[0];
+            const ctr = c.counter != null ? Number(String(c.counter).replace(/[^0-9]/g,'')) : null;
+            const color = Array.isArray(c.colors) ? c.colors[0] : (c.colors || null);
+            const cat = c.category || '';
+            return { id, card_type: cat, cost: c.cost ?? null, counter: isNaN(ctr) ? null : ctr, card_name: c.name || null, card_color: color, set_id: setId };
+          }).filter(r => r.id && r.set_id);
           const status = await upsert(rows);
-          res.write(`${setId}: ${rows.length} cards (status ${status})\n`);
+          res.write(`${label} (${packId}): ${rows.length} cards → Supabase ${status}\n`);
           total += rows.length;
-        } catch(e) { res.write(`${setId}: ERROR ${e.message}\n`); }
-        await new Promise(r => setTimeout(r, 800));
+        } catch(e) { res.write(`${label}: ERROR ${e.message}\n`); }
+        await new Promise(r => setTimeout(r, 200)); // gentle delay, GitHub CDN is fast
       }
       res.write(`\nDone. ${total} total cards imported.\n`);
       res.end();
