@@ -5265,6 +5265,20 @@ const _MYD_ALL_SETS = [
 async function _mydPreloadAllSets() {
   const uncached = _MYD_ALL_SETS.filter(s => !_mydPreloadAllSets._done.has(s));
   if (!uncached.length) return;
+
+  // Try Supabase bulk load first — one round-trip covers all sets
+  const sbLoaded = await _mydLoadAllFromSupabase();
+  if (sbLoaded > 0) {
+    _MYD_ALL_SETS.forEach(s => _mydPreloadAllSets._done.add(s));
+    _buildCardPool();
+    if (document.getElementById('screen-my-deck') &&
+        document.getElementById('screen-my-deck').classList.contains('active')) {
+      _mydRenderCards(); _mydRenderChips();
+    }
+    return;
+  }
+
+  // Supabase empty or not configured — fall back to punk-records per-set
   for (let i = 0; i < uncached.length; i += 5) {
     const batch = uncached.slice(i, i + 5);
     await Promise.all(batch.map(s => _mydFetchSet(s)));
@@ -7662,8 +7676,36 @@ function _mydCacheCards(cards) {
   }
 }
 
+// ── Supabase bulk load ───────────────────────────────────────────────────────
+// Fetches ALL rows from card_metadata in pages of 1000.
+// Returns total cards loaded (0 if Supabase not configured or table empty).
+async function _mydLoadAllFromSupabase() {
+  if (!_sbClient) return 0;
+  try {
+    let allCards = [];
+    let offset = 0;
+    const PAGE = 1000;
+    while (true) {
+      const { data, error } = await _sbClient
+        .from('card_metadata')
+        .select('id,card_type,cost,counter,card_name,card_color,set_id')
+        .range(offset, offset + PAGE - 1);
+      if (error || !data || !data.length) break;
+      allCards = allCards.concat(data);
+      if (data.length < PAGE) break;
+      offset += PAGE;
+    }
+    if (allCards.length) {
+      _mydCacheCards(allCards);
+      _mydSaveTypeCache(); _mydSaveCostCache(); _mydSaveNameCache();
+      _mydSaveColorCache(); _mydSaveCounterCache();
+    }
+    return allCards.length;
+  } catch(e) { return 0; }
+}
+
 // punk-records: static JSON card data on GitHub — no API key, no CORS, no rate limits
-// Source: https://github.com/buhbbl/punk-records
+// Source: https://github.com/buhbbl/punk-records (used as fallback if Supabase is empty)
 const _PUNK_BASE = 'https://raw.githubusercontent.com/buhbbl/punk-records/main/english';
 const _PUNK_PACK = {
   'OP01':'569101','OP02':'569102','OP03':'569103','OP04':'569104','OP05':'569105',
@@ -7682,8 +7724,20 @@ const _PUNK_PACK = {
 
 async function _mydFetchSet(setId) {
   try {
+    // Try Supabase first (data we own)
+    if (_sbClient) {
+      const { data, error } = await _sbClient
+        .from('card_metadata')
+        .select('id,card_type,cost,counter,card_name,card_color')
+        .eq('set_id', setId);
+      if (!error && data && data.length) {
+        _mydCacheCards(data);
+        return;
+      }
+    }
+    // Fall back to punk-records (one-time source / Supabase not yet populated)
     const packId = _PUNK_PACK[setId];
-    if (!packId) return; // set not in mapping (e.g. P promos)
+    if (!packId) return;
     const r = await fetch(`${_PUNK_BASE}/data/${packId}.json`);
     if (!r.ok) return;
     const cards = await r.json();
