@@ -508,6 +508,9 @@ img, picture, video, canvas, svg { display: block; max-width: 100%; }
   letter-spacing: 0.04em;
   line-height: 1.1;
 }
+.matchup-title-wrap:hover h1 { color: var(--gl-gold-h); }
+.leader-switch-hint { font-size: 0.52rem; color: var(--gl-text-faint); margin-top: 3px; display: block; opacity: 0.7; }
+.matchup-title-wrap:hover .leader-switch-hint { opacity: 1; color: var(--gl-gold); }
 .matchup-title-wrap .sub {
   font-size: 0.68rem;
   color: var(--gl-text-faint);
@@ -689,9 +692,6 @@ tr.detail-row td { padding: 0; border-bottom: 1px solid var(--gl-divider); }
 .ds { margin-bottom: var(--sp-2); }
 
 /* No results */
-#table-container.hidden { display: none; }
-#qref-container { display: none; }
-#qref-container.visible { display: block; }
 
 /* Empty state */
 .empty-state { text-align: center; padding: 40px 20px; }
@@ -737,55 +737,29 @@ th.sort-active { color: var(--gl-gold-h); }
 /* Note pip */
 .note-pip { font-size: 0.68rem; opacity: 0.5; margin-left: 3px; vertical-align: middle; }
 
-/* Mobile hide style column */
+/* Mobile — hide style column, tighten everything to fit */
 @media (max-width: 480px) {
   td.sty, th.th-style { display: none; }
-  .you-cell { gap: 2px; }
+  .you-cell { gap: 1px; }
+  /* Smaller table font + tighter padding */
+  table { font-size: 0.65rem; }
+  th { font-size: 0.5rem; padding: 5px 3px; }
+  tr.data-row td { padding: 5px 3px; }
+  /* Star cell */
+  .star-btn { font-size: 0.7rem; padding: 1px 2px; }
+  /* Matchup name: allow wrapping, no overflow */
+  .mname { white-space: normal; word-break: break-word; font-size: 0.65rem; }
+  /* WR badges smaller */
+  .wr { font-size: 0.58rem; padding: 1px 3px; min-width: 28px; }
+  /* Go badge */
+  .go { font-size: 0.58rem; padding: 1px 4px; }
+  /* You column: compress dots */
+  .you-dot { width: 5px; height: 5px; }
+  .you-spark { gap: 1px; }
+  .you-pct { font-size: 0.62rem; }
+  .you-delta { font-size: 0.55rem; }
 }
 
-/* ════════════════════════════════════════════
-   QUICK REF CARDS
-   ════════════════════════════════════════════ */
-.qref-card {
-  background: var(--gl-surface);
-  border: 1px solid var(--gl-border);
-  border-radius: var(--r-lg);
-  margin-bottom: var(--sp-2);
-  overflow: hidden;
-  cursor: pointer;
-  transition: border-color var(--t);
-}
-.qref-card:hover { border-color: var(--gl-gold-dim); }
-.qref-card.open { border-color: var(--gl-gold); background: var(--gl-surface-2); }
-.qref-card.hidden { display: none; }
-.qref-header { display: flex; align-items: center; gap: var(--sp-2); padding: 10px 12px; }
-.qref-name { font-size: 0.875rem; font-weight: 600; color: var(--gl-text); flex: 1; }
-.qref-warn { color: var(--gl-warn); font-size: 0.78rem; }
-.qref-go { font-size: 0.72rem; font-weight: 700; padding: 3px 9px; border-radius: var(--r-sm); white-space: nowrap; letter-spacing: 0.05em; }
-.qref-go.go1 { background: var(--go1-bg); color: var(--go1-fg); border: 1px solid var(--go1-bd); }
-.qref-go.go2 { background: var(--go2-bg); color: var(--go2-fg); border: 1px solid var(--go2-bd); }
-.qref-wrs { display: flex; gap: 4px; }
-.qref-wr { font-size: 0.62rem; font-weight: 700; padding: 2px 5px; border-radius: var(--r-sm); white-space: nowrap; }
-.qref-deck {
-  font-size: 0.68rem; background: var(--gl-success-dim);
-  color: var(--gl-success);
-  border: 1px solid rgba(39,174,96,0.2);
-  border-radius: var(--r-sm); padding: 2px 7px; cursor: pointer; font-weight: 700;
-}
-.qref-body { display: none; padding: 0 12px 12px; }
-.qref-card.open .qref-body { display: block; }
-.qref-section { margin-top: var(--sp-3); }
-.qref-section-title {
-  font-size: 0.58rem; font-weight: 700;
-  letter-spacing: 0.1em; text-transform: uppercase;
-  color: var(--gl-gold); margin-bottom: 5px;
-}
-.qref-tips { list-style: none; padding: 0; }
-.qref-tips li {
-  font-size: 0.73rem; color: var(--gl-text-muted);
-  padding: 2px 0 2px 12px; position: relative; line-height: 1.5;
-}
-.qref-tips li::before { content: '·'; position: absolute; left: 3px; color: var(--gl-gold); }
 
 /* ════════════════════════════════════════════
    DECK SCREEN
@@ -1319,6 +1293,26 @@ th.sort-active { color: var(--gl-gold-h); }
 .dim-parse-hint span { color: var(--gl-gold); }
 
 /* ── NEW DECK PICKER ── */
+/* ── Leader Switcher Sheet ── */
+#leader-switch-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.88); z-index: 500; display: none; align-items: flex-end; justify-content: center; }
+#leader-switch-modal.open { display: flex; }
+.lsw-sheet { background: var(--gl-surface); border-radius: var(--r-xl) var(--r-xl) 0 0; width: 100%; max-width: 600px; max-height: 80vh; display: flex; flex-direction: column; overflow: hidden; padding-bottom: env(safe-area-inset-bottom); }
+.lsw-handle { width: 36px; height: 4px; background: var(--gl-border-2); border-radius: 2px; margin: 12px auto 0; flex-shrink: 0; }
+.lsw-header { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px 4px; flex-shrink: 0; }
+.lsw-title { font-size: 0.9rem; font-weight: 700; color: var(--gl-gold); font-family: var(--font-display); letter-spacing: 0.05em; }
+.lsw-close { background: none; border: none; color: var(--gl-text-faint); font-size: 1.4rem; cursor: pointer; padding: 0; line-height: 1; }
+.lsw-close:hover { color: var(--gl-text); }
+.lsw-sub { font-size: 0.6rem; color: var(--gl-text-faint); padding: 0 16px 10px; flex-shrink: 0; }
+.lsw-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 10px; padding: 0 16px 12px; overflow-y: auto; flex: 1; }
+.lsw-card { position: relative; border-radius: var(--r-md); overflow: hidden; cursor: pointer; border: 2px solid transparent; transition: border-color 0.15s, transform 0.12s; }
+.lsw-card:hover { transform: translateY(-2px); border-color: var(--gl-gold-dim); }
+.lsw-card.current { border-color: var(--gl-gold); }
+.lsw-card img { width: 100%; display: block; }
+.lsw-card-name { position: absolute; bottom: 0; left: 0; right: 0; background: linear-gradient(0deg, rgba(0,0,0,0.88) 0%, transparent 100%); padding: 16px 5px 5px; font-size: 0.5rem; color: #fff; font-weight: 700; text-align: center; line-height: 1.3; }
+.lsw-current-badge { position: absolute; top: 4px; right: 4px; background: var(--gl-gold); color: #000; font-size: 0.42rem; font-weight: 800; padding: 2px 5px; border-radius: 3px; text-transform: uppercase; letter-spacing: 0.06em; }
+.lsw-home-btn { margin: 0 16px 16px; padding: 10px; background: transparent; border: 1px dashed var(--gl-border-2); border-radius: var(--r-md); color: var(--gl-text-faint); font-size: 0.68rem; cursor: pointer; flex-shrink: 0; }
+.lsw-home-btn:hover { border-color: var(--gl-gold-dim); color: var(--gl-gold); }
+
 #new-deck-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.88); z-index: 500; display: none; align-items: flex-end; justify-content: center; padding: 0; }
 #new-deck-modal.open { display: flex; }
 .nd-sheet { background: var(--gl-surface); border-radius: var(--r-xl) var(--r-xl) 0 0; width: 100%; max-width: 600px; max-height: 85vh; display: flex; flex-direction: column; overflow: hidden; }
@@ -1355,7 +1349,7 @@ th.sort-active { color: var(--gl-gold-h); }
 /* split layout */
 .myd-layout { display: flex; gap: 10px; flex: 1; overflow: hidden; min-height: 0; }
 /* left: text editor panel */
-.myd-text-panel { width: 215px; flex-shrink: 0; display: flex; flex-direction: column; gap: 6px; }
+.myd-text-panel { width: 230px; flex-shrink: 0; display: flex; flex-direction: column; gap: 6px; }
 .myd-panel-section { background: var(--gl-surface-2); border: 1px solid var(--gl-border-2); border-radius: var(--r-md); padding: 9px 10px; display: flex; flex-direction: column; gap: 5px; }
 .myd-panel-section-title { font-size: 0.52rem; font-weight: 700; color: var(--gl-gold); text-transform: uppercase; letter-spacing: 0.1em; }
 .myd-ta-label { font-size: 0.55rem; font-weight: 700; color: var(--gl-gold); text-transform: uppercase; letter-spacing: 0.1em; }
@@ -1442,8 +1436,8 @@ th.sort-active { color: var(--gl-gold-h); }
 .myd-start-opt-desc { font-size: 0.52rem; color: var(--gl-text-faint); margin-top: 2px; line-height: 1.4; }
 .myd-start-opt-arrow { color: var(--gl-text-faint); font-size: 0.85rem; flex-shrink: 0; }
 /* card chips list (left panel) */
-.myd-chips-list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 3px; min-height: 0; }
-.myd-chip { display: flex; align-items: center; gap: 7px; background: var(--gl-surface-2); border: 1px solid var(--gl-border-2); border-radius: 7px; padding: 5px 7px 5px 5px; transition: border-color 0.15s, background 0.15s; cursor: pointer; min-height: 44px; }
+.myd-chips-list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 3px; min-height: 0; max-height: none; }
+.myd-chip { display: flex; align-items: center; gap: 7px; background: var(--gl-surface-2); border: 1px solid var(--gl-border-2); border-radius: 7px; padding: 5px 7px 5px 5px; transition: border-color 0.15s, background 0.15s; cursor: pointer; min-height: 40px; }
 .myd-chip:hover { background: var(--gl-surface-3); }
 .myd-chip.selected { outline: 2px solid var(--gl-gold); outline-offset: -1px; }
 /* cost circle — styled like card cost badge */
@@ -1487,15 +1481,21 @@ th.sort-active { color: var(--gl-gold-h); }
 .myd-sort-btn { font-size: 0.55rem; padding: 3px 9px; border-radius: 20px; border: 1px solid var(--gl-border-2); background: var(--gl-surface-2); color: var(--gl-text-muted); cursor: pointer; transition: all 0.15s; font-family: inherit; }
 .myd-sort-btn:hover { border-color: var(--gl-gold-dim); color: var(--gl-text); }
 .myd-sort-btn.active { background: rgba(212,175,55,0.18); border-color: var(--gl-gold); color: var(--gl-gold); font-weight: 700; }
+/* paste section toggle (mobile only — hidden on desktop) */
+.myd-paste-toggle { display: none; width: 100%; background: var(--gl-surface-2); border: 1px solid var(--gl-border-2); border-radius: var(--r-md); padding: 9px 12px; color: var(--gl-text-muted); font-size: 0.72rem; font-weight: 600; cursor: pointer; text-align: left; gap: 6px; align-items: center; }
+.myd-paste-toggle:hover { background: var(--gl-surface-3); color: var(--gl-text); }
+/* selected card preview panel (above the right panel table) */
+#myd-preview-wrap { flex-shrink: 0; }
 /* selected card preview panel (top of right panel) */
-.myd-preview-card { display: flex; align-items: flex-start; gap: 12px; background: rgba(212,175,55,0.07); border: 1px solid rgba(212,175,55,0.3); border-radius: 10px; padding: 10px 12px; margin-bottom: 14px; }
-.myd-preview-card img { width: 96px; border-radius: 6px; display: block; box-shadow: 0 4px 16px rgba(0,0,0,0.6); flex-shrink: 0; }
-.myd-preview-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
-.myd-preview-id { font-size: 0.6rem; font-family: monospace; color: var(--gl-text-faint); }
+.myd-preview-card { display: flex; flex-direction: column; align-items: center; gap: 8px; background: rgba(212,175,55,0.06); border: 1px solid rgba(212,175,55,0.25); border-radius: 12px; padding: 12px 12px 10px; margin-bottom: 8px; position: relative; }
+.myd-preview-card img { width: 100%; max-width: 220px; border-radius: 8px; display: block; box-shadow: 0 6px 24px rgba(0,0,0,0.7); }
+.myd-preview-info { display: flex; flex-direction: row; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: center; width: 100%; }
+.myd-preview-id { font-size: 0.58rem; font-family: monospace; color: var(--gl-text-faint); }
 .myd-preview-type { font-size: 0.62rem; color: var(--gl-gold); font-weight: 600; }
 .myd-preview-cost-row { font-size: 0.68rem; color: var(--gl-text-muted); }
-.myd-preview-cost-val { color: var(--gl-text); font-weight: 700; font-size: 1rem; }
-.myd-preview-close { background: none; border: none; color: rgba(255,255,255,0.35); cursor: pointer; font-size: 1rem; padding: 0; line-height: 1; flex-shrink: 0; align-self: flex-start; margin-left: auto; }
+.myd-preview-cost-val { color: var(--gl-text); font-weight: 700; font-size: 0.9rem; }
+.myd-preview-close { background: rgba(0,0,0,0.4); border: none; color: rgba(255,255,255,0.6); cursor: pointer; font-size: 1rem; padding: 0; line-height: 1; width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; position: absolute; top: 7px; right: 7px; }
+.myd-preview-close:hover { background: rgba(255,255,255,0.15); color: #fff; }
 .myd-preview-close:hover { color: #fff; }
 /* card popup (non-fullscreen preview) */
 .myd-card-popup { position: fixed; z-index: 350; background: rgba(10,12,18,0.97); border: 1px solid rgba(255,255,255,0.18); border-radius: 10px; padding: 10px; box-shadow: 0 16px 48px rgba(0,0,0,0.85); flex-direction: column; align-items: center; gap: 6px; pointer-events: auto; }
@@ -1626,14 +1626,19 @@ th.sort-active { color: var(--gl-gold-h); }
     overflow: visible;
     flex: 0 0 auto;
     min-height: 0;
-    gap: 8px;
+    gap: 6px;
   }
   .myd-text-panel { width: 100%; flex-shrink: 0; }
-  .myd-ta { height: 64px; flex: none; font-size: 14px !important; }
-  .myd-chips-list { max-height: 110px; flex: 0 0 auto; }
+  /* Show the paste toggle on mobile */
+  .myd-paste-toggle { display: flex; }
+  /* Hide paste section by default on mobile (JS toggles it) */
+  .myd-paste-section-hidden { display: none !important; }
+  .myd-ta { height: 80px; flex: none; font-size: 14px !important; }
+  .myd-chips-list { max-height: 200px; flex: 0 0 auto; }
   .myd-chip-img { width: 26px; }
-  .myd-cards-panel { overflow: visible; min-height: 0; flex: 0 0 auto; }
+  .myd-cards-panel { overflow: visible; min-height: 0; flex: 0 0 auto; position: relative; z-index: 1; }
   .myd-table { overflow-y: visible; flex: 0 0 auto; padding: var(--sp-2); }
+  #myd-preview-wrap { padding: 0 2px; }
   .myd-add-bar { position: sticky; bottom: calc(68px + env(safe-area-inset-bottom)); background: var(--gl-bg); padding: 6px 0 4px; z-index: 20; }
 
   /* ── Card controls: bigger touch targets on mobile ── */
@@ -1823,9 +1828,10 @@ th.sort-active { color: var(--gl-gold-h); }
 <!-- ════ SCREEN 1: MATCHUP TABLE ════ -->
 <div class="screen" id="screen-matchup">
   <div class="matchup-topbar">
-    <div class="matchup-title-wrap">
+    <div class="matchup-title-wrap" onclick="openLeaderSwitcher()" style="cursor:pointer" title="Switch leader">
       <h1 id="matchup-title">OP12-061 Donquixote Rosinante</h1>
       <p class="sub" id="matchup-sub">TCGMatchMaking.com · 25,255 games · 55.0% WR · EB03</p>
+      <span class="leader-switch-hint">⇄ switch leader</span>
     </div>
     <button class="stats-nav-btn" onclick="showStats()" title="My Stats">📊</button>
   </div>
@@ -1836,12 +1842,6 @@ th.sort-active { color: var(--gl-gold-h); }
     <span class="mdb-label">My Deck</span>
     <span id="mdb-name" style="display:none"></span>
     <span class="mdb-arrow">›</span>
-  </div>
-
-  <!-- Mode toggle -->
-  <div class="mode-bar">
-    <button class="mode-btn active" id="btn-table" onclick="setMode('table')">Table</button>
-    <button class="mode-btn" id="btn-qref" onclick="setMode('qref')">Quick Ref</button>
   </div>
 
   <!-- Search + filter -->
@@ -1860,31 +1860,19 @@ th.sort-active { color: var(--gl-gold-h); }
     </div>
   </div>
 
-  <div class="legend">
-    <span style="font-size:0.62rem;color:var(--gl-text-faint)">WR:</span>
-    <div class="leg"><span class="sw" style="background:var(--wr-great-bg)"></span>≥60%</div>
-    <div class="leg"><span class="sw" style="background:var(--wr-good-bg)"></span>55–60%</div>
-    <div class="leg"><span class="sw" style="background:var(--wr-even-bg)"></span>50–55%</div>
-    <div class="leg"><span class="sw" style="background:var(--wr-warn-bg)"></span>40–50%</div>
-    <div class="leg"><span class="sw" style="background:var(--wr-bad-bg)"></span>&lt;40%</div>
-    <div class="leg" style="margin-left:var(--sp-2)"><span style="color:var(--gl-warn)">⚠</span><span style="color:var(--gl-text-faint);font-size:0.6rem"> &lt;50 games</span></div>
-  </div>
-
-  <!-- Quick Ref cards -->
-  <div id="qref-container"></div>
 
   <!-- Table view -->
   <div id="table-container">
     <table>
       <thead>
         <tr>
+          <th style="width:24px;padding:7px 4px"></th>
           <th class="sortable" data-col="name" onclick="sortTable('name')">Matchup<span class="sort-ind" id="si-name"></span></th>
           <th>Go</th>
           <th class="sortable" data-col="wr1" onclick="sortTable('wr1')">1st<span class="sort-ind" id="si-wr1"></span></th>
           <th class="sortable" data-col="wr2" onclick="sortTable('wr2')">2nd<span class="sort-ind" id="si-wr2"></span></th>
           <th class="th-style">Style</th>
           <th class="sortable" data-col="you" onclick="sortTable('you')" style="text-align:center">You<span class="sort-ind" id="si-you"></span></th>
-          <th></th>
         </tr>
       </thead>
       <tbody id="tbody"></tbody>
@@ -2051,9 +2039,10 @@ th.sort-active { color: var(--gl-gold-h); }
   <div class="myd-layout">
     <!-- left: paste + card chips -->
     <div class="myd-text-panel">
+      <!-- Mobile: collapse toggle for paste section -->
+      <button class="myd-paste-toggle" id="myd-paste-toggle" onclick="_mydTogglePaste()">📋 Paste Decklist <span id="myd-paste-toggle-arrow">▸</span></button>
       <!-- Import section -->
-      <div class="myd-panel-section">
-        <div class="myd-panel-section-title">📋 Paste Decklist</div>
+      <div class="myd-panel-section" id="myd-paste-section">
         <div class="myd-ta-hint">One card per line, e.g. <code>4xOP07-046</code></div>
         <textarea class="myd-ta" id="myd-ta" spellcheck="false"
           placeholder="4xOP07-046&#10;4xOP06-047&#10;2xOP08-012&#10;…"
@@ -2069,6 +2058,7 @@ th.sort-active { color: var(--gl-gold-h); }
     </div>
     <!-- right: card board + add bar -->
     <div class="myd-cards-panel">
+      <div id="myd-preview-wrap"></div>
       <div class="myd-table" id="myd-table">
         <div class="myd-empty" id="myd-empty-state">
           <div class="myd-empty-icon">🃏</div>
@@ -2128,6 +2118,20 @@ th.sort-active { color: var(--gl-gold-h); }
     </div>
     <div class="nd-sub">Pick a reference decklist to build from — you can edit it before saving</div>
     <div class="nd-list" id="new-deck-list"></div>
+  </div>
+</div>
+
+<!-- ════ LEADER SWITCHER SHEET ════ -->
+<div id="leader-switch-modal" onclick="if(event.target===this)closeLeaderSwitcher()">
+  <div class="lsw-sheet">
+    <div class="lsw-handle"></div>
+    <div class="lsw-header">
+      <span class="lsw-title">Switch Leader</span>
+      <button class="lsw-close" onclick="closeLeaderSwitcher()">×</button>
+    </div>
+    <p class="lsw-sub">Leaders with a saved deck</p>
+    <div class="lsw-grid" id="lsw-grid"></div>
+    <button class="lsw-home-btn" onclick="closeLeaderSwitcher();showHome()">+ Add another leader</button>
   </div>
 </div>
 
@@ -2264,8 +2268,18 @@ function _onAuthSuccess(user) {
   showHome();
   syncFromSupabase().then(() => {
     _bootCustomLeaders(); // re-inject after sync in case new ones pulled from server
+    renderLeaderGrid();   // refresh home grid with synced leaders/decks
+    // Update matchup title if current leader changed after sync
+    const L = LEADERS[currentLeaderKey];
+    if (L) {
+      const titleEl = document.getElementById('matchup-title');
+      const subEl   = document.getElementById('matchup-sub');
+      if (titleEl) titleEl.textContent = L.title;
+      if (subEl)   subEl.textContent   = L.sub;
+    }
     if (document.getElementById('screen-matchup').classList.contains('active')) {
       _refreshYouCells();
+      rebuildMatchupTable();
     }
   });
 }
@@ -2317,7 +2331,7 @@ const LEADERS = {
     cardId: "OP12-061",
     name: "Donquixote Rosinante",
     title: "OP12-061 Donquixote Rosinante",
-    sub: "TCGMatchMaking.com · 25,255 games · 55.0% WR · EB03",
+    sub: "55.0% WR · EB03",
     matchups: [
   { name:"OP01 Law", warn:false, go:"1st", wr1:71.3, wr2:51.9, style:"Attrition · Tall",
     deck:"op01_law",
@@ -2479,14 +2493,6 @@ const LEADERS = {
     ],
     colorMap: null
   },
-  boa: {
-    cardId: "OP14-041",
-    name: "Boa Hancock",
-    title: "OP14-041 Boa Hancock",
-    sub: "Matchup data coming soon",
-    matchups: [],
-    colorMap: null
-  },
   op01_law: {
     cardId: "OP01-002",
     name: "Trafalgar Law",
@@ -2528,6 +2534,14 @@ const LEADERS = {
     { name:"ST29 Luffy", warn:false, go:"?", wr1:null, wr2:null, style:"—", deck:"st29luffy", essential:[], tips:[] },
     { name:"P-117 Nami", warn:false, go:"?", wr1:null, wr2:null, style:"—", deck:"p117nami", essential:[], tips:[] }
     ],
+    colorMap: null
+  },
+  boa: {
+    cardId: "OP14-041",
+    name: "Boa Hancock",
+    title: "OP14-041 Boa Hancock",
+    sub: "Matchup data coming soon",
+    matchups: [],
     colorMap: null
   },
   op7bonney: {
@@ -5180,11 +5194,25 @@ let _essEditMode = false;
 
 // Card type cache — keyed by card ID → 'Character'|'Event'|'Stage'|'Leader'
 let _mydCardTypeCache = {};
-try { _mydCardTypeCache = JSON.parse(localStorage.getItem('optcg-card-types') || '{}'); } catch(e) {}
+try {
+  const _rawTypes = JSON.parse(localStorage.getItem('optcg-card-types') || '{}');
+  // Normalize to title case (old cache may have had inconsistent casing)
+  Object.keys(_rawTypes).forEach(k => {
+    const v = String(_rawTypes[k] || '').trim();
+    if (v) _mydCardTypeCache[k] = v.charAt(0).toUpperCase() + v.slice(1).toLowerCase();
+  });
+} catch(e) {}
 function _mydSaveTypeCache() { try { localStorage.setItem('optcg-card-types', JSON.stringify(_mydCardTypeCache)); } catch(e) {} }
 
 let _mydCardCostCache = {};
-try { _mydCardCostCache = JSON.parse(localStorage.getItem('optcg-card-costs') || '{}'); } catch(e) {}
+try {
+  const _rawCosts = JSON.parse(localStorage.getItem('optcg-card-costs') || '{}');
+  // Only keep numeric cost values; discard any nulls or non-numbers from old cache
+  Object.keys(_rawCosts).forEach(k => {
+    const v = _rawCosts[k];
+    if (v != null && !isNaN(Number(v))) _mydCardCostCache[k] = Number(v);
+  });
+} catch(e) {}
 function _mydSaveCostCache() { try { localStorage.setItem('optcg-card-costs', JSON.stringify(_mydCardCostCache)); } catch(e) {} }
 
 let _mydCardNameCache = {};
@@ -6089,6 +6117,17 @@ async function syncFromSupabase() {
       allHiddenLeaders = new Set(hlr.payload);
       try { localStorage.setItem('optcg-hidden-leaders', JSON.stringify(hlr.payload)); } catch(e) {}
     }
+    const her = rows.find(r => r.id === 'hidden-ess');
+    if (her && her.payload && typeof her.payload === 'object') {
+      allHiddenEssentials = her.payload;
+      try { localStorage.setItem('optcg-hidden-ess', JSON.stringify(allHiddenEssentials)); } catch(e) {}
+    }
+    // Restore last active leader key so cross-device login lands on correct leader
+    const clkr = rows.find(r => r.id === 'current-leader');
+    if (clkr && clkr.payload && clkr.payload.key && LEADERS[clkr.payload.key]) {
+      currentLeaderKey = clkr.payload.key;
+      try { localStorage.setItem('optcg-current-leader', clkr.payload.key); } catch(e) {}
+    }
     _setSyncDot('synced');
   } catch(e) {
     _setSyncDot('error', '☁✗');
@@ -6111,6 +6150,8 @@ async function syncToSupabase() {
         { id: 'my-decks', payload: allMyDecks, user_id: _userId(), updated_at: new Date().toISOString() },
         { id: 'custom-leaders', payload: allCustomLeaders, user_id: _userId(), updated_at: new Date().toISOString() },
         { id: 'hidden-leaders', payload: [...allHiddenLeaders], user_id: _userId(), updated_at: new Date().toISOString() },
+        { id: 'hidden-ess', payload: allHiddenEssentials, user_id: _userId(), updated_at: new Date().toISOString() },
+        { id: 'current-leader', payload: { key: currentLeaderKey }, user_id: _userId(), updated_at: new Date().toISOString() },
       ])
     });
     if (!res.ok) throw new Error(res.status);
@@ -6341,6 +6382,10 @@ LEADERS.rosinante.colorMap = ROSINANTE_COLORS;
 LEADERS.boa.colorMap = BOA_COLORS;
 
 let currentLeaderKey = 'rosinante';
+try {
+  const _savedLK = localStorage.getItem('optcg-current-leader');
+  if (_savedLK && LEADERS[_savedLK]) currentLeaderKey = _savedLK;
+} catch(e) {}
 function getLM() { return (LEADERS[currentLeaderKey] && LEADERS[currentLeaderKey].matchups) || []; }
 function getLCM() { return LEADERS[currentLeaderKey].colorMap || ROSINANTE_COLORS; }
 
@@ -6352,14 +6397,7 @@ function colorDots(name) {
   return (getLCM()[name]||[]).map(c=>`<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${COLOR_HEX[c]||'#888'};margin-left:3px;vertical-align:middle"></span>`).join('');
 }
 
-function setMode(mode) {
-  currentMode = mode;
-  document.getElementById('btn-table').classList.toggle('active', mode === 'table');
-  document.getElementById('btn-qref').classList.toggle('active', mode === 'qref');
-  document.getElementById('table-container').classList.toggle('hidden', mode === 'qref');
-  document.getElementById('qref-container').classList.toggle('visible', mode === 'qref');
-  applyFilters();
-}
+function setMode(mode) { /* quick ref removed */ }
 
 function setColor(btn) {
   document.querySelectorAll('.fbtn').forEach(b => b.classList.remove('active'));
@@ -6407,65 +6445,12 @@ function applyFilters() {
       if (!visible) detailRow.classList.remove('open');
       detailRow.style.display = visible ? '' : 'none';
     }
-    // Qref cards
-    const qcard = document.getElementById('qref-' + i);
-    if (qcard) qcard.classList.toggle('hidden', !visible);
   });
   const noRes = document.getElementById('no-results');
   if (noRes) noRes.style.display = anyVisible ? 'none' : 'block';
 }
 
-function buildQrefCards() {
-  const container = document.getElementById('qref-container');
-  container.innerHTML = '';
-  getLM().forEach((m, i) => {
-    const wrHtml = [
-      m.wr1 != null ? `<span class="qref-wr ${wrCls(m.wr1)}">${m.wr1}% 1st</span>` : '',
-      m.wr2 != null ? `<span class="qref-wr ${wrCls(m.wr2)}">${m.wr2}% 2nd</span>` : '',
-    ].filter(Boolean).join('');
-
-    const deckBtn = m.deck
-      ? `<button class="qref-deck" data-deck="${m.deck}" onclick="event.stopPropagation();showDeck('${m.deck}',${i})">📋</button>`
-      : '';
-    const starBtn = m.deck
-      ? `<button class="star-btn" data-deck="${m.deck}" onclick="event.stopPropagation();toggleFav('${m.deck}')" title="Favourite">★</button>`
-      : '';
-
-    let essHtml = '';
-    if (m.essential && m.essential.length) {
-      essHtml = `<div class="qref-section">
-        <div class="qref-section-title">Essential Cards</div>
-        ${_essCardGrid(m.essential)}
-      </div>`;
-    }
-
-    const tipsHtml = m.tips && m.tips.length ? `<div class="qref-section">
-      <div class="qref-section-title">Key Tips</div>
-      <ul class="qref-tips">${m.tips.map(t=>`<li>${t}</li>`).join('')}</ul>
-    </div>` : '';
-
-    const div = document.createElement('div');
-    div.className = 'qref-card';
-    div.id = 'qref-' + i;
-    div.innerHTML = `
-      <div class="qref-header">
-        <span class="qref-name">${m.name}${m.warn ? '<span class="qref-warn"> ⚠</span>' : ''}</span>
-        <div class="qref-wrs">${wrHtml}</div>
-        <span class="qref-go ${m.go==='1st'?'go1':'go2'}">GO ${m.go}</span>
-        ${starBtn}
-        ${deckBtn}
-      </div>
-      <div class="qref-body">${essHtml}${tipsHtml}</div>`;
-    div.addEventListener('click', (e) => {
-      if (e.target.classList.contains('qref-deck') || e.target.closest('.qref-deck')) return;
-      if (e.target.classList.contains('star-btn') || e.target.closest('.star-btn')) return;
-      const wasOpen = div.classList.contains('open');
-      document.querySelectorAll('.qref-card.open').forEach(d => d.classList.remove('open'));
-      if (!wasOpen) div.classList.add('open');
-    });
-    container.appendChild(div);
-  });
-}
+function buildQrefCards() { /* quick ref removed */ }
 
 function rebuildMatchupTable() {
   tbody.innerHTML = '';
@@ -6483,7 +6468,7 @@ function rebuildMatchupTable() {
   const metaWr = m.go === '1st' ? m.wr1 : m.wr2;
   const youCell = _youCellHtml(i, m.deck, metaWr);
   const starCell = m.deck
-    ? `<td style="padding:2px 4px;text-align:center;white-space:nowrap"><button class="star-btn" data-deck="${m.deck}" onclick="event.stopPropagation();toggleFav('${m.deck}')" title="Favourite">★</button><button class="log-btn" onclick="event.stopPropagation();openLogModal('${m.deck}','${m.name.replace(/'/g,"\'")}',event)" title="Log game">📋</button></td>`
+    ? `<td style="padding:2px 4px;text-align:center"><button class="star-btn" data-deck="${m.deck}" onclick="event.stopPropagation();toggleFav('${m.deck}')" title="Favourite">★</button></td>`
     : `<td></td>`;
 
   const hasNote = !!(allNotes[_nk(currentLeaderKey, m.deck || '')] || '').trim();
@@ -6492,13 +6477,13 @@ function rebuildMatchupTable() {
   tr.className = 'data-row';
   tr.dataset.idx = i;
   tr.innerHTML = `
+    ${starCell}
     <td><span class="mname">${m.name}</span>${colorDots(m.name)}${m.warn?`<span class="warn" title="Fewer than 50 games in dataset — treat with caution">⚠</span>`:''}${notePip}</td>
     <td><span class="go ${m.go==='1st'?'go1':'go2'}">${m.go}</span></td>
     <td><span class="wr ${wrCls(m.wr1)}">${wrLbl(m.wr1)}</span></td>
     <td><span class="wr ${wrCls(m.wr2)}">${wrLbl(m.wr2)}</span></td>
     <td class="sty">${m.style}</td>
-    ${youCell}
-    ${starCell}`;
+    ${youCell}`;
   tbody.appendChild(tr);
 
   const dr = document.createElement('tr');
@@ -6717,6 +6702,7 @@ function openNewDeckFromRef(deckKey, leaderCardId) {
   const ta = document.getElementById('myd-ta');
   ta.value = refText;
   document.getElementById('myd-ta-saved').classList.remove('show');
+  _mydInitPasteState();
   _mydRenderCards();
   _mydRenderChips();
   document.querySelectorAll('.screen').forEach(s => { s.classList.remove('active'); s.style.display = ''; });
@@ -7231,8 +7217,40 @@ function showHome() {
   renderLeaderGrid();
 }
 
+function openLeaderSwitcher() {
+  const modal = document.getElementById('leader-switch-modal');
+  const grid  = document.getElementById('lsw-grid');
+  if (!modal || !grid) return;
+  // Build list of leaders that have a saved deck
+  const leaders = Object.keys(LEADERS).filter(key => {
+    const L = LEADERS[key];
+    return L && L.cardId && allMyDecks[L.cardId];
+  });
+  if (leaders.length === 0) { showHome(); return; }
+  grid.innerHTML = leaders.map(key => {
+    const L = LEADERS[key];
+    const isCurrent = key === currentLeaderKey;
+    return `<div class="lsw-card${isCurrent ? ' current' : ''}" onclick="switchToLeader('${key}')">
+      <img src="${cardImg(L.cardId)}" loading="lazy" onerror="this.style.opacity='0.3'">
+      <div class="lsw-card-name">${L.title || L.name || key}</div>
+      ${isCurrent ? '<div class="lsw-current-badge">Active</div>' : ''}
+    </div>`;
+  }).join('');
+  modal.classList.add('open');
+}
+function closeLeaderSwitcher() {
+  const modal = document.getElementById('leader-switch-modal');
+  if (modal) modal.classList.remove('open');
+}
+function switchToLeader(key) {
+  closeLeaderSwitcher();
+  selectLeader(key);
+}
+
 function selectLeader(key) {
   currentLeaderKey = key;
+  try { localStorage.setItem('optcg-current-leader', key); } catch(e) {}
+  syncToSupabase(); // persist leader choice cross-device
   const L = LEADERS[key];
   document.getElementById('matchup-title').textContent = L.title;
   document.getElementById('matchup-sub').textContent = L.sub;
@@ -7406,6 +7424,7 @@ function showMyDeckViewer(leaderCardId) {
     ta.value = '';
   }
   document.getElementById('myd-ta-saved').classList.remove('show');
+  _mydInitPasteState();
   _mydRenderCards();
   _mydRenderChips();
   document.querySelectorAll('.screen').forEach(s => { s.classList.remove('active'); s.style.display = ''; });
@@ -7471,10 +7490,10 @@ function _mydRenderCards() {
   if (fill) fill.style.width = Math.min(100, (allTotal / TARGET) * 100) + '%';
 
   function renderCard(c) {
-    return `<div class="myd-stack">
+    return `<div class="myd-stack" data-id="${c.id}">
       <div class="myd-stack-inner"
            onclick="_mydShowCardPopup('${c.id}','${cardImg(c.id)}',event)">
-        <img class="myd-card-img" src="${cardImg(c.id)}" alt="${c.id}" loading="lazy">
+        <img class="myd-card-img" src="${cardImg(c.id)}" alt="${c.id}" loading="eager">
         <div class="myd-count-badge">${c.count}×</div>
       </div>
       <div class="myd-card-controls">
@@ -7515,27 +7534,11 @@ function _mydRenderCards() {
     <button class="myd-sort-btn${_mydSortMode==='cost'?' active':''}" onclick="_mydSetSort('cost')">By Cost</button>
   </div>`;
 
-  // Preview panel HTML (shown when a chip is selected)
-  let previewHtml = '';
-  if (_mydSelectedChipId) {
-    const pid = _mydSelectedChipId;
-    const ptype = _mydCardTypeCache[pid] || '';
-    const pcost = _mydCardCostCache[pid];
-    previewHtml = `<div class="myd-preview-card">
-      <img src="${cardImg(pid)}" alt="${pid}" onerror="this.style.opacity='0.3'">
-      <div class="myd-preview-info">
-        <div class="myd-preview-id">${pid}</div>
-        ${ptype ? `<div class="myd-preview-type">${ptype}</div>` : ''}
-        ${pcost != null ? `<div class="myd-preview-cost-row">Cost <span class="myd-preview-cost-val">${pcost}</span></div>` : ''}
-      </div>
-      <button class="myd-preview-close" onclick="event.stopPropagation();_mydClearPreview()" title="Close">×</button>
-    </div>`;
-  }
-
   if (!deckCards.length) {
-    table.innerHTML = previewHtml + sortBar + leaderHtml + `<div class="myd-empty" style="min-height:100px">
+    table.innerHTML = sortBar + leaderHtml + `<div class="myd-empty" style="min-height:100px">
       <div class="myd-empty-text">Paste your decklist on the left or use the search bar below to add cards</div>
     </div>`;
+    _mydUpdatePreview();
     return;
   }
 
@@ -7546,15 +7549,11 @@ function _mydRenderCards() {
     return ca - cb;
   }
 
-  // Group by type
-  const characters = deckCards.filter(c => _mydCardTypeCache[c.id] === 'Character');
-  const events     = deckCards.filter(c => _mydCardTypeCache[c.id] === 'Event');
-  const stages     = deckCards.filter(c => _mydCardTypeCache[c.id] === 'Stage');
-  const unknown    = deckCards.filter(c => !_mydCardTypeCache[c.id]);
-
-  if (_mydSortMode === 'cost') {
-    characters.sort(byCost); events.sort(byCost); stages.sort(byCost); unknown.sort(byCost);
-  }
+  // Group by type — always sorted by cost low→high within each group
+  const characters = deckCards.filter(c => _mydCardTypeCache[c.id] === 'Character').sort(byCost);
+  const events     = deckCards.filter(c => _mydCardTypeCache[c.id] === 'Event').sort(byCost);
+  const stages     = deckCards.filter(c => _mydCardTypeCache[c.id] === 'Stage').sort(byCost);
+  const unknown    = deckCards.filter(c => !_mydCardTypeCache[c.id]).sort(byCost);
 
   function section(label, list) {
     if (!list.length) return '';
@@ -7563,17 +7562,22 @@ function _mydRenderCards() {
     <div class="myd-cards-grid" style="margin-bottom:16px">${list.map(renderCard).join('')}</div>`;
   }
 
-  table.innerHTML = previewHtml + sortBar + leaderHtml
+  table.innerHTML = sortBar + leaderHtml
     + section('Characters', characters)
     + section('Events', events)
     + section('Stages', stages)
     + (unknown.length ? section('Other', unknown) : '')
     + _mydRenderAnalysis(deckCards);
 
-  // Async: fetch missing types and re-render
+  _mydUpdatePreview();
+
+  // Async: fetch missing types/costs/counters and re-render once done
   const allIds = deckCards.map(c => c.id);
-  const missing = allIds.filter(id => !_mydCardTypeCache[id]);
-  if (missing.length) _mydLoadTypes(missing);
+  const missingType    = allIds.filter(id => !_mydCardTypeCache[id]);
+  const missingCost    = allIds.filter(id => _mydCardCostCache[id] == null);
+  const missingCounter = allIds.filter(id => _mydCardCounterCache[id] == null);
+  const missingAny  = [...new Set([...missingType, ...missingCost, ...missingCounter])];
+  if (missingAny.length) _mydLoadTypes(missingAny);
 }
 
 async function _mydFetchSet(setId) {
@@ -7584,9 +7588,10 @@ async function _mydFetchSet(setId) {
     for (const card of data) {
       const id = card.card_id || card.card_set_id;
       if (!id) continue;
-      if (card.card_type)  _mydCardTypeCache[id]  = card.card_type;
-      const costVal = card.cost ?? card.card_cost ?? null;
-      if (costVal != null) _mydCardCostCache[id] = costVal;
+      const typeRaw = (card.card_type || card.type || '').trim();
+      if (typeRaw) _mydCardTypeCache[id] = typeRaw.charAt(0).toUpperCase() + typeRaw.slice(1).toLowerCase();
+      const costVal = card.cost ?? card.card_cost ?? card.card_price ?? null;
+      if (costVal != null) _mydCardCostCache[id] = Number(costVal);
       if (card.card_name)  _mydCardNameCache[id]  = card.card_name;
       if (card.card_color) _mydCardColorCache[id] = card.card_color;
       // counter — try all known field names; store 0 only if confirmed absent
@@ -7600,9 +7605,10 @@ async function _mydFetchSet(setId) {
   } catch(e) {}
 }
 async function _mydLoadTypes(ids) {
-  const missing = ids.filter(id => !_mydCardTypeCache[id]);
-  if (!missing.length) return;
-  const sets = [...new Set(missing.map(id => id.split('-')[0]))];
+  // fetch for any card missing type OR cost OR counter
+  const needFetch = ids.filter(id => !_mydCardTypeCache[id] || _mydCardCostCache[id] == null || _mydCardCounterCache[id] == null);
+  if (!needFetch.length) return;
+  const sets = [...new Set(needFetch.map(id => id.split('-')[0]))];
   await Promise.all(sets.map(setId => _mydFetchSet(setId)));
   _mydSaveTypeCache();
   _mydSaveCostCache();
@@ -7684,17 +7690,19 @@ function _mydRenderAnalysis(deckCards) {
   });
   const avgCost = costCardCount > 0 ? (totalCost / costCardCount).toFixed(1) : '—';
 
-  // Counter breakdown
-  let ctr0 = 0, ctr1k = 0, ctr2k = 0;
+  // Counter breakdown — only count cards where counter is confirmed (not null/undefined)
+  let ctr0 = 0, ctr1k = 0, ctr2k = 0, ctrUnknown = 0;
   deckCards.forEach(c => {
-    const v = _mydCardCounterCache[c.id] || 0;
+    const raw = _mydCardCounterCache[c.id];
+    if (raw == null) { ctrUnknown += c.count; return; } // not yet fetched — exclude from breakdown
+    const v = Number(raw);
     if (v >= 2000) ctr2k += c.count;
     else if (v >= 1000) ctr1k += c.count;
     else ctr0 += c.count;
   });
   const totalCtr = (ctr1k * 1000 + ctr2k * 2000);
   const ctrCards = ctr1k + ctr2k;
-  const avgCtr = ctrCards > 0 ? `+${(totalCtr / ctrCards / 1000).toFixed(1)}k` : '—';
+  const avgCtr = ctrCards > 0 ? `+${(totalCtr / ctrCards / 1000).toFixed(1)}k` : (ctrUnknown > 0 ? '…' : '—');
 
   // Cost curve bars
   const costKeys = ['1','2','3','4','5','6','7','8','9','10+'];
@@ -7730,6 +7738,7 @@ function _mydRenderAnalysis(deckCards) {
         <div class="myd-counter-pill">${ctr2k} cards with <strong>+2k</strong></div>
         <div class="myd-counter-pill">${ctr1k} cards with <strong>+1k</strong></div>
         <div class="myd-counter-pill myd-counter-pill-none">${ctr0} cards with no counter</div>
+        ${ctrUnknown > 0 ? `<div class="myd-counter-pill myd-counter-pill-none" style="opacity:0.5">${ctrUnknown} loading…</div>` : ''}
       </div>
     </div>
   </div>`;
@@ -7737,14 +7746,56 @@ function _mydRenderAnalysis(deckCards) {
 
 function _mydSelectChip(id) {
   _mydSelectedChipId = (_mydSelectedChipId === id) ? null : id;
-  _mydRenderCards();
-  _mydRenderChips();
+  // Update chip selection in-place — no full grid re-render needed
+  document.querySelectorAll('#myd-chips-list .myd-chip[data-id]').forEach(el => {
+    el.classList.toggle('selected', el.dataset.id === _mydSelectedChipId);
+  });
+  _mydUpdatePreview();
 }
 
 function _mydClearPreview() {
   _mydSelectedChipId = null;
-  _mydRenderCards();
-  _mydRenderChips();
+  document.querySelectorAll('#myd-chips-list .myd-chip.selected').forEach(el => el.classList.remove('selected'));
+  _mydUpdatePreview();
+}
+
+function _mydUpdatePreview() {
+  const wrap = document.getElementById('myd-preview-wrap');
+  if (!wrap) return;
+  if (!_mydSelectedChipId) { wrap.innerHTML = ''; return; }
+  const pid   = _mydSelectedChipId;
+  const ptype = _mydCardTypeCache[pid] || '';
+  const pcost = _mydCardCostCache[pid];
+  const pname = _mydCardNameCache[pid] || pid;
+  const pctr  = _mydCardCounterCache[pid];
+  const ctrBadge = pctr > 0 ? `<span style="font-size:0.6rem;background:rgba(156,95,199,0.18);color:#c390e8;font-weight:700;padding:2px 7px;border-radius:20px;border:1px solid rgba(156,95,199,0.3)">+${(pctr/1000).toFixed(0)}k counter</span>` : '';
+  const costBadge = pcost != null ? `<span style="font-size:0.6rem;background:rgba(212,175,55,0.15);color:var(--gl-gold);font-weight:700;padding:2px 7px;border-radius:20px;border:1px solid rgba(212,175,55,0.25)">Cost ${pcost}</span>` : '';
+  const typeBadge = ptype ? `<span style="font-size:0.6rem;color:var(--gl-text-muted);font-weight:600">${ptype}</span>` : '';
+  wrap.innerHTML = `<div class="myd-preview-card">
+    <button class="myd-preview-close" onclick="event.stopPropagation();_mydClearPreview()" title="Close">×</button>
+    <img src="${cardImg(pid)}" alt="${pid}" onerror="this.style.opacity='0.3'">
+    <div class="myd-preview-info">
+      ${typeBadge}${costBadge}${ctrBadge}
+      <span class="myd-preview-id">${pid}</span>
+    </div>
+  </div>`;
+}
+
+let _mydPasteOpen = false;
+function _mydTogglePaste() {
+  _mydPasteOpen = !_mydPasteOpen;
+  const sec = document.getElementById('myd-paste-section');
+  const arrow = document.getElementById('myd-paste-toggle-arrow');
+  if (sec) sec.classList.toggle('myd-paste-section-hidden', !_mydPasteOpen);
+  if (arrow) arrow.textContent = _mydPasteOpen ? '▾' : '▸';
+}
+function _mydInitPasteState() {
+  // On mobile, hide paste section by default; on desktop, always show
+  const isMobile = window.innerWidth <= 768;
+  const sec = document.getElementById('myd-paste-section');
+  const toggle = document.getElementById('myd-paste-toggle');
+  if (sec) sec.classList.toggle('myd-paste-section-hidden', isMobile && !_mydPasteOpen);
+  if (toggle) toggle.style.display = isMobile ? 'flex' : 'none';
 }
 
 function _mydRenderChips() {
@@ -7785,7 +7836,7 @@ function _mydRenderChips() {
     const ctr = _mydCardCounterCache[c.id];
     const metaParts = [t, color, ctr > 0 ? `+${(ctr/1000).toFixed(0)}k` : null].filter(Boolean);
     const meta = metaParts.join(' · ');
-    return `<div class="myd-chip${sel?' selected':''}" onclick="_mydSelectChip('${c.id}')"
+    return `<div class="myd-chip${sel?' selected':''}" data-id="${c.id}" onclick="_mydSelectChip('${c.id}')"
       style="border-left: 3px solid ${borderColor};${bgColor?`background:${bgColor};`:''}">
       <div class="myd-chip-cost-circle" style="border-color:${borderColor};${bgColor?`background:rgba(0,0,0,0.5);`:''}">
         <span style="${costStyle}">${costLabel}</span>
@@ -7801,19 +7852,72 @@ function _mydRenderChips() {
   }).join('');
 }
 
+function _mydSaveLater(ta) {
+  // Shared debounced save helper
+  clearTimeout(_mydSaveTimer);
+  _mydSaveTimer = setTimeout(() => {
+    if (!ta || !_mydCurrentCardId) return;
+    const { cards } = parseDeckList(ta.value);
+    allMyDecks[_mydCurrentCardId] = { cards, savedAt: Date.now() };
+    _saveMyDecks(); syncToSupabase(); _refreshMyDeckBar();
+    const saved = document.getElementById('myd-ta-saved');
+    if (saved) { saved.classList.add('show'); setTimeout(() => saved.classList.remove('show'), 1800); }
+  }, 700);
+}
+
+function _mydUpdateTotals(cards) {
+  const TARGET = 50;
+  const total = cards.reduce((s,c) => s + c.count, 0);
+  const totalEl = document.getElementById('myd-total');
+  if (totalEl) {
+    if (!total) { totalEl.textContent = ''; totalEl.className = 'myd-count'; }
+    else if (total === TARGET) { totalEl.textContent = `${total} / ${TARGET} ✓`; totalEl.className = 'myd-count ok'; }
+    else { totalEl.textContent = `${total} / ${TARGET}`; totalEl.className = total > TARGET ? 'myd-count warn' : 'myd-count'; }
+  }
+  const fill = document.getElementById('myd-progress-fill');
+  if (fill) fill.style.width = Math.min(100, (total / TARGET) * 100) + '%';
+  const ccEl = document.getElementById('myd-chips-count');
+  if (ccEl) ccEl.textContent = total ? `${total} cards` : '';
+}
+
 function _mydChangeCount(id, delta) {
   const ta = document.getElementById('myd-ta');
   if (!ta) return;
   const { cards } = parseDeckList(ta.value);
   const card = cards.find(c => c.id === id);
+  let removedCard = false;
+  let addedCard = false;
   if (card) {
     card.count = Math.max(0, Math.min(4, card.count + delta));
-    if (card.count === 0) cards.splice(cards.indexOf(card), 1);
+    if (card.count === 0) { cards.splice(cards.indexOf(card), 1); removedCard = true; }
   } else if (delta > 0) {
     cards.push({ count: 1, id });
+    addedCard = true;
   }
   ta.value = cards.map(c => `${c.count}x${c.id}`).join('\n');
-  _mydTaChange();
+
+  if (removedCard || addedCard) {
+    // Need full re-render for structural changes (card added/removed)
+    _mydTaChange();
+    return;
+  }
+
+  // Targeted update: just update count badges, no full DOM replacement
+  const newCount = card ? card.count : 0;
+  const stack = document.querySelector(`#myd-table .myd-stack[data-id="${id}"]`);
+  if (stack) {
+    const badge = stack.querySelector('.myd-count-badge');
+    const ctrlCount = stack.querySelector('.myd-ctrl-count');
+    if (badge) badge.textContent = newCount + '×';
+    if (ctrlCount) ctrlCount.textContent = newCount;
+  }
+  const chip = document.querySelector(`#myd-chips-list .myd-chip[data-id="${id}"]`);
+  if (chip) {
+    const cnt = chip.querySelector('.myd-chip-cnt');
+    if (cnt) cnt.textContent = newCount + '×';
+  }
+  _mydUpdateTotals(cards);
+  _mydSaveLater(ta);
 }
 
 function _mydRemoveCard(id) {
@@ -7821,7 +7925,16 @@ function _mydRemoveCard(id) {
   if (!ta) return;
   const { cards } = parseDeckList(ta.value);
   ta.value = cards.filter(c => c.id !== id).map(c => `${c.count}x${c.id}`).join('\n');
-  _mydTaChange();
+  // Remove DOM elements directly to avoid full re-render
+  const stack = document.querySelector(`#myd-table .myd-stack[data-id="${id}"]`);
+  if (stack) stack.remove();
+  const chip = document.querySelector(`#myd-chips-list .myd-chip[data-id="${id}"]`);
+  if (chip) chip.remove();
+  const remainingCards = parseDeckList(ta.value).cards;
+  _mydUpdateTotals(remainingCards);
+  // Clear selected chip if removed
+  if (_mydSelectedChipId === id) { _mydSelectedChipId = null; _mydUpdatePreview(); }
+  _mydSaveLater(ta);
 }
 
 function _mydSaveNow() {
@@ -7894,7 +8007,8 @@ async function _mydSearchInput(val) {
       for (const r of all) {
         const id = r.card_set_id || r.card_id;
         if (!id) continue;
-        if (r.card_type)   _mydCardTypeCache[id]    = r.card_type;
+        const rTypeRaw = (r.card_type || r.type || '').trim();
+        if (rTypeRaw) _mydCardTypeCache[id] = rTypeRaw.charAt(0).toUpperCase() + rTypeRaw.slice(1).toLowerCase();
         const cstVal = r.cost ?? r.card_cost ?? null;
         if (cstVal != null) _mydCardCostCache[id]   = cstVal;
         if (r.card_name)   _mydCardNameCache[id]    = r.card_name;
@@ -8167,25 +8281,31 @@ function renderDeck(d, matchup, deckKey) {
   });
 
   function _ctrStats(cards) {
-    let ctr1k = 0, ctr2k = 0, ctrSum = 0, total = 0;
+    let ctr1k = 0, ctr2k = 0, ctrSum = 0, total = 0, unknown = 0;
     cards.forEach(card => {
       const cnt = card.count || 1;
-      const ctr = Number(_mydCardCounterCache[card.id] ?? 0);
+      const raw = _mydCardCounterCache[card.id];
+      if (raw == null) { unknown += cnt; return; } // not yet fetched — exclude
+      const ctr = Number(raw);
       if (ctr === 1000) ctr1k += cnt;
       else if (ctr === 2000) ctr2k += cnt;
       ctrSum += ctr * cnt;
       total  += cnt;
     });
-    const avg = total > 0 ? Math.round(ctrSum / total) : 0;
-    return { ctr1k, ctr2k, avg, total };
+    const avg = total > 0 ? Math.round(ctrSum / total) : (unknown > 0 ? null : 0);
+    return { ctr1k, ctr2k, avg, total, unknown };
   }
   function _renderCtrStats(stats) {
     const parts = [];
     if (stats.ctr1k > 0) parts.push(`<span class="sec-stat ctr1k">1k ×${stats.ctr1k}</span>`);
     if (stats.ctr2k > 0) parts.push(`<span class="sec-stat ctr2k">2k ×${stats.ctr2k}</span>`);
-    const avgLabel = stats.avg >= 1000 ? (stats.avg / 1000).toFixed(1) + 'k' : stats.avg;
-    const avgCls = stats.avg === 0 ? 'noctr' : 'avg';
-    parts.push(`<span class="sec-stat ${avgCls}">avg ${avgLabel}</span>`);
+    if (stats.unknown > 0 && stats.avg == null) {
+      parts.push(`<span class="sec-stat noctr" style="opacity:0.5">avg …</span>`);
+    } else {
+      const avgLabel = stats.avg != null && stats.avg >= 1000 ? (stats.avg / 1000).toFixed(1) + 'k' : (stats.avg ?? 0);
+      const avgCls = !stats.avg ? 'noctr' : 'avg';
+      parts.push(`<span class="sec-stat ${avgCls}">avg ${avgLabel}</span>`);
+    }
     return parts.length ? `<div class="sec-stats">${parts.join('')}</div>` : '';
   }
   function _renderSection(label, cards) {
@@ -8224,11 +8344,11 @@ function renderDeck(d, matchup, deckKey) {
 
   // Global counter summary (across all sections)
   const _deckStats = _ctrStats(_allDeckCards);
-  const _deckAvgLabel = _deckStats.avg >= 1000 ? (_deckStats.avg/1000).toFixed(1)+'k' : _deckStats.avg;
+  const _deckAvgLabel = _deckStats.avg == null ? '…' : _deckStats.avg >= 1000 ? (_deckStats.avg/1000).toFixed(1)+'k' : _deckStats.avg;
   const _deckCtrSummary = [
     _deckStats.ctr1k > 0 ? `<span class="sec-stat ctr1k">1k ×${_deckStats.ctr1k}</span>` : '',
     _deckStats.ctr2k > 0 ? `<span class="sec-stat ctr2k">2k ×${_deckStats.ctr2k}</span>` : '',
-    `<span class="sec-stat ${_deckStats.avg===0?'noctr':'avg'}">avg ${_deckAvgLabel}/card</span>`,
+    `<span class="sec-stat ${!_deckStats.avg?'noctr':'avg'}">avg ${_deckAvgLabel}/card</span>`,
   ].filter(Boolean).join('');
 
   html += `<div class="total-bar">
@@ -8306,11 +8426,11 @@ function renderDeck(d, matchup, deckKey) {
         // Update global counter summary
         const ctrRow = dc.querySelector('.total-ctr-row');
         const rs2 = _ctrStats(_allDeckCards);
-        const al2 = rs2.avg >= 1000 ? (rs2.avg/1000).toFixed(1)+'k' : rs2.avg;
+        const al2 = rs2.avg == null ? '…' : rs2.avg >= 1000 ? (rs2.avg/1000).toFixed(1)+'k' : rs2.avg;
         const newCtrHtml = [
           rs2.ctr1k > 0 ? `<span class="sec-stat ctr1k">1k ×${rs2.ctr1k}</span>` : '',
           rs2.ctr2k > 0 ? `<span class="sec-stat ctr2k">2k ×${rs2.ctr2k}</span>` : '',
-          `<span class="sec-stat ${rs2.avg===0?'noctr':'avg'}">avg ${al2}/card</span>`,
+          `<span class="sec-stat ${!rs2.avg?'noctr':'avg'}">avg ${al2}/card</span>`,
         ].filter(Boolean).join('');
         if (ctrRow) ctrRow.innerHTML = newCtrHtml;
       }
