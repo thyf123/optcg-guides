@@ -913,8 +913,8 @@ th.sort-active { color: var(--gl-gold-h); }
 }
 .ext-link-bottom:hover { color: var(--gl-text-muted); }
 
-/* Essential cards — 3-per-row compact grid */
-.ess-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin-top: var(--sp-2); }
+/* Essential cards — fixed-size columns so cards stay compact regardless of panel width */
+.ess-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(90px, 110px)); gap: 6px; margin-top: var(--sp-2); }
 .ess-card-item {
   position: relative; border-radius: var(--r-sm); overflow: hidden;
   background: var(--gl-surface-3); cursor: pointer;
@@ -5475,12 +5475,11 @@ function saveTipEdit(deckKey, idx, value) {
 }
 function _buildCustomTipsHtml(deckKey) {
   const tips = _getCustomTips(deckKey);
-  const showHeader = tips.length > 0 || _tipsEditMode;
-  const headerHtml = showHeader
-    ? `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
-        <span style="font-size:0.62rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#c9a84c88">My Tips</span>
-        <button class="tips-edit-btn${_tipsEditMode?' active':''}" onclick="toggleTipsEditMode('${deckKey}')">${_tipsEditMode?'Done':'Edit'}</button>
-       </div>` : '';
+  // Always show the My Tips header so the section is discoverable even when empty
+  const headerHtml = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
+      <span style="font-size:0.62rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#c9a84c88">My Tips</span>
+      <button class="tips-edit-btn${_tipsEditMode?' active':''}" onclick="toggleTipsEditMode('${deckKey}')">${_tipsEditMode?'Done':'Edit'}</button>
+     </div>`;
   let items = '';
   if (_tipsEditMode) {
     items = tips.map((t, i) =>
