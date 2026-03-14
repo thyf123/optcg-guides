@@ -962,6 +962,16 @@ th.sort-active { color: var(--gl-gold-h); }
 .ess-section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
 .ess-add-slot { border: 2px dashed var(--gl-border-2); background: transparent; cursor: pointer; }
 .ess-add-slot:hover { border-color: var(--gl-gold-dim); color: var(--gl-gold); }
+/* compact add button shown when no essential cards yet */
+.ess-empty-add {
+  display: inline-flex; align-items: center; gap: 5px;
+  margin-top: 6px; padding: 5px 12px;
+  background: transparent; border: 1px dashed var(--gl-border-2);
+  border-radius: var(--r-md); color: var(--gl-text-faint);
+  font-size: 0.65rem; font-weight: 600; cursor: pointer;
+  transition: border-color var(--t), color var(--t);
+}
+.ess-empty-add:hover { border-color: var(--gl-gold-dim); color: var(--gl-gold); }
 .ess-edit-reason-input { width: 100%; background: var(--gl-surface-3); border: 1px solid var(--gl-border-2); border-radius: var(--r-sm); color: var(--gl-text); font-size: 0.62rem; padding: 4px 7px; margin-top: 4px; outline: none; }
 .ess-edit-reason-input:focus { border-color: var(--gl-gold-dim); }
 
@@ -5542,7 +5552,8 @@ function _buildMergedEssHtml(builtInList, deckKey) {
 
   // Add slot only if user can still add cards AND we're not in edit mode
   const canAdd = displayCards.length < ESS_TOTAL_MAX && !_essEditMode;
-  if (canAdd) {
+  // When there are real cards, add a card-sized slot in the grid
+  if (canAdd && displayCards.length > 0) {
     rows += `<div class="ess-card-item ess-add-slot" onclick="showAddEssentialInput('${deckKey}')" title="Add your own pick">
       <div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:3px;color:var(--gl-text-faint)">
         <span style="font-size:1.1rem;line-height:1">+</span>
@@ -5558,9 +5569,12 @@ function _buildMergedEssHtml(builtInList, deckKey) {
     <button class="tips-edit-btn${_essEditMode?' active':''}" onclick="toggleEssEditMode('${deckKey}')">${editLabel}</button>
   </div>`;
   const inputArea = `<div id="add-ess-area" style="margin-top:5px"></div>`;
-  // Only show grid if there are cards or user can add
+  // When grid is empty, show a compact inline add button instead of a huge card-sized slot
+  const emptyAddBtn = (canAdd && displayCards.length === 0)
+    ? `<button class="ess-empty-add" onclick="showAddEssentialInput('${deckKey}')">+ Add essential card</button>`
+    : '';
   const showGrid = rows.length > 0;
-  return `${header}${showGrid ? `<div class="ess-grid" style="margin-top:4px">${rows}</div>` : ''}${inputArea}`;
+  return `${header}${showGrid ? `<div class="ess-grid" style="margin-top:4px">${rows}</div>` : ''}${emptyAddBtn}${inputArea}`;
 }
 function _rerenderEssSection(deckKey) {
   const el = document.getElementById('merged-ess-wrap');
