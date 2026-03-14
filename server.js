@@ -88,19 +88,24 @@ http.createServer((req, res) => {
             'Prefer': 'resolution=merge-duplicates'
           }
         };
-        const req = https.request(opts, r => { let b=''; r.on('data',c=>b+=c); r.on('end',()=>resolve(r.statusCode)); });
+        const req = https.request(opts, r => {
+          let b = '';
+          r.on('data', c => b += c);
+          r.on('end', () => resolve({ status: r.statusCode, body: b }));
+        });
         req.on('error', reject); req.write(body); req.end();
       });
     }
-    // Supabase REST has a default row/payload limit — send in chunks of 100
+    // Send in chunks of 100 to stay within Supabase's row/payload limits
     async function upsert(rows) {
       const CHUNK = 100;
-      let worstStatus = 201;
+      let worstStatus = 200;
+      let errorBody = '';
       for (let i = 0; i < rows.length; i += CHUNK) {
-        const status = await upsertBatch(rows.slice(i, i + CHUNK));
-        if (status !== 201) worstStatus = status;
+        const { status, body } = await upsertBatch(rows.slice(i, i + CHUNK));
+        if (status >= 300) { worstStatus = status; errorBody = body; }
       }
-      return worstStatus;
+      return { status: worstStatus, errorBody };
     }
 
     (async () => {
@@ -125,8 +130,9 @@ http.createServer((req, res) => {
             const cat = c.category || '';
             return { id, card_type: cat, cost: c.cost ?? null, counter: isNaN(ctr) ? null : ctr, card_name: c.name || null, card_color: color, set_id: setId };
           }).filter(r => r.id && r.set_id);
-          const status = await upsert(rows);
-          res.write(`${label} (${packId}): ${rows.length} cards → Supabase ${status}\n`);
+          const { status, errorBody } = await upsert(rows);
+          const suffix = status >= 300 ? ` ← ${errorBody.slice(0, 200)}` : '';
+          res.write(`${label} (${packId}): ${rows.length} cards → Supabase ${status}${suffix}\n`);
           total += rows.length;
         } catch(e) { res.write(`${label}: ERROR ${e.message}\n`); }
         await new Promise(r => setTimeout(r, 200)); // gentle delay, GitHub CDN is fast
