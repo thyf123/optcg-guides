@@ -1,6 +1,7 @@
-const http = require('http');
-const fs   = require('fs');
-const path = require('path');
+const http  = require('http');
+const https = require('https');
+const fs    = require('fs');
+const path  = require('path');
 
 const PORT   = process.env.PORT || 3000;
 const SB_URL = process.env.SUPABASE_URL || '';
@@ -55,6 +56,26 @@ http.createServer((req, res) => {
   // ── App (the OPTCG SPA) ─────────────────────────────────────
   if (url === '/app') {
     return serve(res, APP_FILE, MIME['.html'], injectSB);
+  }
+
+  // ── Card data proxy (avoids CORS on client side) ────────────
+  if (url === '/api/cards') {
+    const setId = (req.url.split('set=')[1] || '').split('&')[0];
+    if (!setId) { res.writeHead(400); res.end('Missing set param'); return; }
+    const apiUrl = `https://www.optcgapi.com/api/sets/filtered/?card_set_id=${encodeURIComponent(setId)}`;
+    https.get(apiUrl, apiRes => {
+      let body = '';
+      apiRes.on('data', chunk => body += chunk);
+      apiRes.on('end', () => {
+        res.writeHead(200, {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+          'Cache-Control': 'public, max-age=86400'
+        });
+        res.end(body);
+      });
+    }).on('error', e => { res.writeHead(502); res.end('Upstream error'); });
+    return;
   }
 
   res.writeHead(404);

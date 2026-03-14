@@ -7645,16 +7645,22 @@ function _mydRenderCards() {
 async function _mydFetchSet(setId) {
   try {
     const directUrl = `https://www.optcgapi.com/api/sets/filtered/?card_set_id=${encodeURIComponent(setId)}`;
-    const proxyUrl  = `https://corsproxy.io/?${encodeURIComponent(directUrl)}`;
-    // Try direct first; if CORS blocks it, fall back to proxy
+    // Use our own server proxy first (works on Railway, no CORS)
+    // Fall back to direct (works on GitHub Pages) then corsproxy.io
     let data;
     try {
-      const r = await fetch(directUrl);
+      const r = await fetch(`/api/cards?set=${encodeURIComponent(setId)}`);
       data = await r.json();
       if (!Array.isArray(data)) throw new Error('not array');
     } catch(e) {
-      const r = await fetch(proxyUrl);
-      data = await r.json();
+      try {
+        const r = await fetch(directUrl);
+        data = await r.json();
+        if (!Array.isArray(data)) throw new Error('not array');
+      } catch(e2) {
+        const r = await fetch(`https://corsproxy.io/?${encodeURIComponent(directUrl)}`);
+        data = await r.json();
+      }
     }
     if (!Array.isArray(data)) return;
     for (const card of data) {
