@@ -7652,43 +7652,41 @@ function _mydCacheCards(cards) {
   }
 }
 
-const _SB_CARDS_URL = 'https://ecsvfbupidmoaekxlcau.supabase.co/rest/v1/card_metadata';
-const _SB_CARDS_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVjc3ZmYnVwaWRtb2Fla3hsY2F1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyNDUwNTIsImV4cCI6MjA4ODgyMTA1Mn0.GPOamlglofRx_4GuV9ifEHDO_Ft-eHlmaMR_LyGYosA';
+// punk-records: static JSON card data on GitHub — no API key, no CORS, no rate limits
+// Source: https://github.com/buhbbl/punk-records
+const _PUNK_BASE = 'https://raw.githubusercontent.com/buhbbl/punk-records/main/english';
+const _PUNK_PACK = {
+  'OP01':'569101','OP02':'569102','OP03':'569103','OP04':'569104','OP05':'569105',
+  'OP06':'569106','OP07':'569107','OP08':'569108','OP09':'569109','OP10':'569110',
+  'OP11':'569111','OP12':'569112','OP13':'569113','OP14':'569114',
+  'EB01':'569201','EB02':'569202','EB03':'569203','EB04':'569114', // EB04 shares pack with OP14
+  'PRB01':'569301','PRB02':'569302',
+  'ST01':'569001','ST02':'569002','ST03':'569003','ST04':'569004','ST05':'569005',
+  'ST06':'569006','ST07':'569007','ST08':'569008','ST09':'569009','ST10':'569010',
+  'ST11':'569011','ST12':'569012','ST13':'569013','ST14':'569014','ST15':'569015',
+  'ST16':'569016','ST17':'569017','ST18':'569018','ST19':'569019','ST20':'569020',
+  'ST21':'569021','ST22':'569022','ST23':'569023','ST24':'569024','ST25':'569025',
+  'ST26':'569026','ST27':'569027','ST28':'569028','ST29':'569029',
+};
 
 async function _mydFetchSet(setId) {
   try {
-    // 1. Try our own Supabase database first — reliable, no rate limits, no CORS
-    try {
-      const r = await fetch(
-        `${_SB_CARDS_URL}?set_id=eq.${encodeURIComponent(setId)}&select=id,card_type,cost,counter,card_name,card_color`,
-        { headers: { 'apikey': _SB_CARDS_KEY, 'Authorization': 'Bearer ' + _SB_CARDS_KEY } }
-      );
-      const rows = await r.json();
-      if (Array.isArray(rows) && rows.length > 0) {
-        _mydCacheCards(rows);
-        return; // got data from our own DB — done
-      }
-    } catch(e) {}
-
-    // 2. Supabase empty or unavailable — fall back to OPTCG API via Railway proxy
-    const directUrl = `https://www.optcgapi.com/api/sets/filtered/?card_set_id=${encodeURIComponent(setId)}`;
-    let data;
-    try {
-      const r = await fetch(`/api/cards?set=${encodeURIComponent(setId)}`);
-      data = await r.json();
-      if (!Array.isArray(data)) throw new Error('not array');
-    } catch(e) {
-      try {
-        const r = await fetch(directUrl);
-        data = await r.json();
-        if (!Array.isArray(data)) throw new Error('not array');
-      } catch(e2) {
-        const r = await fetch(`https://corsproxy.io/?${encodeURIComponent(directUrl)}`);
-        data = await r.json();
-      }
-    }
-    if (!Array.isArray(data) || !data.length) return;
-    _mydCacheCards(data);
+    const packId = _PUNK_PACK[setId];
+    if (!packId) return; // set not in mapping (e.g. P promos)
+    const r = await fetch(`${_PUNK_BASE}/data/${packId}.json`);
+    if (!r.ok) return;
+    const cards = await r.json();
+    if (!Array.isArray(cards) || !cards.length) return;
+    // Normalise punk-records format → our cache format
+    const normalized = cards.map(c => ({
+      id:         (c.id || '').trim().toUpperCase().replace(/_R\d+$/i, ''), // strip promo variants e.g. P-029_R1
+      card_type:  c.category || '',
+      cost:       c.cost ?? null,
+      counter:    c.counter ?? null,
+      card_name:  c.name   || null,
+      card_color: Array.isArray(c.colors) ? c.colors[0] : (c.colors || null),
+    })).filter(c => c.id);
+    _mydCacheCards(normalized);
   } catch(e) {}
 }
 let _mydFetchAttempts = 0;
