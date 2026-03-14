@@ -5206,41 +5206,6 @@ let _essEditMode = false;
 // Central ID normalizer — always call this before any cache read/write or API lookup
 function _normId(id) { return (id || '').trim().toUpperCase(); }
 
-// All known One Piece TCG sets — loaded once at startup so no on-demand fetching needed
-const _MYD_ALL_SETS = [
-  'OP01','OP02','OP03','OP04','OP05','OP06','OP07','OP08','OP09','OP10','OP11','OP12','OP13','OP14',
-  'EB01','EB02','EB03','EB04',
-  'ST01','ST02','ST03','ST04','ST05','ST06','ST07','ST08','ST09','ST10',
-  'ST11','ST12','ST13','ST14','ST15','ST16','ST17','ST18','ST19','ST20',
-  'P'
-];
-
-async function _mydPreloadAllSets() {
-  // Only fetch sets not already fully cached
-  const uncached = _MYD_ALL_SETS.filter(s => !_mydPreloadAllSets._done.has(s));
-  if (!uncached.length) return;
-  // Fetch in batches of 5 to avoid hammering the API
-  for (let i = 0; i < uncached.length; i += 5) {
-    const batch = uncached.slice(i, i + 5);
-    await Promise.all(batch.map(s => _mydFetchSet(s)));
-    batch.forEach(s => _mydPreloadAllSets._done.add(s));
-  }
-  _mydSaveTypeCache(); _mydSaveCostCache(); _mydSaveNameCache();
-  _mydSaveColorCache(); _mydSaveCounterCache();
-  // Re-render deck builder if it's open, so analysis shows correct data
-  if (document.getElementById('screen-my-deck') &&
-      document.getElementById('screen-my-deck').classList.contains('active')) {
-    _mydRenderCards(); _mydRenderChips();
-  }
-}
-_mydPreloadAllSets._done = new Set(
-  // Mark already-cached sets as done so we skip them
-  _MYD_ALL_SETS.filter(s => {
-    // A set is "cached" if at least one card from it exists in the type cache
-    return Object.keys(_mydCardTypeCache).some(id => id.startsWith(s + '-'));
-  })
-);
-
 // Card type cache — keyed by card ID → 'Character'|'Event'|'Stage'|'Leader'
 let _mydCardTypeCache = {};
 try {
@@ -5284,6 +5249,34 @@ try {
   Object.keys(_rawCtrs).forEach(k => { if (_rawCtrs[k] != null) _mydCardCounterCache[_normId(k)] = _rawCtrs[k]; });
 } catch(e) {}
 function _mydSaveCounterCache() { try { localStorage.setItem('optcg-card-counters', JSON.stringify(_mydCardCounterCache)); } catch(e) {} }
+
+// All known One Piece TCG sets — preloaded once at startup
+const _MYD_ALL_SETS = [
+  'OP01','OP02','OP03','OP04','OP05','OP06','OP07','OP08','OP09','OP10','OP11','OP12','OP13','OP14',
+  'EB01','EB02','EB03','EB04',
+  'ST01','ST02','ST03','ST04','ST05','ST06','ST07','ST08','ST09','ST10',
+  'ST11','ST12','ST13','ST14','ST15','ST16','ST17','ST18','ST19','ST20',
+  'P'
+];
+async function _mydPreloadAllSets() {
+  const uncached = _MYD_ALL_SETS.filter(s => !_mydPreloadAllSets._done.has(s));
+  if (!uncached.length) return;
+  for (let i = 0; i < uncached.length; i += 5) {
+    const batch = uncached.slice(i, i + 5);
+    await Promise.all(batch.map(s => _mydFetchSet(s)));
+    batch.forEach(s => _mydPreloadAllSets._done.add(s));
+  }
+  _mydSaveTypeCache(); _mydSaveCostCache(); _mydSaveNameCache();
+  _mydSaveColorCache(); _mydSaveCounterCache();
+  if (document.getElementById('screen-my-deck') &&
+      document.getElementById('screen-my-deck').classList.contains('active')) {
+    _mydRenderCards(); _mydRenderChips();
+  }
+}
+// Mark sets already in cache as done — caches are loaded above so safe to access here
+_mydPreloadAllSets._done = new Set(
+  _MYD_ALL_SETS.filter(s => Object.keys(_mydCardTypeCache).some(id => id.startsWith(s + '-')))
+);
 
 // Card color → CSS accent helpers
 const _MYD_COLOR_BORDER = { Red:'#e05858', Blue:'#4a90d9', Green:'#4caf70', Purple:'#9c5fc7', Yellow:'#c8a820', Black:'#888' };
