@@ -57,7 +57,8 @@ http.createServer((req, res) => {
   // ── One-time card import: fetches all sets → saves to Supabase ──
   // Trigger by visiting /api/import-cards in browser (Railway's IP, not yours)
   if (url === '/api/import-cards') {
-    res.writeHead(200, { 'Content-Type': 'text/plain' });
+    res.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8', 'Transfer-Encoding': 'chunked', 'X-Content-Type-Options': 'nosniff' });
+    res.flushHeaders(); // stream each line immediately instead of buffering
     res.write('Starting card import...\n');
 
     const ALL_SETS = [
@@ -68,8 +69,9 @@ http.createServer((req, res) => {
       'P'
     ];
 
-    const SB_URL_LOCAL = process.env.SUPABASE_URL || SB_URL;
-    const SB_KEY_LOCAL = process.env.SUPABASE_KEY || SB_KEY;
+    // Hardcoded fallback so import works even if Railway env vars aren't set
+    const SB_URL_LOCAL = process.env.SUPABASE_URL || 'https://ecsvfbupidmoaekxlcau.supabase.co';
+    const SB_KEY_LOCAL = process.env.SUPABASE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVjc3ZmYnVwaWRtb2Fla3hsY2F1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM0MDI0MDQsImV4cCI6MjA1ODk3ODQwNH0.iSu_Hn9a0RhJ8TjS7FMPKa5u7DPqyMF7H0GCnQYRb0o';
 
     function httpsGet(url) {
       return new Promise((resolve, reject) => {
