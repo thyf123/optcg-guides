@@ -7608,8 +7608,18 @@ function _mydRenderCards() {
 
 async function _mydFetchSet(setId) {
   try {
-    const res = await fetch(`https://www.optcgapi.com/api/sets/filtered/?card_set_id=${encodeURIComponent(setId)}`);
-    const data = await res.json();
+    const directUrl = `https://www.optcgapi.com/api/sets/filtered/?card_set_id=${encodeURIComponent(setId)}`;
+    const proxyUrl  = `https://corsproxy.io/?${encodeURIComponent(directUrl)}`;
+    // Try direct first; if CORS blocks it, fall back to proxy
+    let data;
+    try {
+      const r = await fetch(directUrl);
+      data = await r.json();
+      if (!Array.isArray(data)) throw new Error('not array');
+    } catch(e) {
+      const r = await fetch(proxyUrl);
+      data = await r.json();
+    }
     if (!Array.isArray(data)) return;
     for (const card of data) {
       const id = _normId(card.card_id || card.card_set_id);
