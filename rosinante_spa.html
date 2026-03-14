@@ -5997,6 +5997,13 @@ function _buildCardPool(deckKey, matchup) {
   if (myDeckKey) addDeck(myDeckKey, 'My deck');
   // "Opp" = exactly the deck being viewed (deckKey), if it's different from mine
   if (deckKey && deckKey !== myDeckKey) addDeck(deckKey, 'Opp');
+  // Supplement with all cards loaded from punk-records cache so @mentions work for any card
+  for (const id of Object.keys(_mydCardNameCache)) {
+    if (!seen.has(id)) {
+      seen.add(id);
+      pool.push({ id, name: _mydCardNameCache[id] || id, label: _mydCardTypeCache[id] || '' });
+    }
+  }
   return pool;
 }
 
