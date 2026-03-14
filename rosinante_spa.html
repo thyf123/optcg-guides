@@ -8245,9 +8245,6 @@ function renderDeck(d, matchup, deckKey) {
 
     const _ctHtml = _buildCustomTipsHtml(deckKey);
     matchupInfoHtml = `<div class="matchup-info">
-      <div class="mi-row1">
-        <span class="mi-name">${matchup.name}${matchup.warn?' <span class="mi-warn">⚠</span>':''}</span>
-      </div>
       <div class="mi-row2">
         <span class="mi-go ${matchup.go==='1st'?'go1':'go2'}">GO ${matchup.go}</span>
         ${wrHtml}
