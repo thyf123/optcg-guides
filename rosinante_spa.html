@@ -5256,8 +5256,10 @@ function _mydSaveCounterCache() { try { localStorage.setItem('optcg-card-counter
 const _MYD_ALL_SETS = [
   'OP01','OP02','OP03','OP04','OP05','OP06','OP07','OP08','OP09','OP10','OP11','OP12','OP13','OP14',
   'EB01','EB02','EB03','EB04',
+  'PRB01','PRB02',
   'ST01','ST02','ST03','ST04','ST05','ST06','ST07','ST08','ST09','ST10',
   'ST11','ST12','ST13','ST14','ST15','ST16','ST17','ST18','ST19','ST20',
+  'ST21','ST22','ST23','ST24','ST25','ST26','ST27','ST28','ST29',
   'P'
 ];
 async function _mydPreloadAllSets() {
@@ -7662,6 +7664,7 @@ const _PUNK_PACK = {
   'OP11':'569111','OP12':'569112','OP13':'569113','OP14':'569114',
   'EB01':'569201','EB02':'569202','EB03':'569203','EB04':'569114', // EB04 shares pack with OP14
   'PRB01':'569301','PRB02':'569302',
+  'P':'569901',    // main promo pack — 306 cards incl. P-088 etc.
   'ST01':'569001','ST02':'569002','ST03':'569003','ST04':'569004','ST05':'569005',
   'ST06':'569006','ST07':'569007','ST08':'569008','ST09':'569009','ST10':'569010',
   'ST11':'569011','ST12':'569012','ST13':'569013','ST14':'569014','ST15':'569015',
@@ -8051,12 +8054,11 @@ function _mydSaveNow() {
 
 // ── DECK CARD SEARCH ──────────────────────────────────────────
 let _mydSearchTimer = null;
-const _OPTCG_SEARCH = 'https://www.optcgapi.com/api/sets/filtered/';
 
 // Track which IDs are already added in current search session
 let _mydSearchAdded = {};
 
-async function _mydSearchInput(val) {
+function _mydSearchInput(val) {
   const dd = document.getElementById('myd-search-dd');
   if (!dd) return;
   const q = val.trim();
@@ -8065,64 +8067,60 @@ async function _mydSearchInput(val) {
   // Direct card ID — show instant preview
   if (/^[A-Z]{1,4}\d*-\d{3,4}$/i.test(q)) {
     const id = q.toUpperCase();
-    _mydRenderSearchResults(dd, [{ card_set_id: id, card_name: id }], 'Direct match');
+    _mydRenderSearchResults(dd, [{
+      card_set_id: id, card_name: _mydCardNameCache[id] || id,
+      card_type: _mydCardTypeCache[id] || '', card_color: _mydCardColorCache[id] || '',
+      cost: _mydCardCostCache[id] ?? null
+    }], 'Direct match');
     return;
   }
 
   clearTimeout(_mydSearchTimer);
-  _mydSearchTimer = setTimeout(async () => {
+  _mydSearchTimer = setTimeout(() => {
     dd.innerHTML = `<div class="myd-search-header">Searching…</div>`;
     dd.style.display = 'block';
-    try {
-      const lower = q.toLowerCase();
-      const colorMap = { red:'Red', blue:'Blue', green:'Green', yellow:'Yellow', purple:'Purple', black:'Black' };
-      const typeMap  = { character:'Character', event:'Event', stage:'Stage', leader:'Leader' };
-      let params = [];
-      let nameQ = q;
-      for (const [k,v] of Object.entries(colorMap)) {
-        if (lower.includes(k)) { params.push(`card_color=${encodeURIComponent(v)}`); nameQ = nameQ.replace(new RegExp(k,'i'),'').trim(); }
-      }
-      for (const [k,v] of Object.entries(typeMap)) {
-        if (lower.includes(k)) { params.push(`card_type=${encodeURIComponent(v)}`); nameQ = nameQ.replace(new RegExp(k,'i'),'').trim(); }
-      }
 
-      // Run name search + trait search in parallel; merge deduped
-      const nameParams = [...params, ...(nameQ ? [`card_name=${encodeURIComponent(nameQ)}`] : [])];
-      const traitParams = [...params, ...(nameQ ? [`type=${encodeURIComponent(nameQ)}`] : [])];
+    const lower = q.toLowerCase();
+    const colorMap = { red:'Red', blue:'Blue', green:'Green', yellow:'Yellow', purple:'Purple', black:'Black' };
+    const typeMap  = { character:'Character', event:'Event', stage:'Stage', leader:'Leader' };
 
-      const fetches = [fetch(_OPTCG_SEARCH + '?' + nameParams.join('&'))];
-      if (nameQ) fetches.push(fetch(_OPTCG_SEARCH + '?' + traitParams.join('&')));
-
-      const responses = await Promise.all(fetches);
-      const datasets  = await Promise.all(responses.map(r => r.json()));
-      const seen = new Set();
-      const all = [];
-      for (const data of datasets) {
-        if (!Array.isArray(data)) continue;
-        for (const r of data) {
-          const id = _normId(r.card_set_id || r.card_id);
-          if (id && !seen.has(id)) { seen.add(id); all.push({ ...r, card_id: id, card_set_id: id }); }
-        }
-      }
-      // Cache any data we got back
-      for (const r of all) {
-        const id = _normId(r.card_set_id || r.card_id);
-        if (!id) continue;
-        const rTypeRaw = (r.card_type || r.type || '').trim();
-        if (rTypeRaw) _mydCardTypeCache[id] = rTypeRaw.charAt(0).toUpperCase() + rTypeRaw.slice(1).toLowerCase();
-        const cstVal = r.cost ?? r.card_cost ?? null;
-        if (cstVal != null) _mydCardCostCache[id]   = cstVal;
-        if (r.card_name)   _mydCardNameCache[id]    = r.card_name;
-        if (r.card_color)  _mydCardColorCache[id]   = r.card_color;
-        const ctr = r.counter ?? r.counter_plus_power ?? r.card_counter ?? null;
-        if (ctr != null) _mydCardCounterCache[id] = ctr;
-      }
-      _mydRenderSearchResults(dd, all, nameQ || params.join(' ') || q);
-    } catch(e) {
-      dd.innerHTML = `<div class="myd-search-item" style="color:var(--gl-text-faint);padding:10px">Search failed — check connection</div>`;
-      dd.style.display = 'block';
+    // Parse optional color/type filters out of the query
+    let colorFilter = null, typeFilter = null, nameQ = lower;
+    for (const [k,v] of Object.entries(colorMap)) {
+      if (nameQ.includes(k)) { colorFilter = v; nameQ = nameQ.replace(k,'').trim(); }
     }
-  }, 380);
+    for (const [k,v] of Object.entries(typeMap)) {
+      if (nameQ.includes(k)) { typeFilter = v; nameQ = nameQ.replace(k,'').trim(); }
+    }
+
+    // Search entirely in local cache — no external API, no CORS
+    const allIds = Object.keys(_mydCardNameCache);
+    if (!allIds.length) {
+      dd.innerHTML = `<div class="myd-search-header">Card data still loading — try again in a moment</div>`;
+      return;
+    }
+
+    const results = allIds.filter(id => {
+      const name  = (_mydCardNameCache[id] || '').toLowerCase();
+      const color = _mydCardColorCache[id] || '';
+      const type  = _mydCardTypeCache[id]  || '';
+      if (colorFilter && color !== colorFilter) return false;
+      if (typeFilter  && type  !== typeFilter)  return false;
+      if (nameQ && !name.includes(nameQ) && !id.toLowerCase().includes(nameQ)) return false;
+      return true;
+    }).map(id => ({
+      card_set_id: id,
+      card_name:  _mydCardNameCache[id]  || id,
+      card_type:  _mydCardTypeCache[id]  || '',
+      card_color: _mydCardColorCache[id] || '',
+      cost:       _mydCardCostCache[id]  ?? null,
+    })).sort((a, b) => {
+      const ca = a.cost ?? 999, cb = b.cost ?? 999;
+      return ca - cb || a.card_set_id.localeCompare(b.card_set_id);
+    });
+
+    _mydRenderSearchResults(dd, results, nameQ || q);
+  }, 250);
 }
 
 function _mydRenderSearchResults(dd, all, label) {
