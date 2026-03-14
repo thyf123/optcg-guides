@@ -77,7 +77,7 @@ http.createServer((req, res) => {
       return new Promise((resolve, reject) => {
         https.get(url, r => {
           let b = ''; r.on('data', c => b += c);
-          r.on('end', () => { try { resolve(JSON.parse(b)); } catch(e) { resolve(null); } });
+          r.on('end', () => { try { resolve(JSON.parse(b)); } catch(e) { resolve({ _raw: b.slice(0, 200), _status: r.statusCode }); } });
         }).on('error', reject);
       });
     }
@@ -104,7 +104,7 @@ http.createServer((req, res) => {
       for (const setId of ALL_SETS) {
         try {
           const data = await httpsGet(`https://www.optcgapi.com/api/sets/filtered/?card_set_id=${encodeURIComponent(setId)}`);
-          if (!Array.isArray(data) || !data.length) { res.write(`${setId}: skipped\n`); await new Promise(r=>setTimeout(r,800)); continue; }
+          if (!Array.isArray(data) || !data.length) { res.write(`${setId}: skipped (got: ${JSON.stringify(data).slice(0,120)})\n`); await new Promise(r=>setTimeout(r,800)); continue; }
           const rows = data.map(c => {
             const id = (c.card_id||c.card_set_id||'').trim().toUpperCase();
             const t = (c.card_type||c.type||'').trim();
