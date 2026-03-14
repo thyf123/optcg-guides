@@ -76,7 +76,7 @@ http.createServer((req, res) => {
       });
     }
 
-    function upsert(rows) {
+    function upsertBatch(rows) {
       return new Promise((resolve, reject) => {
         const body = JSON.stringify(rows);
         const u = new URL('/rest/v1/card_metadata?on_conflict=id', SB_URL_LOCAL);
@@ -91,6 +91,16 @@ http.createServer((req, res) => {
         const req = https.request(opts, r => { let b=''; r.on('data',c=>b+=c); r.on('end',()=>resolve(r.statusCode)); });
         req.on('error', reject); req.write(body); req.end();
       });
+    }
+    // Supabase REST has a default row/payload limit — send in chunks of 100
+    async function upsert(rows) {
+      const CHUNK = 100;
+      let worstStatus = 201;
+      for (let i = 0; i < rows.length; i += CHUNK) {
+        const status = await upsertBatch(rows.slice(i, i + CHUNK));
+        if (status !== 201) worstStatus = status;
+      }
+      return worstStatus;
     }
 
     (async () => {
