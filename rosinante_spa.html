@@ -8512,8 +8512,8 @@ function renderDeck(d, matchup, deckKey) {
 
   // Async: fetch types for any unknown cards, then re-render sections in-place
   // Fetch cost/counter/color data for this deck's cards (grouping already correct from section titles)
-  // Fetch for any card where counter is still unknown (null = never fetched)
-  const _needMeta = _allDeckCards.filter(c => _mydCardCounterCache[c.id] == null).map(c => c.id);
+  // Fetch for any card where cost OR counter is still unknown
+  const _needMeta = _allDeckCards.filter(c => _mydCardCostCache[c.id] == null || _mydCardCounterCache[c.id] == null).map(c => c.id);
   if (_needMeta.length) {
     _mydLoadDeckMeta(_needMeta).then(() => {
       // Re-render sections to add cost/counter badges and update stats
