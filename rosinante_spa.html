@@ -7640,10 +7640,14 @@ async function _mydFetchSet(setId) {
     }
   } catch(e) {}
 }
+let _mydFetchAttempts = 0;
+const _mydFetchMaxAttempts = 10;
 async function _mydLoadTypes(ids) {
   // fetch for any card missing type OR cost OR counter
   const needFetch = ids.filter(id => !_mydCardTypeCache[id] || _mydCardCostCache[id] == null || _mydCardCounterCache[id] == null);
-  if (!needFetch.length) return;
+  if (!needFetch.length) { _mydFetchAttempts = 0; return; } // success — reset counter
+  if (_mydFetchAttempts >= _mydFetchMaxAttempts) return;    // give up after 10 failed attempts
+  _mydFetchAttempts++;
   const sets = [...new Set(needFetch.map(id => id.split('-')[0]))];
   await Promise.all(sets.map(setId => _mydFetchSet(setId)));
   _mydSaveTypeCache();
