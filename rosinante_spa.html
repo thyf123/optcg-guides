@@ -5711,7 +5711,7 @@ function showAddEssentialInput(deckKey) {
   if (!area) return;
   area.innerHTML = `<div class="add-tip-row" style="flex-direction:column;gap:4px;align-items:stretch">
     <div style="display:flex;gap:5px">
-      <input id="new-ess-input" class="add-tip-input" type="text" placeholder="@name or card ID (e.g. OP06-033)…" autofocus style="flex:1;font-size:0.72rem">
+      <input id="new-ess-input" class="add-tip-input" type="text" placeholder="Search card name or ID…" autofocus style="flex:1;font-size:0.72rem">
       <button class="add-tip-save" onclick="commitEssential('${deckKey}')">Add</button>
       <button class="add-tip-save" style="background:transparent;border-color:var(--gl-border-2);color:var(--gl-text-faint)" onclick="_renderCustomEssentials('${deckKey}')">✕</button>
     </div>
@@ -5724,7 +5724,7 @@ function showAddEssentialInput(deckKey) {
       if (e.key === 'Enter') { e.preventDefault(); const r = document.getElementById('new-ess-reason'); if (r) r.focus(); else commitEssential(deckKey); }
       if (e.key === 'Escape') _renderCustomEssentials(deckKey);
     });
-    _setupAtMention(inp, deckKey, _currentDeckMatchup);
+    _setupDirectSearch(inp, deckKey, _currentDeckMatchup);
   }
   const reasonInp = document.getElementById('new-ess-reason');
   if (reasonInp) {
@@ -5994,7 +5994,7 @@ function deleteGame(lk, dk, ts) {
 }
 
 // ── CARD @MENTION SYSTEM ─────────────────────────────────────────
-let _acPool = [], _acCards = [], _acTa = null, _acStart = -1;
+let _acPool = [], _acCards = [], _acTa = null, _acStart = -1, _acDirectMode = false;
 
 function _buildCardPool(deckKey, matchup) {
   const seen = new Set();
@@ -6026,12 +6026,38 @@ function _buildCardPool(deckKey, matchup) {
 }
 
 function _setupAtMention(ta, deckKey, matchup) {
-  _acTa = ta;
+  _acTa = ta; _acDirectMode = false;
   _acPool = _buildCardPool(deckKey, matchup);
   ta.removeEventListener('input', _onAtInput);
+  ta.removeEventListener('input', _onDirectInput);
   ta.removeEventListener('keydown', _onAtKeydown);
   ta.addEventListener('input', _onAtInput);
   ta.addEventListener('keydown', _onAtKeydown);
+}
+// Direct-search mode: autocomplete fires on every keystroke, no @ needed.
+// Used for single-purpose card inputs (e.g. "add essential card").
+function _setupDirectSearch(inp, deckKey, matchup) {
+  _acTa = inp; _acDirectMode = true;
+  _acPool = _buildCardPool(deckKey, matchup);
+  inp.removeEventListener('input', _onAtInput);
+  inp.removeEventListener('input', _onDirectInput);
+  inp.removeEventListener('keydown', _onAtKeydown);
+  inp.addEventListener('input', _onDirectInput);
+  inp.addEventListener('keydown', _onAtKeydown);
+}
+function _onDirectInput() {
+  const ta = _acTa; if (!ta) return;
+  const query = ta.value.toLowerCase().trim();
+  _acStart = 0;
+  if (!query) { _hideAcDropdown(); return; }
+  const terms = query.split(/\s+/).filter(Boolean);
+  const matches = _acPool.filter(c => {
+    const n = c.name.toLowerCase(), id = c.id.toLowerCase();
+    return terms.every(t => n.includes(t) || id.includes(t));
+  }).slice(0, 8);
+  if (!matches.length) { _hideAcDropdown(); return; }
+  _acCards = matches;
+  _showAcDropdown(matches, ta);
 }
 function _onAtInput() {
   const ta = _acTa; if (!ta) return;
@@ -6083,7 +6109,17 @@ function _hideAcDropdown() {
 }
 function _pickAcItem(el) {
   const c = _acCards[parseInt(el.dataset.idx)]; if (!c || !_acTa) return;
-  const ta = _acTa, pos = ta.selectionStart, val = ta.value;
+  const ta = _acTa;
+  if (_acDirectMode) {
+    // Replace entire input with the selected card mention
+    ta.value = `@[${c.name}](${c.id})`;
+    _hideAcDropdown(); _acStart = -1; _acDirectMode = false;
+    // Auto-advance to the reason field if present
+    const reasonInp = document.getElementById('new-ess-reason');
+    if (reasonInp) { reasonInp.focus(); } else { ta.focus(); }
+    return;
+  }
+  const pos = ta.selectionStart, val = ta.value;
   const mention = `@[${c.name}](${c.id})`;
   ta.value = val.slice(0, _acStart) + mention + val.slice(pos);
   const np = _acStart + mention.length;
