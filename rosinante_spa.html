@@ -551,6 +551,30 @@ img, picture, video, canvas, svg { display: block; max-width: 100%; }
 }
 .stats-nav-btn:hover { border-color: var(--gl-gold); color: var(--gl-gold); }
 
+/* Admin modal */
+#admin-modal {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.75); z-index: 500;
+  display: none; align-items: center; justify-content: center;
+}
+.admin-box {
+  background: var(--gl-surface); border: 1px solid var(--gl-gold-dim);
+  border-radius: var(--r-lg); padding: 24px 28px; width: 280px; max-width: 90vw;
+  display: flex; flex-direction: column; gap: 12px;
+}
+.admin-box h3 { font-family: var(--font-display); color: var(--gl-gold); margin: 0; font-size: 1rem; letter-spacing: 0.05em; }
+.admin-pwd-input {
+  background: var(--gl-bg); border: 1px solid var(--gl-border-2);
+  border-radius: var(--r-sm); color: var(--gl-text); font-size: 0.85rem;
+  padding: 8px 10px; font-family: inherit; outline: none; width: 100%; box-sizing: border-box;
+}
+.admin-pwd-input:focus { border-color: var(--gl-gold-dim); }
+.admin-err { font-size: 0.72rem; color: var(--gl-crimson-h); min-height: 1em; }
+.admin-btns { display: flex; gap: 8px; justify-content: flex-end; }
+.admin-btn-cancel { background: none; border: 1px solid var(--gl-border-2); border-radius: var(--r-sm); color: var(--gl-text-muted); font-size: 0.78rem; padding: 6px 14px; cursor: pointer; }
+.admin-btn-login  { background: var(--gl-gold-dim); border: 1px solid var(--gl-gold); border-radius: var(--r-sm); color: var(--gl-gold); font-size: 0.78rem; font-weight: 700; padding: 6px 14px; cursor: pointer; }
+.admin-btn-login:hover  { background: var(--gl-gold); color: #000; }
+.admin-btn-cancel:hover { border-color: var(--gl-gold-dim); color: var(--gl-text); }
+
 /* Search + filter */
 .search-bar { display: flex; gap: var(--sp-2); margin-bottom: var(--sp-2); align-items: center; flex-wrap: wrap; }
 .search-input {
@@ -1846,6 +1870,7 @@ th.sort-active { color: var(--gl-gold-h); }
       <span class="leader-switch-hint">⇄ switch leader</span>
     </div>
     <button class="stats-nav-btn" onclick="showStats()" title="My Stats">📊</button>
+    <button class="stats-nav-btn" id="admin-lock-btn" onclick="openAdminModal()" title="Admin login">🔒</button>
   </div>
 
   <!-- My Deck bar -->
@@ -1909,6 +1934,20 @@ th.sort-active { color: var(--gl-gold-h); }
   <button class="deck-fab" id="deck-fab" onclick="openLogModal(_currentDeckKey,'',event)" style="display:none">+ Log Game</button>
 </div>
 <div id="log-toast">✓ Logged!</div>
+
+<!-- Admin login modal -->
+<div id="admin-modal" onclick="if(event.target===this)closeAdminModal()">
+  <div class="admin-box">
+    <h3>🔒 Admin Login</h3>
+    <input id="admin-pwd" class="admin-pwd-input" type="password" placeholder="Password"
+      onkeydown="if(event.key==='Enter')submitAdminLogin();if(event.key==='Escape')closeAdminModal()">
+    <div id="admin-err" class="admin-err"></div>
+    <div class="admin-btns">
+      <button class="admin-btn-cancel" onclick="closeAdminModal()">Cancel</button>
+      <button class="admin-btn-login" onclick="submitAdminLogin()">Login</button>
+    </div>
+  </div>
+</div>
 
 <!-- ════ SCREEN 3: MY STATS ════ -->
 <div class="screen" id="screen-stats">
@@ -2185,6 +2224,82 @@ function _initSbClient() {
   return _sbClient;
 }
 
+// ── ADMIN AUTH ──────────────────────────────────────────────────
+let _adminToken = '';
+try { _adminToken = sessionStorage.getItem('optcg-admin-token') || ''; } catch(e) {}
+
+function _isAdmin() { return !!_adminToken; }
+
+// Verify stored token against server on load — clears if stale (e.g. after redeploy)
+async function _verifyAdminToken() {
+  if (!_adminToken) return;
+  try {
+    const r = await fetch(`/api/admin-verify?token=${encodeURIComponent(_adminToken)}`);
+    if (!r.ok) { _adminToken = ''; try { sessionStorage.removeItem('optcg-admin-token'); } catch(e) {} }
+  } catch(e) {}
+  _updateAdminLockBtn();
+}
+
+function _updateAdminLockBtn() {
+  const btn = document.getElementById('admin-lock-btn');
+  if (btn) btn.textContent = _isAdmin() ? '🔓' : '🔒';
+}
+
+function openAdminModal() {
+  if (_isAdmin()) {
+    // Already logged in — offer logout
+    if (confirm('Logged in as admin. Log out?')) {
+      _adminToken = '';
+      try { sessionStorage.removeItem('optcg-admin-token'); } catch(e) {}
+      _updateAdminLockBtn();
+      _refreshAdminButtons();
+    }
+    return;
+  }
+  const m = document.getElementById('admin-modal');
+  if (m) { m.style.display = 'flex'; setTimeout(() => document.getElementById('admin-pwd')?.focus(), 50); }
+}
+function closeAdminModal() {
+  const m = document.getElementById('admin-modal');
+  if (m) m.style.display = 'none';
+  const err = document.getElementById('admin-err');
+  if (err) err.textContent = '';
+}
+async function submitAdminLogin() {
+  const pwd = document.getElementById('admin-pwd')?.value || '';
+  const err = document.getElementById('admin-err');
+  try {
+    const r = await fetch('/api/admin-login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: pwd })
+    });
+    const data = await r.json();
+    if (data.ok) {
+      _adminToken = data.token;
+      try { sessionStorage.setItem('optcg-admin-token', _adminToken); } catch(e) {}
+      closeAdminModal();
+      _updateAdminLockBtn();
+      _refreshAdminButtons();
+    } else {
+      if (err) err.textContent = 'Wrong password';
+    }
+  } catch(e) {
+    if (err) err.textContent = 'Login failed';
+  }
+}
+// Re-render sections that have admin-gated buttons after login/logout
+function _refreshAdminButtons() {
+  if (_currentDeckKey) {
+    const topLogBtn = document.getElementById('deck-top-log-btn');
+    const fab = document.getElementById('deck-fab');
+    if (topLogBtn) topLogBtn.style.display = _isAdmin() ? '' : 'none';
+    if (fab) fab.style.display = _isAdmin() ? '' : 'none';
+    _rerenderEssSection(_currentDeckKey);
+    _renderCustomTips(_currentDeckKey);
+  }
+}
+
 // ── LOGIN SCREEN LOGIC ──────────────────────────────────────────
 
 function _loginTab(tab) {
@@ -2279,6 +2394,8 @@ function _onAuthSuccess(user) {
   _bootCustomLeaders();
   showHome();
   _mydPreloadAllSets(); // kick off background load of all card data
+  _verifyAdminToken();  // validate stored admin token (clears if server restarted)
+  _updateAdminLockBtn();
   syncFromSupabase().then(() => {
     _bootCustomLeaders(); // re-inject after sync in case new ones pulled from server
     renderLeaderGrid();   // refresh home grid with synced leaders/decks
@@ -5476,12 +5593,15 @@ function saveTipEdit(deckKey, idx, value) {
 function _buildCustomTipsHtml(deckKey) {
   const tips = _getCustomTips(deckKey);
   // Always show the My Tips header so the section is discoverable even when empty
+  const editBtn = _isAdmin()
+    ? `<button class="tips-edit-btn${_tipsEditMode?' active':''}" onclick="toggleTipsEditMode('${deckKey}')">${_tipsEditMode?'Done':'Edit'}</button>`
+    : '';
   const headerHtml = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
       <span style="font-size:0.62rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#c9a84c88">My Tips</span>
-      <button class="tips-edit-btn${_tipsEditMode?' active':''}" onclick="toggleTipsEditMode('${deckKey}')">${_tipsEditMode?'Done':'Edit'}</button>
+      ${editBtn}
      </div>`;
   let items = '';
-  if (_tipsEditMode) {
+  if (_isAdmin() && _tipsEditMode) {
     items = tips.map((t, i) =>
       `<li class="custom-tip-item">
         <input class="cti-edit-input" value="${t.replace(/&/g,'&amp;').replace(/"/g,'&quot;')}"
@@ -5496,9 +5616,11 @@ function _buildCustomTipsHtml(deckKey) {
     ).join('');
   }
   const listHtml = items ? `<ul class="mi-tips custom-tips">${items}</ul>` : '';
-  const addHtml = _tipsEditMode
-    ? '<div id="add-tip-area"></div>'
-    : `<div id="add-tip-area"></div><button class="add-tip-btn" onclick="showAddTipInput('${deckKey}')">+ Add tip</button>`;
+  const addHtml = _isAdmin()
+    ? (_tipsEditMode
+        ? '<div id="add-tip-area"></div>'
+        : `<div id="add-tip-area"></div><button class="add-tip-btn" onclick="showAddTipInput('${deckKey}')">+ Add tip</button>`)
+    : '<div id="add-tip-area"></div>';
   return headerHtml + listHtml + addHtml;
 }
 function _renderCustomTips(deckKey) {
@@ -5613,8 +5735,8 @@ function _buildMergedEssHtml(builtInList, deckKey) {
     </div>`;
   }).join('');
 
-  // Add slot only if user can still add cards AND we're not in edit mode
-  const canAdd = displayCards.length < ESS_TOTAL_MAX && !_essEditMode;
+  // Add slot only if admin, can still add cards AND we're not in edit mode
+  const canAdd = _isAdmin() && displayCards.length < ESS_TOTAL_MAX && !_essEditMode;
   // When there are real cards, add a card-sized slot in the grid
   if (canAdd && displayCards.length > 0) {
     rows += `<div class="ess-card-item ess-add-slot" onclick="showAddEssentialInput('${deckKey}')" title="Add your own pick">
@@ -5627,9 +5749,12 @@ function _buildMergedEssHtml(builtInList, deckKey) {
 
   const anyHidden = hidden.length > 0;
   const editLabel = _essEditMode ? 'Done' : (anyHidden ? `Edit (${hidden.length} hidden)` : 'Edit');
+  const editBtn = _isAdmin()
+    ? `<button class="tips-edit-btn${_essEditMode?' active':''}" onclick="toggleEssEditMode('${deckKey}')">${editLabel}</button>`
+    : '';
   const header = `<div class="ess-section-header">
     <div class="mi-section-title" style="margin-bottom:0">My Essential Cards</div>
-    <button class="tips-edit-btn${_essEditMode?' active':''}" onclick="toggleEssEditMode('${deckKey}')">${editLabel}</button>
+    ${editBtn}
   </div>`;
   const inputArea = `<div id="add-ess-area" style="margin-top:5px"></div>`;
   // When grid is empty, show a compact inline add button instead of a huge card-sized slot
@@ -8563,12 +8688,12 @@ function renderDeck(d, matchup, deckKey) {
   const _mNameTop = (matchup ? matchup.name : deckKey).replace(/'/g,'&#39;');
   const topLogBtn = document.getElementById('deck-top-log-btn');
   if (topLogBtn) {
-    topLogBtn.style.display = '';
+    topLogBtn.style.display = _isAdmin() ? '' : 'none';
     topLogBtn.onclick = (e) => openLogModal(deckKey, _mNameTop, e);
   }
   const fab = document.getElementById('deck-fab');
   if (fab) {
-    fab.style.display = '';
+    fab.style.display = _isAdmin() ? '' : 'none';
     fab.onclick = (e) => openLogModal(deckKey, _mNameTop, e);
   }
   // append my-section

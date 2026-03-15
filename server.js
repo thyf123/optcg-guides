@@ -1,12 +1,16 @@
-const http  = require('http');
-const https = require('https');
-const fs    = require('fs');
-const path  = require('path');
+const http   = require('http');
+const https  = require('https');
+const fs     = require('fs');
+const path   = require('path');
+const crypto = require('crypto');
 
-const PORT        = process.env.PORT || 3000;
-const SB_URL      = process.env.SUPABASE_URL || '';
-const SB_KEY      = process.env.SUPABASE_KEY || '';
-const LANDING_DIR = path.join(__dirname, 'Grand Line \u2014 One Piece TCG');
+const PORT           = process.env.PORT || 3000;
+const SB_URL         = process.env.SUPABASE_URL || '';
+const SB_KEY         = process.env.SUPABASE_KEY || '';
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || '';
+// Random token generated at each server start — clients must re-login after redeploy
+const ADMIN_TOKEN    = ADMIN_PASSWORD ? crypto.randomBytes(20).toString('hex') : '';
+const LANDING_DIR    = path.join(__dirname, 'Grand Line \u2014 One Piece TCG');
 
 const MIME = {
   '.html': 'text/html; charset=utf-8',
@@ -160,6 +164,38 @@ http.createServer((req, res) => {
         res.end(body);
       });
     }).on('error', e => { res.writeHead(502); res.end('Upstream error'); });
+    return;
+  }
+
+  // ── Admin login ──────────────────────────────────────────────
+  if (url === '/api/admin-login' && req.method === 'POST') {
+    let body = '';
+    req.on('data', c => body += c);
+    req.on('end', () => {
+      try {
+        const { password } = JSON.parse(body);
+        if (ADMIN_PASSWORD && password === ADMIN_PASSWORD) {
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ ok: true, token: ADMIN_TOKEN }));
+        } else {
+          res.writeHead(401, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ ok: false, error: 'Wrong password' }));
+        }
+      } catch(e) { res.writeHead(400); res.end('Bad request'); }
+    });
+    return;
+  }
+
+  // ── Admin token verify ───────────────────────────────────────
+  if (url.startsWith('/api/admin-verify')) {
+    const token = new URL('http://x' + req.url).searchParams.get('token') || '';
+    if (ADMIN_TOKEN && token === ADMIN_TOKEN) {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: true }));
+    } else {
+      res.writeHead(401, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: false }));
+    }
     return;
   }
 
