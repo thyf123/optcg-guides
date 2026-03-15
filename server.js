@@ -573,7 +573,7 @@ if (url.startsWith('/api/fetch-bandai')) {
   }
 
   // ── Manual scrape trigger (admin only) ──────────────────────
-  if (url === '/api/trigger-scrape') {
+  if (url.startsWith('/api/trigger-scrape')) {
     const token = new URL('http://x' + req.url).searchParams.get('token') || '';
     if (!ADMIN_TOKEN || token !== ADMIN_TOKEN) {
       res.writeHead(401, { 'Content-Type': 'application/json' });
@@ -583,6 +583,22 @@ if (url.startsWith('/api/fetch-bandai')) {
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ ok: true, message: 'Scrape triggered in background' }));
     runDailyScrape().catch(e => console.error('[scraper] Manual trigger error:', e.message));
+    return;
+  }
+
+  // ── Backfill: scrape N pages of history (admin only) ─────────
+  if (url.startsWith('/api/backfill-scrape')) {
+    const params = new URL('http://x' + req.url).searchParams;
+    const token = params.get('token') || '';
+    if (!ADMIN_TOKEN || token !== ADMIN_TOKEN) {
+      res.writeHead(401, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: false, error: 'Unauthorized' }));
+      return;
+    }
+    const pages = Math.min(parseInt(params.get('pages') || '20', 10), 50);
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ ok: true, message: `Backfill started for ${pages} pages` }));
+    runDailyScrape({ maxPages: pages }).catch(e => console.error('[scraper] Backfill error:', e.message));
     return;
   }
 
@@ -715,27 +731,49 @@ async function _countExistingVariants(deckKey) {
 }
 
 // ── Main scrape function ───────────────────────────────────────
-async function runDailyScrape() {
+// Fetch tournament IDs across multiple pages of the Limitless listing
+async function _scraperFetchTournamentIds(maxPages) {
+  const ids = [];
+  const seen = new Set();
+  const re = /href="\/tournaments\/(\d+)"/gi;
+  for (let page = 1; page <= maxPages; page++) {
+    const url = page === 1
+      ? 'https://onepiece.limitlesstcg.com/tournaments'
+      : `https://onepiece.limitlesstcg.com/tournaments?page=${page}`;
+    try {
+      const html = await _scraperGet(url);
+      let m; re.lastIndex = 0;
+      let found = 0;
+      while ((m = re.exec(html)) !== null) {
+        const id = parseInt(m[1]);
+        if (!seen.has(id)) { seen.add(id); ids.push(id); found++; }
+      }
+      console.log(`[scraper] Page ${page}: found ${found} tournament IDs`);
+      if (found === 0) break; // no more pages
+      if (page < maxPages) await new Promise(r => setTimeout(r, 800));
+    } catch(e) {
+      console.error(`[scraper] Page ${page} fetch error:`, e.message);
+      break;
+    }
+  }
+  return ids;
+}
+
+async function runDailyScrape({ maxPages } = {}) {
   if (!SB_URL || !SB_SERVICE_KEY) {
     console.log('[scraper] Supabase not configured — skipping');
     return;
   }
-  console.log('[scraper] Daily tournament scrape starting');
-  try {
-    const state = await _getScrapeState();
-    const importedIds = new Set((state.importedIds || []).map(Number));
+  const state = await _getScrapeState();
+  const importedIds = new Set((state.importedIds || []).map(Number));
+  const isFirstRun = importedIds.size === 0;
 
-    // Fetch recent tournament IDs from Limitless
-    const listHtml = await _scraperGet('https://onepiece.limitlesstcg.com/tournaments');
-    const ids = [];
-    const re = /href="\/tournaments\/(\d+)"/gi;
-    let m;
-    const seen = new Set();
-    while ((m = re.exec(listHtml)) !== null) {
-      const id = parseInt(m[1]);
-      if (!seen.has(id)) { seen.add(id); ids.push(id); }
-    }
-    const newIds = ids.slice(0, 30).filter(id => !importedIds.has(id));
+  // First run ever → backfill 10 pages of history; daily → just page 1
+  const pages = maxPages || (isFirstRun ? 10 : 1);
+  console.log(`[scraper] Starting scrape (${pages} page${pages > 1 ? 's' : ''}, ${isFirstRun ? 'first run backfill' : 'daily update'})`);
+  try {
+    const ids = await _scraperFetchTournamentIds(pages);
+    const newIds = ids.filter(id => !importedIds.has(id));
     console.log(`[scraper] ${ids.length} tournaments found, ${newIds.length} new`);
 
     let totalSaved = state.totalSaved || 0;
