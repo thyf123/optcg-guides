@@ -523,13 +523,13 @@ img, picture, video, canvas, svg { display: block; max-width: 100%; }
   display: flex; align-items: center; gap: 8px;
   background: var(--gl-surface); border: 1px solid var(--gl-border-2);
   border-radius: var(--r-md); padding: 5px 10px 5px 6px;
-  margin-bottom: var(--sp-3); cursor: pointer;
+  margin-bottom: var(--sp-3); cursor: pointer; overflow: hidden;
   transition: border-color var(--t), background var(--t);
 }
 .my-deck-bar:hover { border-color: var(--gl-gold-dim); background: var(--gl-surface-2); }
 .my-deck-bar:active { transform: scale(0.985); }
 .mdb-img {
-  width: 28px; height: auto; border-radius: 3px; flex-shrink: 0;
+  width: 28px; height: 39px; object-fit: cover; border-radius: 3px; flex-shrink: 0;
   background: var(--gl-surface-3); opacity: 0; transition: opacity var(--t);
 }
 .mdb-img.loaded { opacity: 1; }
