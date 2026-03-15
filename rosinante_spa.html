@@ -6587,25 +6587,19 @@ async function syncToSupabase() {
 async function saveDeckDataToSupabase() {
   const btn = document.getElementById('save-deck-data-btn');
   const msg = document.getElementById('admin-panel-msg');
-  if (!_sbUrl || !_sbKey) {
-    if (msg) msg.textContent = '⚠ Supabase not configured';
-    return;
-  }
   if (btn) btn.disabled = true;
   if (btn) btn.textContent = 'Saving…';
   if (msg) msg.textContent = '';
   try {
-    const res = await fetch(_sbUrl + '/rest/v1/optcg_sync', {
+    // Route through server so it can use the service role key (bypasses Supabase RLS)
+    const res = await fetch('/api/save-deck-data', {
       method: 'POST',
-      headers: { ..._sbHeaders(), 'Prefer': 'resolution=merge-duplicates' },
-      body: JSON.stringify([
-        { id: 'leaders-data', payload: LEADERS, user_id: 'admin', updated_at: new Date().toISOString() },
-        { id: 'decklists-data', payload: DECKLISTS, user_id: 'admin', updated_at: new Date().toISOString() },
-      ])
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token: _adminToken, leaders: LEADERS, decklists: DECKLISTS })
     });
-    if (!res.ok) {
-      const errTxt = await res.text().catch(() => '');
-      throw new Error(res.status + ' ' + errTxt.slice(0, 120));
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.ok) {
+      throw new Error((data.error || res.status) + '');
     }
     if (btn) btn.textContent = '✓ Saved';
     if (msg) msg.textContent = 'Leaders & decklists saved to Supabase';

@@ -4,10 +4,11 @@ const fs     = require('fs');
 const path   = require('path');
 const crypto = require('crypto');
 
-const PORT           = process.env.PORT || 3000;
-const SB_URL         = process.env.SUPABASE_URL || '';
-const SB_KEY         = process.env.SUPABASE_KEY || '';
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || '';
+const PORT              = process.env.PORT || 3000;
+const SB_URL            = process.env.SUPABASE_URL || '';
+const SB_KEY            = process.env.SUPABASE_KEY || '';
+const SB_SERVICE_KEY    = process.env.SUPABASE_SERVICE_KEY || SB_KEY; // service role key bypasses RLS
+const ADMIN_PASSWORD    = process.env.ADMIN_PASSWORD || '';
 // Random token generated at each server start — clients must re-login after redeploy
 const ADMIN_TOKEN    = ADMIN_PASSWORD ? crypto.randomBytes(20).toString('hex') : '';
 const LANDING_DIR    = path.join(__dirname, 'Grand Line \u2014 One Piece TCG');
@@ -196,6 +197,65 @@ http.createServer((req, res) => {
       res.writeHead(401, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ ok: false }));
     }
+    return;
+  }
+
+  // ── Admin: save LEADERS + DECKLISTS to Supabase ──────────────
+  // Uses service role key (bypasses RLS). Admin token required.
+  if (url === '/api/save-deck-data' && req.method === 'POST') {
+    let body = '';
+    req.on('data', c => { body += c; if (body.length > 20 * 1024 * 1024) { res.writeHead(413); res.end('Payload too large'); } });
+    req.on('end', async () => {
+      try {
+        const { token, leaders, decklists } = JSON.parse(body);
+        if (!ADMIN_TOKEN || token !== ADMIN_TOKEN) {
+          res.writeHead(401, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ ok: false, error: 'Unauthorized' }));
+          return;
+        }
+        if (!SB_URL || !SB_SERVICE_KEY) {
+          res.writeHead(503, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ ok: false, error: 'Supabase not configured' }));
+          return;
+        }
+        const rows = [
+          { id: 'leaders-data', payload: leaders, user_id: 'admin', updated_at: new Date().toISOString() },
+          { id: 'decklists-data', payload: decklists, user_id: 'admin', updated_at: new Date().toISOString() },
+        ];
+        const sbBody = JSON.stringify(rows);
+        const sbResult = await new Promise((resolve, reject) => {
+          const u = new URL('/rest/v1/optcg_sync?on_conflict=id', SB_URL);
+          const opts = {
+            hostname: u.hostname, path: u.pathname + u.search, method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Content-Length': Buffer.byteLength(sbBody),
+              'apikey': SB_SERVICE_KEY,
+              'Authorization': 'Bearer ' + SB_SERVICE_KEY,
+              'Prefer': 'resolution=merge-duplicates'
+            }
+          };
+          const sbReq = https.request(opts, sbRes => {
+            let b = '';
+            sbRes.on('data', c => b += c);
+            sbRes.on('end', () => resolve({ status: sbRes.statusCode, body: b }));
+          });
+          sbReq.on('error', reject);
+          sbReq.write(sbBody);
+          sbReq.end();
+        });
+        if (sbResult.status >= 300) {
+          res.writeHead(502, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ ok: false, error: sbResult.body.slice(0, 300) }));
+        } else {
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ ok: true }));
+        }
+      } catch(e) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ ok: false, error: String(e) }));
+      }
+    });
     return;
   }
 
