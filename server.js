@@ -207,7 +207,7 @@ http.createServer((req, res) => {
     req.on('data', c => { body += c; if (body.length > 20 * 1024 * 1024) { res.writeHead(413); res.end('Payload too large'); } });
     req.on('end', async () => {
       try {
-        const { token, leaders, decklists } = JSON.parse(body);
+        const { token, leaders, decklists, variantRows } = JSON.parse(body);
         if (!ADMIN_TOKEN || token !== ADMIN_TOKEN) {
           res.writeHead(401, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify({ ok: false, error: 'Unauthorized' }));
@@ -218,39 +218,61 @@ http.createServer((req, res) => {
           res.end(JSON.stringify({ ok: false, error: 'Supabase not configured' }));
           return;
         }
-        const rows = [
-          { id: 'leaders-data', payload: leaders, user_id: 'admin', updated_at: new Date().toISOString() },
+
+        function sbUpsert(rows) {
+          return new Promise((resolve, reject) => {
+            const sbBody = JSON.stringify(rows);
+            const u = new URL('/rest/v1/optcg_sync?on_conflict=id', SB_URL);
+            const opts = {
+              hostname: u.hostname, path: u.pathname + u.search, method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Content-Length': Buffer.byteLength(sbBody),
+                'apikey': SB_SERVICE_KEY,
+                'Authorization': 'Bearer ' + SB_SERVICE_KEY,
+                'Prefer': 'resolution=merge-duplicates'
+              }
+            };
+            const sbReq = https.request(opts, sbRes => {
+              let b = ''; sbRes.on('data', c => b += c);
+              sbRes.on('end', () => resolve({ status: sbRes.statusCode, body: b }));
+            });
+            sbReq.on('error', reject); sbReq.write(sbBody); sbReq.end();
+          });
+        }
+
+        // 1. Save leaders + legacy decklists blob
+        const baseRows = [
+          { id: 'leaders-data',   payload: leaders,   user_id: 'admin', updated_at: new Date().toISOString() },
           { id: 'decklists-data', payload: decklists, user_id: 'admin', updated_at: new Date().toISOString() },
         ];
-        const sbBody = JSON.stringify(rows);
-        const sbResult = await new Promise((resolve, reject) => {
-          const u = new URL('/rest/v1/optcg_sync?on_conflict=id', SB_URL);
-          const opts = {
-            hostname: u.hostname, path: u.pathname + u.search, method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Content-Length': Buffer.byteLength(sbBody),
-              'apikey': SB_SERVICE_KEY,
-              'Authorization': 'Bearer ' + SB_SERVICE_KEY,
-              'Prefer': 'resolution=merge-duplicates'
-            }
-          };
-          const sbReq = https.request(opts, sbRes => {
-            let b = '';
-            sbRes.on('data', c => b += c);
-            sbRes.on('end', () => resolve({ status: sbRes.statusCode, body: b }));
-          });
-          sbReq.on('error', reject);
-          sbReq.write(sbBody);
-          sbReq.end();
-        });
-        if (sbResult.status >= 300) {
+        const r1 = await sbUpsert(baseRows);
+        if (r1.status >= 300) {
           res.writeHead(502, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ ok: false, error: sbResult.body.slice(0, 300) }));
-        } else {
-          res.writeHead(200, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ ok: true }));
+          res.end(JSON.stringify({ ok: false, error: r1.body.slice(0, 300) })); return;
         }
+
+        // 2. Save per-variant rows: deck:{deckKey}:{variantIdx}
+        if (Array.isArray(variantRows) && variantRows.length > 0) {
+          const vRows = variantRows.map(v => ({
+            id: `deck:${v.deckKey}:${v.variantIdx}`,
+            payload: v.payload,
+            user_id: 'admin',
+            updated_at: new Date().toISOString()
+          }));
+          // Chunk into 50 rows per request to stay within limits
+          const CHUNK = 50;
+          for (let i = 0; i < vRows.length; i += CHUNK) {
+            const r = await sbUpsert(vRows.slice(i, i + CHUNK));
+            if (r.status >= 300) {
+              res.writeHead(502, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ ok: false, error: 'variant rows: ' + r.body.slice(0, 200) })); return;
+            }
+          }
+        }
+
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ ok: true }));
       } catch(e) {
         res.writeHead(500, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ ok: false, error: String(e) }));

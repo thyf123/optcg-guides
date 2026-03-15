@@ -5344,6 +5344,31 @@ function updateStarBtns() {
 let allGames = [];
 let allNotes = {};
 let allCustomTips = {};
+
+// ── VARIANTS HELPERS ──────────────────────────────────────────
+// Returns the sections array for a given deck key and variant index.
+// Falls back to the legacy top-level .sections field for backwards compat.
+// variantIdx defaults to 0 (first / only variant).
+function _getSections(deckKey, variantIdx) {
+  const d = DECKLISTS[deckKey];
+  if (!d) return [];
+  if (d.variants && d.variants.length > 0) {
+    const idx = variantIdx ?? 0;
+    return (d.variants[idx] && d.variants[idx].sections) || [];
+  }
+  return d.sections || []; // legacy fallback
+}
+
+// Returns the variants array, synthesising a single-element array from the
+// legacy .sections field when variants haven't been created yet.
+function _getVariants(deckKey) {
+  const d = DECKLISTS[deckKey];
+  if (!d) return [];
+  if (d.variants && d.variants.length > 0) return d.variants;
+  if (d.sections) return [{ label: 'Main Build', sections: d.sections }];
+  return [];
+}
+// ─────────────────────────────────────────────────────────────
 let allCustomEssentials = {};
 let allMatchupOverrides = {};  // admin-editable Key Tips, Style overrides per matchup
 let allHiddenEssentials = {};   // keyed by leaderKey:deckKey → Set of card indices to hide
@@ -6280,7 +6305,7 @@ function _buildCardPool(deckKey, matchup) {
     const d = DECKLISTS[dk];
     if (!d) return;
     if (!seen.has(d.leader)) { seen.add(d.leader); pool.push({ id: d.leader, name: d.leaderName, label }); }
-    d.sections.forEach(sec => sec.cards.forEach(c => {
+    _getSections(dk).forEach(sec => sec.cards.forEach(c => {
       if (!seen.has(c.id)) { seen.add(c.id); pool.push({ id: c.id, name: c.name, label }); }
     }));
   };
@@ -6544,6 +6569,32 @@ async function syncFromSupabase() {
       }
     } catch(e) { /* non-fatal: keep hardcoded defaults */ }
 
+    // Restore per-variant rows (deck:{deckKey}:{variantIdx}) — overlay onto DECKLISTS
+    try {
+      const vRes = await fetch(
+        _sbUrl + '/rest/v1/optcg_sync?id=like.deck:*&select=id,payload',
+        { headers: _sbHeaders() }
+      );
+      if (vRes.ok) {
+        const vRows = await vRes.json();
+        // Group by deckKey, sort by variantIdx, inject into DECKLISTS[deckKey].variants
+        const grouped = {};
+        for (const row of vRows) {
+          const parts = row.id.split(':'); // ['deck', deckKey, variantIdx]
+          if (parts.length < 3) continue;
+          const deckKey = parts.slice(1, -1).join(':'); // handles deckKeys without colons
+          const idx = parseInt(parts[parts.length - 1], 10);
+          if (!grouped[deckKey]) grouped[deckKey] = [];
+          grouped[deckKey].push({ idx, payload: row.payload });
+        }
+        for (const [deckKey, entries] of Object.entries(grouped)) {
+          if (!DECKLISTS[deckKey]) continue;
+          entries.sort((a, b) => a.idx - b.idx);
+          DECKLISTS[deckKey].variants = entries.map(e => e.payload);
+        }
+      }
+    } catch(e) { /* non-fatal: variants fall back to legacy sections */ }
+
     // Restore last active leader key so cross-device login lands on correct leader
     const clkr = rows.find(r => r.id === 'current-leader');
     if (clkr && clkr.payload && clkr.payload.key && LEADERS[clkr.payload.key]) {
@@ -6593,11 +6644,19 @@ async function saveDeckDataToSupabase() {
   if (btn) btn.textContent = 'Saving…';
   if (msg) msg.textContent = '';
   try {
+    // Build per-variant rows: deck:{deckKey}:{variantIdx} for each deck
+    const variantRows = [];
+    for (const deckKey of Object.keys(DECKLISTS)) {
+      const variants = _getVariants(deckKey);
+      variants.forEach((v, idx) => {
+        variantRows.push({ deckKey, variantIdx: idx, payload: v });
+      });
+    }
     // Route through server so it can use the service role key (bypasses Supabase RLS)
     const res = await fetch('/api/save-deck-data', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ token: _adminToken, leaders: LEADERS, decklists: DECKLISTS })
+      body: JSON.stringify({ token: _adminToken, leaders: LEADERS, decklists: DECKLISTS, variantRows })
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok || !data.ok) {
@@ -7095,7 +7154,7 @@ function openNewDeckPicker() {
     const d = DECKLISTS[dk];
     if (!d || !d.leader) return '';
     const meta = [d.player, d.placement].filter(Boolean).join(' · ');
-    const cardCount = (d.sections || []).reduce((s, sec) =>
+    const cardCount = _getSections(dk).reduce((s, sec) =>
       s + (sec.cards || []).reduce((ss, c) => ss + c.count, 0), 0);
     return `<div class="nd-item" onclick="openNewDeckFromRef('${dk}','${d.leader}')">
       <img class="nd-img" src="${cardImg(d.leader)}" alt="${d.leaderName || d.leader}" loading="lazy" onerror="this.style.opacity='0.3'">
@@ -7115,7 +7174,7 @@ function _decklistToText(deckKey) {
   const d = DECKLISTS[deckKey];
   if (!d) return '';
   const lines = [];
-  for (const sec of (d.sections || [])) {
+  for (const sec of _getSections(deckKey)) {
     for (const card of (sec.cards || [])) {
       if (card.id && card.count) lines.push(`${card.count}x${card.id}`);
     }
@@ -8682,7 +8741,7 @@ function _essCardId(cardStr) {
   // Search DECKLISTS by name
   for (const dk of Object.keys(DECKLISTS)) {
     const dl = DECKLISTS[dk];
-    for (const sec of dl.sections) {
+    for (const sec of _getSections(dk)) {
       for (const c of sec.cards) {
         if (c.name && c.name.toLowerCase().replace(/[^a-z0-9]/g, '') === lower) return c.id;
         if (c.name && lower.length > 4 && c.name.toLowerCase().replace(/[^a-z0-9]/g, '').includes(lower)) return c.id;
