@@ -38,6 +38,32 @@ function serve(res, filePath, mime, transform) {
   res.end(content);
 }
 
+// Parse Limitless HTML: extract (count, cardId) pairs from decklist markup.
+// Count appears as:  src="…/images/decklist/N.png"
+// Card ID appears as: href="/cards/OP13-002"
+// They sit close together in the DOM so we match them as adjacent pairs.
+function _parseLimitlessHtml(res, html) {
+  const re = /\/images\/decklist\/(\d+)\.png[\s\S]{0,400}?href="\/cards\/([A-Z]{1,4}\d*-\d{3,4})"/gi;
+  const cards = [];
+  let m;
+  const seen = new Set();
+  while ((m = re.exec(html)) !== null) {
+    const count = parseInt(m[1]);
+    const id    = m[2].toUpperCase();
+    // Skip duplicates (some cards appear in tooltips / related sections)
+    const key = id;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    if (count >= 1 && count <= 4) cards.push({ count, id });
+  }
+  res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+  if (!cards.length) {
+    res.end(JSON.stringify({ ok: false, error: 'No cards found — Limitless may have changed their markup' }));
+  } else {
+    res.end(JSON.stringify({ ok: true, cards }));
+  }
+}
+
 http.createServer((req, res) => {
   const url = req.url.split('?')[0].replace(/\/+$/, '') || '/';
 
@@ -145,6 +171,44 @@ http.createServer((req, res) => {
       res.write(`\nDone. ${total} total cards imported.\n`);
       res.end();
     })();
+    return;
+  }
+
+  // ── Limitless TCG decklist proxy ─────────────────────────────
+  // Fetches a limitlesstcg.com/decks/list/{id} page and parses cards.
+  // Returns { ok, cards: [{id,count}] }
+  if (url.startsWith('/api/fetch-limitless')) {
+    const targetUrl = new URL('http://x' + req.url).searchParams.get('url') || '';
+    if (!targetUrl.match(/^https?:\/\/([\w-]+\.)?limitlesstcg\.com\//)) {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: false, error: 'Only limitlesstcg.com URLs are allowed' }));
+      return;
+    }
+    const parsedUrl = new URL(targetUrl);
+    const opts = {
+      hostname: parsedUrl.hostname, path: parsedUrl.pathname + parsedUrl.search,
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (compatible; OPTCG-Guide-Bot/1.0)',
+        'Accept': 'text/html,application/xhtml+xml'
+      }
+    };
+    https.get(opts, proxyRes => {
+      // Follow one redirect if needed
+      if (proxyRes.statusCode >= 301 && proxyRes.statusCode <= 302 && proxyRes.headers.location) {
+        const redir = new URL(proxyRes.headers.location, targetUrl);
+        const rOpts = {
+          hostname: redir.hostname, path: redir.pathname + redir.search,
+          headers: opts.headers
+        };
+        https.get(rOpts, r2 => {
+          let html = ''; r2.on('data', c => html += c);
+          r2.on('end', () => _parseLimitlessHtml(res, html));
+        }).on('error', e => { res.writeHead(502); res.end(JSON.stringify({ ok: false, error: e.message })); });
+        return;
+      }
+      let html = ''; proxyRes.on('data', c => html += c);
+      proxyRes.on('end', () => _parseLimitlessHtml(res, html));
+    }).on('error', e => { res.writeHead(502); res.end(JSON.stringify({ ok: false, error: e.message })); });
     return;
   }
 

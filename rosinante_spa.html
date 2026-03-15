@@ -8999,8 +8999,19 @@ function renderDeck(d, matchup, deckKey) {
   if (_isAdmin()) {
     html += `<div class="admin-variant-panel">
       <span class="avp-label">⚙ Admin · Add variant</span>
-      <div style="margin-bottom:6px">
+      <div style="display:flex;gap:6px;margin-bottom:6px;flex-wrap:wrap">
         <button id="admin-paste-toggle-btn" class="variant-tab" style="font-size:0.62rem" onclick="adminTogglePaste('${deckKey}')">📋 Paste decklist</button>
+        <button id="admin-limitless-toggle-btn" class="variant-tab" style="font-size:0.62rem" onclick="adminToggleLimitless('${deckKey}')">🌐 Import from Limitless</button>
+      </div>
+      <div id="admin-limitless-area" style="display:none;margin-bottom:8px">
+        <div style="display:flex;gap:6px;align-items:center">
+          <input type="text" id="admin-limitless-url" class="variant-label-input"
+            placeholder="https://onepiece.limitlesstcg.com/decks/list/6041">
+          <button class="variant-save-btn"
+            style="background:var(--gl-card);color:var(--gl-text);border:1px solid var(--gl-divider);white-space:nowrap"
+            onclick="adminFetchLimitless('${deckKey}')">Fetch →</button>
+        </div>
+        <span id="admin-limitless-preview" style="font-size:0.65rem;color:var(--gl-text-muted);display:block;margin-top:4px"></span>
       </div>
       <div id="admin-paste-area" style="display:none;margin-bottom:8px">
         <textarea id="admin-paste-ta" class="variant-label-input"
@@ -9238,50 +9249,23 @@ async function adminSaveVariant(deckKey) {
   await saveDeckDataToSupabase();
   renderDeck(d, _currentDeckMatchup, deckKey);
 }
-// ── ADMIN: PASTE DECKLIST PARSER ─────────────────────────────
-function adminTogglePaste(deckKey) {
-  const area = document.getElementById('admin-paste-area');
-  const btn  = document.getElementById('admin-paste-toggle-btn');
-  if (!area) return;
-  const open = area.style.display === 'none';
-  area.style.display = open ? 'block' : 'none';
-  if (btn) btn.textContent = open ? '▲ Hide paste' : '📋 Paste decklist';
-  if (open) {
-    // Clear any stale pending result when reopening
-    delete _pendingVariantSections[deckKey];
-    const prev = document.getElementById('admin-paste-preview');
-    if (prev) prev.textContent = '';
-  }
-}
+// ── ADMIN: SHARED CARD PIPELINE ───────────────────────────────
+// Shared by paste parser and Limitless importer.
+// rawCards: [{id, count}], extraErrors: number of parse-skipped lines
+// Fetches types, groups into sections, stores pending, updates previewEl.
+async function _processRawCards(deckKey, rawCards, previewEl, extraErrors) {
+  if (!rawCards.length) { if (previewEl) previewEl.textContent = 'No valid cards found.'; return; }
 
-async function adminParsePaste(deckKey) {
-  const ta      = document.getElementById('admin-paste-ta');
-  const preview = document.getElementById('admin-paste-preview');
-  if (!ta || !preview) return;
+  if (previewEl) previewEl.textContent = 'Fetching card data…';
 
-  const text = ta.value.trim();
-  if (!text) { preview.textContent = 'Paste a decklist first.'; return; }
+  const missingIds = rawCards.map(c => c.id).filter(id => !_mydCardTypeCache[id] || !_mydCardNameCache[id]);
+  if (missingIds.length) { try { await _mydLoadDeckMeta(missingIds); } catch(e) {} }
 
-  const { cards, errors } = parseDeckList(text);
-  if (!cards.length) {
-    preview.textContent = `No valid cards (${errors} parse errors). Format: 4xOP07-046`;
-    return;
-  }
-
-  preview.textContent = 'Fetching card data…';
-
-  // Ensure type/name caches are populated for these cards
-  const missingIds = cards.map(c => c.id).filter(id => !_mydCardTypeCache[id] || !_mydCardNameCache[id]);
-  if (missingIds.length) {
-    try { await _mydLoadDeckMeta(missingIds); } catch(e) {}
-  }
-
-  // Group by type into sections
   const chars = [], events = [], stages = [], other = [];
-  cards.forEach(c => {
-    const name = _mydCardNameCache[c.id] || c.id;
-    const entry = { id: c.id, name, count: c.count };
-    const type  = _mydCardTypeCache[c.id];
+  rawCards.forEach(c => {
+    const type = _mydCardTypeCache[c.id];
+    if (type === 'Leader') return; // skip leader card
+    const entry = { id: c.id, name: _mydCardNameCache[c.id] || c.id, count: c.count };
     if      (type === 'Character') chars.push(entry);
     else if (type === 'Event')     events.push(entry);
     else if (type === 'Stage')     stages.push(entry);
@@ -9296,19 +9280,78 @@ async function adminParsePaste(deckKey) {
 
   _pendingVariantSections[deckKey] = sections;
 
-  // Build summary line
-  const total = cards.reduce((s, c) => s + c.count, 0);
+  const total = rawCards.reduce((s, c) => s + c.count, 0);
   const parts = [];
   if (chars.length)  parts.push(`${chars.reduce((s,c)=>s+c.count,0)} chars`);
   if (events.length) parts.push(`${events.reduce((s,c)=>s+c.count,0)} events`);
   if (stages.length) parts.push(`${stages.reduce((s,c)=>s+c.count,0)} stages`);
   if (other.length)  parts.push(`${other.reduce((s,c)=>s+c.count,0)} other`);
-  if (errors)        parts.push(`${errors} skipped`);
-  preview.innerHTML = `<span style="color:var(--gl-gold-h)">✓ ${total} cards</span> — ${parts.join(' · ')} <span style="opacity:0.5;font-size:0.6rem">Enter label & save ↓</span>`;
+  if (extraErrors)   parts.push(`${extraErrors} skipped`);
+  if (previewEl) previewEl.innerHTML = `<span style="color:var(--gl-gold-h)">✓ ${total} cards</span> — ${parts.join(' · ')} <span style="opacity:0.5;font-size:0.6rem">Enter label & save ↓</span>`;
 
-  // Focus the label input so the admin can type the name right away
   const labelEl = document.getElementById('variant-label-input');
   if (labelEl) labelEl.focus();
+}
+
+// ── ADMIN: PASTE DECKLIST PARSER ─────────────────────────────
+function adminTogglePaste(deckKey) {
+  const area = document.getElementById('admin-paste-area');
+  const btn  = document.getElementById('admin-paste-toggle-btn');
+  if (!area) return;
+  const open = area.style.display === 'none';
+  area.style.display = open ? 'block' : 'none';
+  if (btn) btn.textContent = open ? '▲ Hide paste' : '📋 Paste decklist';
+  if (open) {
+    delete _pendingVariantSections[deckKey];
+    const prev = document.getElementById('admin-paste-preview');
+    if (prev) prev.textContent = '';
+  }
+}
+
+async function adminParsePaste(deckKey) {
+  const ta      = document.getElementById('admin-paste-ta');
+  const preview = document.getElementById('admin-paste-preview');
+  if (!ta || !preview) return;
+  const text = ta.value.trim();
+  if (!text) { preview.textContent = 'Paste a decklist first.'; return; }
+  const { cards, errors } = parseDeckList(text);
+  if (!cards.length) { preview.textContent = `No valid cards (${errors} parse errors). Format: 4xOP07-046`; return; }
+  await _processRawCards(deckKey, cards, preview, errors);
+}
+
+// ── ADMIN: IMPORT FROM LIMITLESS ─────────────────────────────
+function adminToggleLimitless(deckKey) {
+  const area = document.getElementById('admin-limitless-area');
+  const btn  = document.getElementById('admin-limitless-toggle-btn');
+  if (!area) return;
+  const open = area.style.display === 'none';
+  area.style.display = open ? 'block' : 'none';
+  if (btn) btn.textContent = open ? '▲ Hide' : '🌐 Import from Limitless';
+  if (open) {
+    delete _pendingVariantSections[deckKey];
+    const prev = document.getElementById('admin-limitless-preview');
+    if (prev) prev.textContent = '';
+  }
+}
+
+async function adminFetchLimitless(deckKey) {
+  const urlEl  = document.getElementById('admin-limitless-url');
+  const preview = document.getElementById('admin-limitless-preview');
+  if (!urlEl || !preview) return;
+  const targetUrl = urlEl.value.trim();
+  if (!targetUrl || !targetUrl.includes('limitlesstcg.com')) {
+    preview.textContent = 'Enter a limitlesstcg.com/decks/list/... URL';
+    return;
+  }
+  preview.textContent = 'Fetching from Limitless…';
+  try {
+    const res  = await fetch('/api/fetch-limitless?url=' + encodeURIComponent(targetUrl));
+    const data = await res.json();
+    if (!data.ok) { preview.textContent = 'Error: ' + (data.error || res.status); return; }
+    await _processRawCards(deckKey, data.cards, preview, 0);
+  } catch(e) {
+    preview.textContent = 'Error: ' + e.message;
+  }
 }
 // ── STAR FIELD GENERATOR ──────────────────────────────────────
 (function() {
