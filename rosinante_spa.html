@@ -6690,6 +6690,9 @@ function goBack() {
   _sm.style.display = 'block';
   const fab = document.getElementById('deck-fab');
   if (fab) fab.style.display = 'none';
+  // Clear search bar on return
+  const searchEl = document.getElementById('search-input');
+  if (searchEl) { searchEl.value = ''; applyFilters(); }
   _bnavSetActive('bnav-matchup');
   requestAnimationFrame(() => { _sm.scrollTop = savedScroll; _refreshYouCells(); });
 }
