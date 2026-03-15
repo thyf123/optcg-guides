@@ -126,6 +126,7 @@ img, picture, video, canvas, svg { display: block; max-width: 100%; }
   position: absolute; inset: 0;
   overflow-y: auto; overflow-x: hidden;
   padding: var(--sp-4);
+  background: var(--gl-bg);
 }
 .screen.active {
   display: block;
