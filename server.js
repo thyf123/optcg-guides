@@ -182,7 +182,13 @@ http.createServer((req, res) => {
 
   // ── App (the OPTCG SPA) ─────────────────────────────────────
   if (url === '/app') {
-    return serve(res, path.join(__dirname, 'rosinante_spa.html'), MIME['.html'], injectSB);
+    return serve(res, path.join(__dirname, 'index.html'), MIME['.html'], injectSB);
+  }
+  if (url === '/styles.css') {
+    return serve(res, path.join(__dirname, 'styles.css'), MIME['.css']);
+  }
+  if (url === '/app.js') {
+    return serve(res, path.join(__dirname, 'app.js'), MIME['.js']);
   }
 
   // ── One-time card import: fetches all sets → saves to Supabase ──

@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<!--
+  ____  ____   __   _  _  ____     __    ____  _  _  ____ 
+ / ___)(  _ \ / _\ ( \( )(    \   (  )  (  _ \( \( )(  __)
+ \___ \ )   //    \ )  (  ) D (    )(__  ) __/ )  (  ) _) 
+ (____/(__\_)\_/\_/(_\_)(____/   (____)(__)  (_\_)(__)
+
+ Grand Line · One Piece TCG Companion
+ Created with Perplexity Computer · https://www.perplexity.ai/computer
+-->
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Grand Line · OPTCG Companion</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+</head>
+
+<body>
+<div id="gl-stars"></div>
+<div id="app">
+<div id="sync-dot"></div>
+<div id="dbg"></div>
+
+<!-- ════ SCREEN -1: LOGIN ════ -->
+<div class="screen" id="screen-login">
+  <div class="login-logo">
+    <!-- Grand Line compass mark SVG -->
+    <svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Grand Line compass">
+      <circle cx="32" cy="32" r="30" stroke="#c9a84c" stroke-width="1.5" stroke-dasharray="4 3" opacity="0.4"/>
+      <circle cx="32" cy="32" r="22" stroke="#c9a84c" stroke-width="1.5" opacity="0.6"/>
+      <circle cx="32" cy="32" r="4" fill="#c9a84c"/>
+      <!-- Cardinal crosshairs -->
+      <line x1="32" y1="4" x2="32" y2="10" stroke="#c9a84c" stroke-width="2" stroke-linecap="round"/>
+      <line x1="32" y1="54" x2="32" y2="60" stroke="#c9a84c" stroke-width="2" stroke-linecap="round"/>
+      <line x1="4" y1="32" x2="10" y2="32" stroke="#c9a84c" stroke-width="2" stroke-linecap="round"/>
+      <line x1="54" y1="32" x2="60" y2="32" stroke="#c9a84c" stroke-width="2" stroke-linecap="round"/>
+      <!-- N indicator -->
+      <!-- N indicator: two verticals + diagonal = capital N -->
+      <line x1="29" y1="16" x2="29" y2="24" stroke="#e8c96a" stroke-width="1.8" stroke-linecap="round"/>
+      <line x1="29" y1="16" x2="35" y2="24" stroke="#e8c96a" stroke-width="1.8" stroke-linecap="round"/>
+      <line x1="35" y1="16" x2="35" y2="24" stroke="#e8c96a" stroke-width="1.8" stroke-linecap="round"/>
+      <!-- S indicator tick -->
+      <line x1="32" y1="38" x2="32" y2="46" stroke="#c9a84c" stroke-width="1.2" stroke-linecap="round" opacity="0.7"/>
+      <!-- Diagonal ticks -->
+      <line x1="14" y1="14" x2="17" y2="17" stroke="#c9a84c" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+      <line x1="50" y1="14" x2="47" y2="17" stroke="#c9a84c" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+      <line x1="14" y1="50" x2="17" y2="47" stroke="#c9a84c" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+      <line x1="50" y1="50" x2="47" y2="47" stroke="#c9a84c" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+    </svg>
+    <div class="login-wordmark">GRAND LINE</div>
+    <div class="login-tagline">OPTCG Companion · Serious players only</div>
+  </div>
+
+  <div class="login-card">
+    <div class="login-tab-row">
+      <button class="login-tab active" id="tab-signin" onclick="_loginTab('signin')">Sign In</button>
+      <button class="login-tab" id="tab-signup" onclick="_loginTab('signup')">Create Account</button>
+    </div>
+
+    <div id="login-form-signin">
+      <div class="login-field">
+        <label class="login-label" for="login-email">Email</label>
+        <input class="login-input" id="login-email" type="email" placeholder="you@example.com" autocomplete="email">
+      </div>
+      <div class="login-field">
+        <label class="login-label" for="login-pw">Password</label>
+        <input class="login-input" id="login-pw" type="password" placeholder="••••••••" autocomplete="current-password">
+      </div>
+      <button class="login-btn-primary" onclick="_doSignIn()">Sign In</button>
+    </div>
+
+    <div id="login-form-signup" style="display:none">
+      <div class="login-field">
+        <label class="login-label" for="signup-email">Email</label>
+        <input class="login-input" id="signup-email" type="email" placeholder="you@example.com" autocomplete="email">
+      </div>
+      <div class="login-field">
+        <label class="login-label" for="signup-pw">Password</label>
+        <input class="login-input" id="signup-pw" type="password" placeholder="Min 6 characters" autocomplete="new-password">
+      </div>
+      <button class="login-btn-primary" onclick="_doSignUp()">Create Account</button>
+    </div>
+
+    <div class="login-divider">or</div>
+    <button class="login-btn-google" onclick="_doGoogleLogin()">
+      <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+        <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" fill="#4285F4"/>
+        <path d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z" fill="#34A853"/>
+        <path d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z" fill="#FBBC05"/>
+        <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 6.29C4.672 4.163 6.656 3.58 9 3.58z" fill="#EA4335"/>
+      </svg>
+      Continue with Google
+    </button>
+
+    <div class="login-status" id="login-status"></div>
+  </div>
+
+  <p style="margin-top:1.5rem;font-size:0.65rem;color:var(--gl-text-faint);text-align:center;max-width:320px;line-height:1.6">
+    Your notes, game logs and settings sync securely across devices.
+  </p>
+  <a href="https://www.perplexity.ai/computer" target="_blank" rel="noopener noreferrer"
+     style="margin-top:1.5rem;font-size:0.6rem;color:var(--gl-text-faint);opacity:0.5">
+    Created with Perplexity Computer
+  </a>
+</div>
+
+<!-- ════ SCREEN 0: HOME ════ -->
+<div class="screen" id="screen-home">
+  <div class="home-header">
+    <div class="home-logo-row">
+      <svg width="28" height="28" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Grand Line">
+        <circle cx="32" cy="32" r="22" stroke="#c9a84c" stroke-width="1.5" opacity="0.7"/>
+        <circle cx="32" cy="32" r="4" fill="#c9a84c"/>
+        <line x1="32" y1="4" x2="32" y2="10" stroke="#c9a84c" stroke-width="2" stroke-linecap="round"/>
+        <line x1="32" y1="54" x2="32" y2="60" stroke="#c9a84c" stroke-width="2" stroke-linecap="round"/>
+        <line x1="4" y1="32" x2="10" y2="32" stroke="#c9a84c" stroke-width="2" stroke-linecap="round"/>
+        <line x1="54" y1="32" x2="60" y2="32" stroke="#c9a84c" stroke-width="2" stroke-linecap="round"/>
+        <!-- N indicator: two verticals + diagonal = capital N -->
+        <line x1="29" y1="16" x2="29" y2="24" stroke="#e8c96a" stroke-width="1.8" stroke-linecap="round"/>
+        <line x1="29" y1="16" x2="35" y2="24" stroke="#e8c96a" stroke-width="1.8" stroke-linecap="round"/>
+        <line x1="35" y1="16" x2="35" y2="24" stroke="#e8c96a" stroke-width="1.8" stroke-linecap="round"/>
+      </svg>
+      <div>
+        <div class="home-wordmark">GRAND LINE</div>
+        <div class="home-sub-row">OPTCG Companion</div>
+      </div>
+    </div>
+    <div class="home-actions">
+      <button class="home-manage-btn" id="home-edit-btn" onclick="toggleHomeEditMode()">Manage</button>
+      <button class="home-logout-btn" onclick="_doLogout()" title="Sign out">Sign out</button>
+    </div>
+  </div>
+
+  <div id="home-manage-hint"></div>
+  <div class="home-section-label">My Decks</div>
+  <div class="leader-grid" id="my-decks-grid"></div>
+
+  <footer style="text-align:center;margin-top:2.5rem;padding-bottom:1rem">
+    <a href="https://www.perplexity.ai/computer" target="_blank" rel="noopener noreferrer"
+       style="font-size:0.6rem;color:var(--gl-text-faint);opacity:0.4">
+      Created with Perplexity Computer
+    </a>
+  </footer>
+</div>
+
+<!-- ════ SCREEN 1: MATCHUP TABLE ════ -->
+<div class="screen" id="screen-matchup">
+  <div class="matchup-topbar">
+    <div class="matchup-title-wrap" onclick="openLeaderSwitcher()" style="cursor:pointer" title="Switch leader">
+      <h1 id="matchup-title">OP12-061 Donquixote Rosinante</h1>
+      <p class="sub" id="matchup-sub">TCGMatchMaking.com · 25,255 games · 55.0% WR · EB03</p>
+      <span class="leader-switch-hint">⇄ switch leader</span>
+    </div>
+    <button class="stats-nav-btn" onclick="showStats()" title="My Stats">📊</button>
+    <button class="stats-nav-btn" id="admin-lock-btn" onclick="openAdminModal()" title="Admin login">🔒</button>
+  </div>
+
+  <!-- My Deck bar -->
+  <div class="my-deck-bar" id="my-deck-bar" onclick="" style="display:none">
+    <img class="mdb-img" id="mdb-img" src="" alt="">
+    <span class="mdb-label">My Deck</span>
+    <span id="mdb-name" style="display:none"></span>
+    <span class="mdb-arrow">›</span>
+  </div>
+
+  <!-- Search + filter -->
+  <div class="search-bar">
+    <input class="search-input" id="search-input" type="text" placeholder="Search matchup…" oninput="applyFilters()">
+    <div class="filter-btns">
+      <button class="fbtn fbtn-all active" data-color="all" onclick="setColor(this)">All</button>
+      <button class="fbtn fbtn-r" data-color="red" onclick="setColor(this)">Red</button>
+      <button class="fbtn fbtn-g" data-color="green" onclick="setColor(this)">Green</button>
+      <button class="fbtn fbtn-b" data-color="blue" onclick="setColor(this)">Blue</button>
+      <button class="fbtn fbtn-p" data-color="purple" onclick="setColor(this)">Purple</button>
+      <button class="fbtn fbtn-y" data-color="yellow" onclick="setColor(this)">Yellow</button>
+      <button class="fbtn fbtn-bk" data-color="black" onclick="setColor(this)">Black</button>
+      <button class="fbtn fbtn-warn" data-color="warn" onclick="setColor(this)">⚠ Hard</button>
+      <button class="fbtn fbtn-logged" id="logged-only-btn" onclick="toggleLoggedOnly()">📊 Logged</button>
+    </div>
+  </div>
+
+
+  <!-- Table view -->
+  <div id="table-container">
+    <table>
+      <thead>
+        <tr>
+          <th style="width:24px;padding:7px 4px"></th>
+          <th class="sortable" data-col="name" onclick="sortTable('name')">Matchup<span class="sort-ind" id="si-name"></span></th>
+          <th>Go</th>
+          <th class="sortable" data-col="wr1" onclick="sortTable('wr1')">1st<span class="sort-ind" id="si-wr1"></span></th>
+          <th class="sortable" data-col="wr2" onclick="sortTable('wr2')">2nd<span class="sort-ind" id="si-wr2"></span></th>
+          <th class="th-style">Style</th>
+          <th class="sortable" data-col="you" onclick="sortTable('you')" style="text-align:center">You<span class="sort-ind" id="si-you"></span></th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
+  <div id="no-results" style="display:none">
+    <div class="empty-state">
+      <div class="empty-state-icon">🔍</div>
+      <div class="empty-state-msg">No matchups match your filter.</div>
+      <div class="empty-state-cta" onclick="clearAllFilters()">Clear filters</div>
+    </div>
+  </div>
+</div><!-- /screen-matchup -->
+
+<!-- ════ SCREEN 2: DECKLIST ════ -->
+<div class="screen" id="screen-deck">
+  <div class="deck-topbar">
+    <button class="back-btn" onclick="goBack()">← Back</button>
+    <button class="my-log-btn" id="deck-top-log-btn" onclick="openLogModal('','',event)" style="display:none">+ Log Game</button>
+  </div>
+  <div id="deck-content"></div>
+  <button class="deck-fab" id="deck-fab" onclick="openLogModal(_currentDeckKey,'',event)" style="display:none">+ Log Game</button>
+</div>
+<div id="log-toast">✓ Logged!</div>
+
+<!-- Admin login modal -->
+<div id="admin-modal" onclick="if(event.target===this)closeAdminModal()">
+  <div class="admin-box">
+    <!-- Login view -->
+    <div id="admin-login-section">
+      <h3>🔒 Admin Login</h3>
+      <input id="admin-pwd" class="admin-pwd-input" type="password" placeholder="Password"
+        onkeydown="if(event.key==='Enter')submitAdminLogin();if(event.key==='Escape')closeAdminModal()">
+      <div id="admin-err" class="admin-err"></div>
+      <div class="admin-btns">
+        <button class="admin-btn-cancel" onclick="closeAdminModal()">Cancel</button>
+        <button class="admin-btn-login" onclick="submitAdminLogin()">Login</button>
+      </div>
+    </div>
+    <!-- Admin panel view (shown when logged in) -->
+    <div id="admin-panel-section" style="display:none">
+      <h3>🔓 Admin Panel</h3>
+      <div style="display:flex;flex-direction:column;gap:10px;margin:12px 0">
+        <button id="save-deck-data-btn" class="admin-btn-login" onclick="saveDeckDataToSupabase()">
+          💾 Save deck data to Supabase
+        </button>
+      </div>
+      <div id="admin-panel-msg" style="font-size:12px;color:var(--accent);min-height:18px;text-align:center"></div>
+      <div class="admin-btns" style="margin-top:10px">
+        <button class="admin-btn-cancel" onclick="adminLogout()">Logout</button>
+        <button class="admin-btn-login" onclick="closeAdminModal()">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════ SCREEN 3: MY STATS ════ -->
+<div class="screen" id="screen-stats">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--sp-4)">
+    <button class="back-btn" style="margin-bottom:0" onclick="goBackFromStats()">← Back</button>
+    <div class="stats-screen-title">My Stats</div>
+    <div style="width:56px"></div>
+  </div>
+  <div id="stats-content"></div>
+</div>
+
+<!-- ════ SCREEN: COMPETITIONS ════ -->
+<div class="screen" id="screen-competitions">
+  <div class="comp-page-title">🏆 Competitions</div>
+  <div id="comp-sync-status" style="font-size:0.6rem;color:var(--gl-text-muted);padding:0 16px 2px;min-height:14px"></div>
+  <div class="comp-filter-bar" id="comp-filter-bar">
+    <button class="comp-filter-btn active" onclick="setCompFilter('all',this)">All</button>
+    <button class="comp-filter-btn" onclick="setCompFilter('Red',this)">🔴 Red</button>
+    <button class="comp-filter-btn" onclick="setCompFilter('Blue',this)">🔵 Blue</button>
+    <button class="comp-filter-btn" onclick="setCompFilter('Green',this)">🟢 Green</button>
+    <button class="comp-filter-btn" onclick="setCompFilter('Yellow',this)">🟡 Yellow</button>
+    <button class="comp-filter-btn" onclick="setCompFilter('Purple',this)">🟣 Purple</button>
+    <button class="comp-filter-btn" onclick="setCompFilter('Black',this)">⚫ Black</button>
+  </div>
+  <div class="comp-list" id="comp-content"></div>
+</div>
+
+<!-- ════ BOTTOM NAV (mobile) ════ -->
+<nav id="bottom-nav">
+  <button class="bnav-btn" id="bnav-home" onclick="showHome()">
+    <span class="bni">⚓</span><span>Home</span>
+  </button>
+  <button class="bnav-btn" id="bnav-matchup" onclick="_bnavMatchup()">
+    <span class="bni">⚔</span><span>Matchups</span>
+  </button>
+  <button class="bnav-btn" id="bnav-comps" onclick="showCompetitions()">
+    <span class="bni">🏆</span><span>Comps</span>
+  </button>
+  <button class="bnav-btn" id="bnav-stats" onclick="showStats()">
+    <span class="bni">📊</span><span>Stats</span>
+  </button>
+</nav>
+
+<!-- ════ LOG GAME MODAL ════ -->
+<div id="log-modal" onclick="closeLogModal()">
+  <div class="log-card" onclick="event.stopPropagation()">
+    <div id="log-modal-title" class="log-title"></div>
+    <div class="log-section">
+      <div class="log-lbl">Go Order</div>
+      <div class="log-row">
+        <button class="log-toggle" data-go="1st" onclick="setLogGo('1st')">1st</button>
+        <button class="log-toggle" data-go="2nd" onclick="setLogGo('2nd')">2nd</button>
+      </div>
+    </div>
+    <div class="log-section">
+      <div class="log-lbl">Result</div>
+      <div class="log-row">
+        <button class="log-toggle" data-result="W" onclick="setLogResult('W')">Win ✓</button>
+        <button class="log-toggle" data-result="L" onclick="setLogResult('L')">Loss ✗</button>
+      </div>
+    </div>
+    <div class="log-section">
+      <div class="log-lbl">Note (optional)</div>
+      <textarea id="log-note" class="log-note-area" placeholder="What happened? Key plays, mistakes…"></textarea>
+    </div>
+    <div class="log-actions">
+      <button class="log-cancel" onclick="closeLogModal()">Cancel</button>
+      <button class="log-save" id="log-save-btn" onclick="saveLog()" disabled>Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════ SUPABASE SETTINGS MODAL (legacy) ════ -->
+<div id="sb-modal" onclick="closeSbModal()">
+  <div class="sb-card" onclick="event.stopPropagation()">
+    <div class="sb-title">Cloud Sync</div>
+    <div class="sb-sub">Supabase credentials for cross-device sync. Stored on-device only.</div>
+    <div class="sb-label">Project URL</div>
+    <input id="sb-url-input" class="sb-input" type="text" placeholder="https://xxxx.supabase.co" spellcheck="false">
+    <div class="sb-label">Anon Key</div>
+    <input id="sb-key-input" class="sb-input" type="password" placeholder="eyJ…">
+    <div class="sb-actions">
+      <button class="sb-cancel" onclick="closeSbModal()">Cancel</button>
+      <button class="sb-save" onclick="saveSbConfig()">Save &amp; Sync</button>
+    </div>
+    <div id="sb-status" class="sb-status"></div>
+  </div>
+</div>
+
+<!-- Card image modal -->
+<div class="modal" id="modal" onclick="closeModal()">
+  <div class="modal-spinner" id="modal-spinner"></div>
+  <img id="modal-img" src="" alt="">
+  <div class="modal-lbl" id="modal-lbl"></div>
+</div>
+
+<!-- ════ ADD LEADER PICKER MODAL ════ -->
+<div id="add-leader-modal" onclick="_almBgClick(event)">
+  <div class="alm-sheet" onclick="event.stopPropagation()">
+    <div class="alm-header">
+      <div class="alm-handle"></div>
+      <div class="alm-title-row">
+        <span class="alm-title">Choose a Leader</span>
+        <button class="alm-close" onclick="closeAddLeader()">✕</button>
+      </div>
+      <input class="alm-search" id="alm-search" type="text" placeholder="Search by name…" oninput="_almFilter()">
+      <div class="alm-colors" id="alm-colors">
+        <button class="alm-col-btn active" data-col="All" onclick="_almSetColor(this)">All</button>
+        <button class="alm-col-btn" data-col="Red" onclick="_almSetColor(this)">Red</button>
+        <button class="alm-col-btn" data-col="Green" onclick="_almSetColor(this)">Green</button>
+        <button class="alm-col-btn" data-col="Blue" onclick="_almSetColor(this)">Blue</button>
+        <button class="alm-col-btn" data-col="Purple" onclick="_almSetColor(this)">Purple</button>
+        <button class="alm-col-btn" data-col="Yellow" onclick="_almSetColor(this)">Yellow</button>
+        <button class="alm-col-btn" data-col="Black" onclick="_almSetColor(this)">Black</button>
+      </div>
+    </div>
+    <div id="alm-body" class="alm-grid-wrap">
+      <div class="alm-loading">
+        <div class="alm-spinner"></div>
+        Loading leaders…
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════ DECK IMPORT MODAL ════ -->
+<div id="deck-import-modal" onclick="_dimBgClick(event)">
+  <div class="dim-sheet" onclick="event.stopPropagation()">
+    <div class="dim-handle"></div>
+    <div class="dim-title">Import Deck</div>
+    <div class="dim-sub">Paste your decklist — one card per line in <span style="color:var(--gl-gold);font-family:monospace">4xOP07-046</span> format</div>
+    <div class="dim-leader-row" id="dim-leader-row">
+      <img class="dim-leader-img" id="dim-leader-img" src="" alt="">
+      <div>
+        <div class="dim-leader-name" id="dim-leader-name">—</div>
+        <div class="dim-leader-id" id="dim-leader-id"></div>
+      </div>
+    </div>
+    <textarea class="dim-ta" id="dim-ta" placeholder="1xOP14-041&#10;4xOP07-046&#10;4xOP06-047&#10;…"></textarea>
+    <div class="dim-parse-hint" id="dim-parse-hint"></div>
+    <div class="dim-row">
+      <button class="dim-btn-cancel" onclick="closeDeckImport()">Cancel</button>
+      <button class="dim-btn-save" onclick="saveDeckImport()">Save Deck</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════ SCREEN: MY DECK VIEWER / EDITOR ════ -->
+<div class="screen" id="screen-my-deck">
+  <div class="myd-topbar">
+    <button class="myd-back" onclick="closMyDeckViewer()">‹ Back</button>
+    <div class="myd-title" id="myd-title">My Deck</div>
+    <div class="myd-progress-wrap">
+      <span class="myd-count" id="myd-total"></span>
+      <div class="myd-progress-bar"><div class="myd-progress-fill" id="myd-progress-fill" style="width:0%"></div></div>
+    </div>
+    <button class="myd-save-btn" onclick="_mydSaveNow()">💾 Save</button>
+  </div>
+  <div class="myd-layout">
+    <!-- left: paste + card chips -->
+    <div class="myd-text-panel">
+      <!-- Mobile: collapse toggle for paste section -->
+      <button class="myd-paste-toggle" id="myd-paste-toggle" onclick="_mydTogglePaste()">📋 Paste Decklist <span id="myd-paste-toggle-arrow">▸</span></button>
+      <!-- Import section -->
+      <div class="myd-panel-section" id="myd-paste-section">
+        <div class="myd-ta-hint">One card per line, e.g. <code>4xOP07-046</code></div>
+        <textarea class="myd-ta" id="myd-ta" spellcheck="false"
+          placeholder="4xOP07-046&#10;4xOP06-047&#10;2xOP08-012&#10;…"
+          oninput="_mydTaChange()"></textarea>
+        <div class="myd-ta-saved" id="myd-ta-saved">✓ Saved</div>
+      </div>
+      <!-- Card list -->
+      <div class="myd-chips-header">
+        <span class="myd-chips-title">Cards in Deck</span>
+        <span class="myd-chips-count" id="myd-chips-count"></span>
+      </div>
+      <div class="myd-chips-list" id="myd-chips-list"></div>
+    </div>
+    <!-- right: card board + add bar -->
+    <div class="myd-cards-panel">
+      <div id="myd-preview-wrap"></div>
+      <div class="myd-table" id="myd-table">
+        <div class="myd-empty" id="myd-empty-state">
+          <div class="myd-empty-icon">🃏</div>
+          <div class="myd-empty-title">Build Your Deck</div>
+          <div class="myd-empty-text">A standard deck has 50 cards — 1 Leader + 49 others. Get started with one of the options below:</div>
+          <div class="myd-start-options">
+            <button class="myd-start-opt" onclick="document.getElementById('myd-ta').focus()">
+              <div class="myd-start-opt-num">1</div>
+              <div class="myd-start-opt-body">
+                <div class="myd-start-opt-title">Paste a full decklist</div>
+                <div class="myd-start-opt-desc">Copy a decklist from an online source, paste in the box on the left</div>
+              </div>
+              <span class="myd-start-opt-arrow">›</span>
+            </button>
+            <button class="myd-start-opt" onclick="document.getElementById('myd-add-inp').focus()">
+              <div class="myd-start-opt-num">2</div>
+              <div class="myd-start-opt-body">
+                <div class="myd-start-opt-title">Search &amp; add cards one by one</div>
+                <div class="myd-start-opt-desc">Use the search bar below — try a card name, crew type (e.g. "Straw Hat"), or card ID</div>
+              </div>
+              <span class="myd-start-opt-arrow">›</span>
+            </button>
+            <button class="myd-start-opt" onclick="closMyDeckViewer();openNewDeckPicker()">
+              <div class="myd-start-opt-num">3</div>
+              <div class="myd-start-opt-body">
+                <div class="myd-start-opt-title">Start from a reference deck</div>
+                <div class="myd-start-opt-desc">Load a tournament-proven decklist and customise it</div>
+              </div>
+              <span class="myd-start-opt-arrow">›</span>
+            </button>
+          </div>
+        </div>
+      </div>
+      <!-- add/search bar -->
+      <div class="myd-add-bar">
+        <div class="myd-add-bar-label">🔍 Search &amp; Add Cards</div>
+        <div class="myd-add-bar-row">
+          <input class="myd-add-inp" id="myd-add-inp"
+            placeholder="Card name, crew type, or ID (e.g. OP07-046)…"
+            oninput="_mydSearchInput(this.value)"
+            onkeydown="_mydAddKeydown(event)">
+          <button class="myd-add-btn" onclick="_mydAddFromInput()">Add</button>
+        </div>
+        <div class="myd-search-dd" id="myd-search-dd"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════ NEW DECK PICKER MODAL ════ -->
+<div id="new-deck-modal" onclick="if(event.target===this)this.classList.remove('open')">
+  <div class="nd-sheet" onclick="event.stopPropagation()">
+    <div class="nd-handle"></div>
+    <div class="nd-header">
+      <div class="nd-title">Choose a Starting Point</div>
+      <button class="nd-close" onclick="document.getElementById('new-deck-modal').classList.remove('open')">×</button>
+    </div>
+    <div class="nd-sub">Pick a reference decklist to build from — you can edit it before saving</div>
+    <div class="nd-list" id="new-deck-list"></div>
+  </div>
+</div>
+
+<!-- ════ LEADER SWITCHER SHEET ════ -->
+<div id="leader-switch-modal" onclick="if(event.target===this)closeLeaderSwitcher()">
+  <div class="lsw-sheet">
+    <div class="lsw-handle"></div>
+    <div class="lsw-header">
+      <span class="lsw-title">Switch Leader</span>
+      <button class="lsw-close" onclick="closeLeaderSwitcher()">×</button>
+    </div>
+    <p class="lsw-sub">Leaders with a saved deck</p>
+    <div class="lsw-grid" id="lsw-grid"></div>
+    <button class="lsw-home-btn" onclick="closeLeaderSwitcher();showHome()">+ Add another leader</button>
+  </div>
+</div>
+
+<!-- card popup (non-fullscreen preview) -->
+<div class="myd-card-popup" id="myd-card-popup" style="display:none">
+  <button class="myd-card-popup-close" onclick="_mydHideCardPopup()">×</button>
+  <img id="myd-popup-img" src="" alt="">
+  <div class="myd-card-popup-id" id="myd-popup-id"></div>
+</div>
+
+</div><!-- #app -->
+
+
+<script src="app.js"></script>
+</body>
+</html>
