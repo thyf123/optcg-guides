@@ -222,7 +222,7 @@ http.createServer((req, res) => {
         function sbUpsert(rows) {
           return new Promise((resolve, reject) => {
             const sbBody = JSON.stringify(rows);
-            const u = new URL('/rest/v1/optcg_sync?on_conflict=id', SB_URL);
+            const u = new URL('/rest/v1/optcg_sync?on_conflict=id,user_id', SB_URL);
             const opts = {
               hostname: u.hostname, path: u.pathname + u.search, method: 'POST',
               headers: {
