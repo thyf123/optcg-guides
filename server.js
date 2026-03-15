@@ -735,17 +735,15 @@ async function _countExistingVariants(deckKey) {
 async function _scraperFetchTournamentIds(maxPages) {
   const ids = [];
   const seen = new Set();
-  const re = /href="\/tournaments\/(\d+)"/gi;
+  const re = /href="\/tournaments\/([\w-]+)"/gi;
   for (let page = 1; page <= maxPages; page++) {
-    const url = page === 1
-      ? 'https://onepiece.limitlesstcg.com/tournaments'
-      : `https://onepiece.limitlesstcg.com/tournaments?page=${page}`;
+    const url = `https://play.limitlesstcg.com/tournaments/completed?game=OP&page=${page}`;
     try {
       const html = await _scraperGet(url);
       let m; re.lastIndex = 0;
       let found = 0;
       while ((m = re.exec(html)) !== null) {
-        const id = parseInt(m[1]);
+        const id = m[1];
         if (!seen.has(id)) { seen.add(id); ids.push(id); found++; }
       }
       console.log(`[scraper] Page ${page}: found ${found} tournament IDs`);
@@ -765,7 +763,7 @@ async function runDailyScrape({ maxPages } = {}) {
     return;
   }
   const state = await _getScrapeState();
-  const importedIds = new Set((state.importedIds || []).map(Number));
+  const importedIds = new Set((state.importedIds || []).map(String));
   const isFirstRun = importedIds.size === 0;
 
   // First run ever → backfill 10 pages of history; daily → just page 1
@@ -773,7 +771,7 @@ async function runDailyScrape({ maxPages } = {}) {
   console.log(`[scraper] Starting scrape (${pages} page${pages > 1 ? 's' : ''}, ${isFirstRun ? 'first run backfill' : 'daily update'})`);
   try {
     const ids = await _scraperFetchTournamentIds(pages);
-    const newIds = ids.filter(id => !importedIds.has(id));
+    const newIds = ids.filter(id => !importedIds.has(String(id)));
     console.log(`[scraper] ${ids.length} tournaments found, ${newIds.length} new`);
 
     let totalSaved = state.totalSaved || 0;
@@ -781,7 +779,7 @@ async function runDailyScrape({ maxPages } = {}) {
     for (const tournamentId of newIds) {
       console.log(`[scraper] Fetching tournament ${tournamentId}`);
       try {
-        const html  = await _scraperGet(`https://onepiece.limitlesstcg.com/tournaments/${tournamentId}/decklists`);
+        const html  = await _scraperGet(`https://play.limitlesstcg.com/tournaments/${tournamentId}/decklists`);
         const decks = _extractTournamentDecks(html);
 
         if (!decks.length) { importedIds.add(tournamentId); continue; }
@@ -806,7 +804,7 @@ async function runDailyScrape({ maxPages } = {}) {
                 player: deck.player, placement: deck.placement,
                 archetype: deck.archetype, date: '',
                 source: 'limitless-auto',
-                url: `https://onepiece.limitlesstcg.com/tournaments/${tournamentId}/decklists`
+                url: `https://play.limitlesstcg.com/tournaments/${tournamentId}/decklists`
               }
             },
             user_id: 'admin',
