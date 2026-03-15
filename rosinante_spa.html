@@ -2297,6 +2297,9 @@ function _refreshAdminButtons() {
     if (fab) fab.style.display = _isAdmin() ? '' : 'none';
     _rerenderEssSection(_currentDeckKey);
     _renderCustomTips(_currentDeckKey);
+    _rerenderKeyTips(_currentDeckKey);
+    const styleEl = document.getElementById('mi-style-wrap');
+    if (styleEl) styleEl.outerHTML = _buildStyleChipHtml(_currentDeckKey, _currentDeckMatchup);
   }
 }
 
@@ -5308,6 +5311,7 @@ let allGames = [];
 let allNotes = {};
 let allCustomTips = {};
 let allCustomEssentials = {};
+let allMatchupOverrides = {};  // admin-editable Key Tips, Style overrides per matchup
 let allHiddenEssentials = {};   // keyed by leaderKey:deckKey → Set of card indices to hide
 let allMyDecks = {};        // keyed by leader cardId → { cards: [{count, id}] }
 let allCustomLeaders = {};  // keyed by cardId → { cardId, name, addedAt }
@@ -5316,6 +5320,7 @@ try { allGames = JSON.parse(localStorage.getItem('optcg-games') || '[]'); } catc
 try { allNotes = JSON.parse(localStorage.getItem('optcg-notes') || '{}'); } catch(e) {}
 try { allCustomTips = JSON.parse(localStorage.getItem('optcg-tips') || '{}'); } catch(e) {}
 try { allCustomEssentials = JSON.parse(localStorage.getItem('optcg-essentials') || '{}'); } catch(e) {}
+try { allMatchupOverrides = JSON.parse(localStorage.getItem('optcg-matchup-ov') || '{}'); } catch(e) {}
 try { allHiddenEssentials = JSON.parse(localStorage.getItem('optcg-hidden-ess') || '{}'); } catch(e) {}
 try { allMyDecks = JSON.parse(localStorage.getItem('optcg-my-decks') || '{}'); } catch(e) {}
 try { allCustomLeaders = JSON.parse(localStorage.getItem('optcg-custom-leaders') || '{}'); } catch(e) {}
@@ -5558,6 +5563,20 @@ function _bootCustomLeaders() {
 
 function _saveTips() { try { localStorage.setItem('optcg-tips', JSON.stringify(allCustomTips)); } catch(e) {} }
 function _saveEssentials() { try { localStorage.setItem('optcg-essentials', JSON.stringify(allCustomEssentials)); } catch(e) {} }
+function _saveMatchupOverrides() { try { localStorage.setItem('optcg-matchup-ov', JSON.stringify(allMatchupOverrides)); } catch(e) {} }
+function _getMatchupOv(deckKey) {
+  const k = _nk(currentLeaderKey, deckKey);
+  if (!allMatchupOverrides[k]) allMatchupOverrides[k] = {};
+  return allMatchupOverrides[k];
+}
+function _getEffectiveKeyTips(deckKey, matchup) {
+  const ov = _getMatchupOv(deckKey);
+  return ov.tips != null ? ov.tips : (matchup ? (matchup.tips || []) : []);
+}
+function _getEffectiveStyle(deckKey, matchup) {
+  const ov = _getMatchupOv(deckKey);
+  return ov.style != null ? ov.style : (matchup ? (matchup.style || '') : '');
+}
 
 
 function _getCustomTips(deckKey) { return allCustomTips[_nk(currentLeaderKey, deckKey)] || []; }
@@ -5631,6 +5650,109 @@ function _renderCustomTips(deckKey) {
   el.querySelectorAll('.cti-edit-input').forEach(inp => {
     _setupAtMention(inp, deckKey, _currentDeckMatchup);
   });
+}
+
+// ── EDITABLE KEY TIPS (admin only) ───────────────────────────
+let _keyTipsEditMode = false;
+function toggleKeyTipsEditMode(deckKey) {
+  _keyTipsEditMode = !_keyTipsEditMode;
+  _rerenderKeyTips(deckKey);
+}
+function _rerenderKeyTips(deckKey) {
+  const el = document.getElementById('key-tips-wrap');
+  if (!el) return;
+  el.outerHTML = _buildKeyTipsHtml(deckKey, _currentDeckMatchup);
+  // Re-wire @mention on edit inputs
+  const newEl = document.getElementById('key-tips-wrap');
+  if (newEl) newEl.querySelectorAll('.cti-edit-input').forEach(inp => _setupAtMention(inp, deckKey, _currentDeckMatchup));
+}
+function _buildKeyTipsHtml(deckKey, matchup) {
+  const tips = _getEffectiveKeyTips(deckKey, matchup);
+  const editBtn = _isAdmin()
+    ? `<button class="tips-edit-btn${_keyTipsEditMode?' active':''}" onclick="toggleKeyTipsEditMode('${deckKey}')">${_keyTipsEditMode?'Done':'Edit'}</button>`
+    : '';
+  const header = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
+    <div class="mi-section-title" style="margin-bottom:0">Key Tips</div>${editBtn}</div>`;
+  let items = '';
+  if (_isAdmin() && _keyTipsEditMode) {
+    items = tips.map((t, i) =>
+      `<li class="custom-tip-item">
+        <input class="cti-edit-input" value="${t.replace(/&/g,'&amp;').replace(/"/g,'&quot;')}"
+          onchange="saveKeyTipEdit('${deckKey}',${i},this.value)"
+          onblur="saveKeyTipEdit('${deckKey}',${i},this.value)">
+        <button class="cti-del" onclick="deleteKeyTip('${deckKey}',${i})" title="Delete">×</button>
+      </li>`
+    ).join('');
+  } else {
+    items = tips.map(t => `<li>${_renderMentions(t)}</li>`).join('');
+  }
+  const listHtml = items ? `<ul class="mi-tips">${items}</ul>` : '';
+  const addHtml = _isAdmin()
+    ? (_keyTipsEditMode
+        ? '<div id="add-key-tip-area"></div>'
+        : `<div id="add-key-tip-area"></div><button class="add-tip-btn" onclick="showAddKeyTipInput('${deckKey}')">+ Add key tip</button>`)
+    : '';
+  return `<div class="mi-section" id="key-tips-wrap">${header}${listHtml}${addHtml}</div>`;
+}
+function saveKeyTipEdit(deckKey, idx, value) {
+  const ov = _getMatchupOv(deckKey);
+  if (!ov.tips) ov.tips = [..._getEffectiveKeyTips(deckKey, _currentDeckMatchup)];
+  ov.tips[idx] = value;
+  _saveMatchupOverrides();
+}
+function deleteKeyTip(deckKey, idx) {
+  const ov = _getMatchupOv(deckKey);
+  if (!ov.tips) ov.tips = [..._getEffectiveKeyTips(deckKey, _currentDeckMatchup)];
+  ov.tips.splice(idx, 1);
+  _saveMatchupOverrides();
+  _rerenderKeyTips(deckKey);
+}
+function showAddKeyTipInput(deckKey) {
+  const area = document.getElementById('add-key-tip-area');
+  if (!area) return;
+  area.innerHTML = `<div class="add-tip-row">
+    <input id="new-key-tip-input" class="add-tip-input" type="text" placeholder="Key tip… use @ for cards" autofocus>
+    <button class="add-tip-save" onclick="commitKeyTip('${deckKey}')">Add</button>
+  </div>`;
+  const inp = document.getElementById('new-key-tip-input');
+  if (inp) {
+    inp.focus();
+    inp.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); commitKeyTip(deckKey); } });
+    _setupAtMention(inp, deckKey, _currentDeckMatchup);
+  }
+}
+function commitKeyTip(deckKey) {
+  const inp = document.getElementById('new-key-tip-input');
+  if (!inp) return;
+  const text = inp.value.trim();
+  if (!text) { _rerenderKeyTips(deckKey); return; }
+  const ov = _getMatchupOv(deckKey);
+  if (!ov.tips) ov.tips = [..._getEffectiveKeyTips(deckKey, _currentDeckMatchup)];
+  ov.tips.push(text);
+  _saveMatchupOverrides();
+  _rerenderKeyTips(deckKey);
+}
+
+// ── EDITABLE STYLE (admin inline edit) ───────────────────────
+function editMatchupStyle(deckKey) {
+  const current = _getEffectiveStyle(deckKey, _currentDeckMatchup);
+  const newStyle = prompt('Matchup style (e.g. "Attrition · Tall"):', current);
+  if (newStyle === null) return;
+  _getMatchupOv(deckKey).style = newStyle.trim();
+  _saveMatchupOverrides();
+  const el = document.getElementById('mi-style-wrap');
+  if (el) el.outerHTML = _buildStyleChipHtml(deckKey, _currentDeckMatchup);
+}
+function _buildStyleChipHtml(deckKey, matchup) {
+  const style = _getEffectiveStyle(deckKey, matchup);
+  if (_isAdmin()) {
+    const label = style || '+ Style';
+    const dim = !style ? 'opacity:0.4;' : '';
+    return `<span id="mi-style-wrap" onclick="editMatchupStyle('${deckKey}')" title="Click to edit" style="cursor:pointer"><span class="mi-style" style="${dim}">${label} ✎</span></span>`;
+  }
+  return style && style !== '—'
+    ? `<span id="mi-style-wrap"><span class="mi-style">${style}</span></span>`
+    : `<span id="mi-style-wrap"></span>`;
 }
 function showAddTipInput(deckKey) {
   const area = document.getElementById('add-tip-area');
@@ -8525,6 +8647,7 @@ function renderDeck(d, matchup, deckKey) {
   _currentDeckKey = deckKey;
   _tipsEditMode = false;
   _essEditMode = false;
+  _keyTipsEditMode = false;
   const total = d.sections.reduce((a,s)=>a+s.cards.reduce((b,c)=>b+c.count,0),0);
 
   // color pips for leader
@@ -8547,19 +8670,14 @@ function renderDeck(d, matchup, deckKey) {
       ${_buildMergedEssHtml(matchup.essential || [], deckKey)}
     </div>`;
 
-    const tipsHtml = matchup.tips && matchup.tips.length
-      ? `<div class="mi-section">
-          <div class="mi-section-title">Key Tips</div>
-          <ul class="mi-tips">${matchup.tips.map(t=>`<li>${_renderMentions(t)}</li>`).join('')}</ul>
-        </div>`
-      : '';
+    const tipsHtml = _buildKeyTipsHtml(deckKey, matchup);
 
     const _ctHtml = _buildCustomTipsHtml(deckKey);
     matchupInfoHtml = `<div class="matchup-info">
       <div class="mi-row2">
         <span class="mi-go ${matchup.go==='1st'?'go1':'go2'}">GO ${matchup.go}</span>
         ${wrHtml}
-        ${matchup.style && matchup.style !== '—' ? `<span class="mi-style">${matchup.style}</span>` : ''}
+        ${_buildStyleChipHtml(deckKey, matchup)}
       </div>
       ${essHtml}
       ${tipsHtml}
