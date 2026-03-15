@@ -472,7 +472,7 @@ img, picture, video, canvas, svg { display: block; max-width: 100%; }
 /* ════════════════════════════════════════════
    MATCHUP SCREEN
    ════════════════════════════════════════════ */
-#screen-matchup { padding: var(--sp-4) var(--sp-4) 80px; }
+#screen-matchup { padding: var(--sp-4) var(--sp-4) 80px; background: var(--gl-bg); }
 
 .matchup-topbar {
   display: flex;
@@ -1671,7 +1671,7 @@ th.sort-active { color: var(--gl-gold-h); }
 .bnav-btn:active { color: var(--gl-gold-h); }
 
 /* ── Competitions page ─────────────────────────────────────── */
-#screen-competitions { padding: 0 0 80px; overflow-y: auto; display: flex; flex-direction: column; }
+#screen-competitions { padding: 0 0 80px; overflow-y: auto; display: flex; flex-direction: column; background: var(--gl-bg); }
 .comp-page-title { font-size: 1rem; font-weight: 700; color: var(--gl-gold); margin-bottom: 4px; padding: 16px 16px 0; }
 .comp-filter-bar {
   display: flex; gap: 6px; overflow-x: auto; padding: 10px 16px 10px;
