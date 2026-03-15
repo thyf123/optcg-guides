@@ -5698,13 +5698,13 @@ function saveKeyTipEdit(deckKey, idx, value) {
   const ov = _getMatchupOv(deckKey);
   if (!ov.tips) ov.tips = [..._getEffectiveKeyTips(deckKey, _currentDeckMatchup)];
   ov.tips[idx] = value;
-  _saveMatchupOverrides();
+  _saveMatchupOverrides(); syncToSupabase();
 }
 function deleteKeyTip(deckKey, idx) {
   const ov = _getMatchupOv(deckKey);
   if (!ov.tips) ov.tips = [..._getEffectiveKeyTips(deckKey, _currentDeckMatchup)];
   ov.tips.splice(idx, 1);
-  _saveMatchupOverrides();
+  _saveMatchupOverrides(); syncToSupabase();
   _rerenderKeyTips(deckKey);
 }
 function showAddKeyTipInput(deckKey) {
@@ -5729,7 +5729,7 @@ function commitKeyTip(deckKey) {
   const ov = _getMatchupOv(deckKey);
   if (!ov.tips) ov.tips = [..._getEffectiveKeyTips(deckKey, _currentDeckMatchup)];
   ov.tips.push(text);
-  _saveMatchupOverrides();
+  _saveMatchupOverrides(); syncToSupabase();
   _rerenderKeyTips(deckKey);
 }
 
@@ -5739,7 +5739,7 @@ function editMatchupStyle(deckKey) {
   const newStyle = prompt('Matchup style (e.g. "Attrition · Tall"):', current);
   if (newStyle === null) return;
   _getMatchupOv(deckKey).style = newStyle.trim();
-  _saveMatchupOverrides();
+  _saveMatchupOverrides(); syncToSupabase();
   const el = document.getElementById('mi-style-wrap');
   if (el) el.outerHTML = _buildStyleChipHtml(deckKey, _currentDeckMatchup);
 }
@@ -6489,6 +6489,11 @@ async function syncFromSupabase() {
       allHiddenEssentials = her.payload;
       try { localStorage.setItem('optcg-hidden-ess', JSON.stringify(allHiddenEssentials)); } catch(e) {}
     }
+    const mor = rows.find(r => r.id === 'matchup-overrides');
+    if (mor && mor.payload && typeof mor.payload === 'object') {
+      allMatchupOverrides = mor.payload;
+      try { localStorage.setItem('optcg-matchup-ov', JSON.stringify(allMatchupOverrides)); } catch(e) {}
+    }
     // Restore last active leader key so cross-device login lands on correct leader
     const clkr = rows.find(r => r.id === 'current-leader');
     if (clkr && clkr.payload && clkr.payload.key && LEADERS[clkr.payload.key]) {
@@ -6519,6 +6524,7 @@ async function syncToSupabase() {
         { id: 'hidden-leaders', payload: [...allHiddenLeaders], user_id: _userId(), updated_at: new Date().toISOString() },
         { id: 'hidden-ess', payload: allHiddenEssentials, user_id: _userId(), updated_at: new Date().toISOString() },
         { id: 'current-leader', payload: { key: currentLeaderKey }, user_id: _userId(), updated_at: new Date().toISOString() },
+        { id: 'matchup-overrides', payload: allMatchupOverrides, user_id: _userId(), updated_at: new Date().toISOString() },
       ])
     });
     if (!res.ok) throw new Error(res.status);
