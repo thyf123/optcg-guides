@@ -1171,6 +1171,7 @@ th.sort-active { color: var(--gl-gold-h); }
 .stats-delta-table td { padding: 6px 4px; border-bottom: 1px solid var(--gl-divider); vertical-align: middle; }
 .stats-delta-table td.r { text-align: right; }
 .sdt-name { color: var(--gl-text); font-weight: 600; }
+.sdt-row:hover { background: rgba(212,175,55,0.06); }
 .sdt-games { color: var(--gl-text-faint); }
 .sdt-wr { font-weight: 700; }
 .sdt-delta { font-weight: 800; font-size: 0.76rem; }
@@ -7244,7 +7245,7 @@ function renderStats(leaderKey) {
     const xg = mg.filter(g => _gameXwr(g) !== null);
     const mXwr = xg.length > 0 ? Math.round(xg.reduce((s, g) => s + _gameXwr(g), 0) / xg.length) : null;
     const mDelta = mXwr !== null ? mWr - mXwr : null;
-    return { name: m.name, g: mg.length, w: mw, wr: mWr, xwr: mXwr, delta: mDelta };
+    return { name: m.name, deck: m.deck, g: mg.length, w: mw, wr: mWr, xwr: mXwr, delta: mDelta };
   }).filter(Boolean);
 
   // Sort by delta ascending (worst first)
@@ -7325,8 +7326,9 @@ function renderStats(leaderKey) {
   sorted.forEach(r => {
     const dCls = r.delta === null ? 'neu' : r.delta > 2 ? 'pos' : r.delta < -2 ? 'neg' : 'neu';
     const dStr = r.delta === null ? '—' : (r.delta > 0 ? '+' : '') + r.delta + '%';
-    html += `<tr>
-      <td class="sdt-name">${r.name}</td>
+    const clickable = r.deck ? `style="cursor:pointer" onclick="showDeck('${r.deck}')" title="Open ${r.name} matchup"` : '';
+    html += `<tr class="sdt-row" ${clickable}>
+      <td class="sdt-name">${r.name}${r.deck ? ' <span style="font-size:0.6rem;opacity:0.35">›</span>' : ''}</td>
       <td class="r sdt-games">${r.g}</td>
       <td class="r sdt-wr ${wrCls2(r.wr)}">${r.wr}%</td>
       <td class="r" style="color:#555">${r.xwr !== null ? r.xwr + '%' : '—'}</td>
