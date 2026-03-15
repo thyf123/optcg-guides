@@ -8844,15 +8844,10 @@ function renderDeck(d, matchup, deckKey) {
     _sortByCost(cards).forEach((card, idx) => {
       const src  = cardImg(card.id);
       const delay = Math.min(idx * 18, 220);
-      const cost  = _mydCardCostCache[card.id] ?? card.cost ?? null;
-      const costBadge = cost != null ? `<div class="b-cost">${cost}</div>` : '';
-      const ctr = Number(_mydCardCounterCache[card.id] ?? 0);
-      const ctrBadge = ctr > 0 ? `<div class="b-ctr">${ctr >= 1000 ? (ctr/1000).toFixed(0)+'k' : ctr}</div>` : '';
       sh += `<div class="card-item" style="animation-delay:${delay}ms" onclick="toggleCardZoom(event,this,'${card.id}')">
         <img src="${src}" onload="this.classList.add('loaded')"
           onerror="this.onerror=null;" alt="${card.name}">
         <div class="b-count">×${card.count}</div>
-        ${costBadge}${ctrBadge}
       </div>`;
     });
     sh += `</div></div>`;
