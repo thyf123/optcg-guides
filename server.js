@@ -4,7 +4,7 @@ const fs     = require('fs');
 const path   = require('path');
 const crypto = require('crypto');
 
-const PORT              = process.env.PORT || 3000;
+const PORT              = process.env.PORT || 3000; // build v2
 const SB_URL            = process.env.SUPABASE_URL || '';
 const SB_KEY            = process.env.SUPABASE_KEY || '';
 const SB_SERVICE_KEY    = process.env.SUPABASE_SERVICE_KEY || SB_KEY; // service role key bypasses RLS
