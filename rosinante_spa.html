@@ -8828,6 +8828,7 @@ function _essCardGrid(essential, deckKey) {
 let _currentDeckMatchup = null;
 let _currentDeckKey = null;
 let _activeVariantIdx = {};
+let _pendingVariantSections = {}; // deckKey → parsed sections waiting to be saved
 function renderDeck(d, matchup, deckKey) {
   _currentDeckMatchup = matchup;
   _currentDeckKey = deckKey;
@@ -8974,6 +8975,20 @@ function renderDeck(d, matchup, deckKey) {
   if (_isAdmin()) {
     html += `<div class="admin-variant-panel">
       <span class="avp-label">⚙ Admin · Add variant</span>
+      <div style="margin-bottom:6px">
+        <button id="admin-paste-toggle-btn" class="variant-tab" style="font-size:0.62rem" onclick="adminTogglePaste('${deckKey}')">📋 Paste decklist</button>
+      </div>
+      <div id="admin-paste-area" style="display:none;margin-bottom:8px">
+        <textarea id="admin-paste-ta" class="variant-label-input"
+          style="width:100%;min-height:90px;resize:vertical;font-family:monospace;font-size:0.65rem;box-sizing:border-box"
+          placeholder="4xOP01-001&#10;4xOP01-003&#10;… one card per line"></textarea>
+        <div style="display:flex;gap:6px;margin-top:4px;align-items:center">
+          <button class="variant-save-btn"
+            style="background:var(--gl-card);color:var(--gl-text);border:1px solid var(--gl-divider)"
+            onclick="adminParsePaste('${deckKey}')">Parse →</button>
+          <span id="admin-paste-preview" style="font-size:0.65rem;color:var(--gl-text-muted);flex:1"></span>
+        </div>
+      </div>
       <div class="avp-row">
         <input type="text" id="variant-label-input" class="variant-label-input" placeholder="e.g. Player A's build, Top-cut Sep 2024…">
         <button id="admin-save-variant-btn" class="variant-save-btn" onclick="adminSaveVariant('${deckKey}')">+ Save as variant</button>
@@ -9103,9 +9118,12 @@ async function adminSaveVariant(deckKey) {
   const d = DECKLISTS[deckKey];
   if (!d) return;
 
-  // Deep-copy the currently active sections so future edits don't mutate this snapshot
+  // Use parsed paste sections if available; otherwise snapshot the currently active variant
   const activeVI = _activeVariantIdx[deckKey] ?? 0;
-  const sections = JSON.parse(JSON.stringify(_getSections(deckKey, activeVI)));
+  const sections = _pendingVariantSections[deckKey]
+    ? _pendingVariantSections[deckKey]
+    : JSON.parse(JSON.stringify(_getSections(deckKey, activeVI)));
+  delete _pendingVariantSections[deckKey]; // consume so next save uses active again
 
   // Ensure variants array exists; if deck only had legacy .sections, seed it first
   if (!d.variants || d.variants.length === 0) {
@@ -9121,6 +9139,78 @@ async function adminSaveVariant(deckKey) {
 
   await saveDeckDataToSupabase();
   renderDeck(d, _currentDeckMatchup, deckKey);
+}
+// ── ADMIN: PASTE DECKLIST PARSER ─────────────────────────────
+function adminTogglePaste(deckKey) {
+  const area = document.getElementById('admin-paste-area');
+  const btn  = document.getElementById('admin-paste-toggle-btn');
+  if (!area) return;
+  const open = area.style.display === 'none';
+  area.style.display = open ? 'block' : 'none';
+  if (btn) btn.textContent = open ? '▲ Hide paste' : '📋 Paste decklist';
+  if (open) {
+    // Clear any stale pending result when reopening
+    delete _pendingVariantSections[deckKey];
+    const prev = document.getElementById('admin-paste-preview');
+    if (prev) prev.textContent = '';
+  }
+}
+
+async function adminParsePaste(deckKey) {
+  const ta      = document.getElementById('admin-paste-ta');
+  const preview = document.getElementById('admin-paste-preview');
+  if (!ta || !preview) return;
+
+  const text = ta.value.trim();
+  if (!text) { preview.textContent = 'Paste a decklist first.'; return; }
+
+  const { cards, errors } = parseDeckList(text);
+  if (!cards.length) {
+    preview.textContent = `No valid cards (${errors} parse errors). Format: 4xOP07-046`;
+    return;
+  }
+
+  preview.textContent = 'Fetching card data…';
+
+  // Ensure type/name caches are populated for these cards
+  const missingIds = cards.map(c => c.id).filter(id => !_mydCardTypeCache[id] || !_mydCardNameCache[id]);
+  if (missingIds.length) {
+    try { await _mydLoadDeckMeta(missingIds); } catch(e) {}
+  }
+
+  // Group by type into sections
+  const chars = [], events = [], stages = [], other = [];
+  cards.forEach(c => {
+    const name = _mydCardNameCache[c.id] || c.id;
+    const entry = { id: c.id, name, count: c.count };
+    const type  = _mydCardTypeCache[c.id];
+    if      (type === 'Character') chars.push(entry);
+    else if (type === 'Event')     events.push(entry);
+    else if (type === 'Stage')     stages.push(entry);
+    else                           other.push(entry);
+  });
+
+  const sections = [];
+  if (chars.length)  sections.push({ title: 'Character', cards: chars });
+  if (events.length) sections.push({ title: 'Event',     cards: events });
+  if (stages.length) sections.push({ title: 'Stage',     cards: stages });
+  if (other.length)  sections.push({ title: 'Other',     cards: other });
+
+  _pendingVariantSections[deckKey] = sections;
+
+  // Build summary line
+  const total = cards.reduce((s, c) => s + c.count, 0);
+  const parts = [];
+  if (chars.length)  parts.push(`${chars.reduce((s,c)=>s+c.count,0)} chars`);
+  if (events.length) parts.push(`${events.reduce((s,c)=>s+c.count,0)} events`);
+  if (stages.length) parts.push(`${stages.reduce((s,c)=>s+c.count,0)} stages`);
+  if (other.length)  parts.push(`${other.reduce((s,c)=>s+c.count,0)} other`);
+  if (errors)        parts.push(`${errors} skipped`);
+  preview.innerHTML = `<span style="color:var(--gl-gold-h)">✓ ${total} cards</span> — ${parts.join(' · ')} <span style="opacity:0.5;font-size:0.6rem">Enter label & save ↓</span>`;
+
+  // Focus the label input so the admin can type the name right away
+  const labelEl = document.getElementById('variant-label-input');
+  if (labelEl) labelEl.focus();
 }
 // ── STAR FIELD GENERATOR ──────────────────────────────────────
 (function() {
