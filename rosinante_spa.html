@@ -865,6 +865,29 @@ th.sort-active { color: var(--gl-gold-h); }
 .variant-tab:hover { border-color:var(--gl-gold-h); color:var(--gl-gold-h); }
 .variant-tab.active { background:var(--gl-gold-h); border-color:var(--gl-gold-h); color:#000; }
 
+/* Admin variant panel */
+.admin-variant-panel {
+  background:rgba(255,200,0,0.04);
+  border:1px dashed rgba(255,200,0,0.28);
+  border-radius:8px; padding:8px 12px; margin-bottom:12px;
+}
+.avp-label {
+  font-size:0.58rem; font-weight:700; letter-spacing:0.07em;
+  color:var(--gl-gold-h); text-transform:uppercase; display:block; margin-bottom:6px;
+}
+.avp-row { display:flex; gap:6px; align-items:center; }
+.variant-label-input {
+  flex:1; background:var(--gl-card); border:1px solid var(--gl-divider);
+  color:var(--gl-text); border-radius:6px; padding:5px 10px;
+  font-size:0.7rem; outline:none;
+}
+.variant-label-input:focus { border-color:var(--gl-gold-h); }
+.variant-save-btn {
+  font-size:0.65rem; font-weight:600; padding:5px 12px; border-radius:6px;
+  background:var(--gl-gold-h); color:#000; border:none; cursor:pointer; white-space:nowrap;
+}
+.variant-save-btn:disabled { opacity:0.6; cursor:default; }
+
 /* Card sections */
 .sec-wrap { margin-bottom: var(--sp-4); }
 .sec-hdr {
@@ -8947,6 +8970,17 @@ function renderDeck(d, matchup, deckKey) {
     html += `<div class="variant-tabs">${tabs}</div>`;
   }
 
+  // Admin: save-as-variant panel (only visible to admins)
+  if (_isAdmin()) {
+    html += `<div class="admin-variant-panel">
+      <span class="avp-label">⚙ Admin · Add variant</span>
+      <div class="avp-row">
+        <input type="text" id="variant-label-input" class="variant-label-input" placeholder="e.g. Player A's build, Top-cut Sep 2024…">
+        <button id="admin-save-variant-btn" class="variant-save-btn" onclick="adminSaveVariant('${deckKey}')">+ Save as variant</button>
+      </div>
+    </div>`;
+  }
+
   html += _renderSection('Characters', _grpChar);
   html += _renderSection('Events', _grpEvent);
   html += _renderSection('Stages', _grpStage);
@@ -9055,6 +9089,38 @@ function switchVariant(deckKey, idx) {
   // Scroll back to top of deck screen so user sees the tab strip
   const sd = document.getElementById('screen-deck');
   if (sd) sd.scrollTop = 0;
+}
+// ── ADMIN: SAVE AS VARIANT ────────────────────────────────────
+async function adminSaveVariant(deckKey) {
+  if (!_isAdmin()) return;
+  const labelEl = document.getElementById('variant-label-input');
+  const label = (labelEl?.value || '').trim();
+  if (!label) {
+    if (labelEl) { labelEl.style.borderColor = 'var(--gl-gold-h)'; labelEl.focus(); }
+    return;
+  }
+
+  const d = DECKLISTS[deckKey];
+  if (!d) return;
+
+  // Deep-copy the currently active sections so future edits don't mutate this snapshot
+  const activeVI = _activeVariantIdx[deckKey] ?? 0;
+  const sections = JSON.parse(JSON.stringify(_getSections(deckKey, activeVI)));
+
+  // Ensure variants array exists; if deck only had legacy .sections, seed it first
+  if (!d.variants || d.variants.length === 0) {
+    const existing = d.sections ? JSON.parse(JSON.stringify(d.sections)) : [];
+    d.variants = existing.length ? [{ label: 'Main Build', sections: existing }] : [];
+  }
+
+  d.variants.push({ label, sections });
+  _activeVariantIdx[deckKey] = d.variants.length - 1;
+
+  const btn = document.getElementById('admin-save-variant-btn');
+  if (btn) { btn.textContent = 'Saving…'; btn.disabled = true; }
+
+  await saveDeckDataToSupabase();
+  renderDeck(d, _currentDeckMatchup, deckKey);
 }
 // ── STAR FIELD GENERATOR ──────────────────────────────────────
 (function() {
