@@ -230,7 +230,71 @@ http.createServer((req, res) => {
     return;
   }
 
-  // ── Card data proxy (avoids CORS on client side) ────────────
+  // ── Bandai deck recipe parser ────────────────────────────────
+// Parses en.onepiece-cardgame.com/feature/deck/deck_NNN.php pages.
+// Card ID:  src="/images/cardlist/card/OP01-006.png"
+// Quantity: x4 (text node immediately after the img)
+function _parseBandaiHtml(res, html) {
+  const re = /\/cardlist\/card\/([A-Z0-9]{2,7}-\d{3,4})\.png[^>]*>[\s\S]{0,300}?x(\d+)/gi;
+  const cards = [];
+  let m;
+  const seen = new Set();
+  while ((m = re.exec(html)) !== null) {
+    const id    = m[1].toUpperCase();
+    const count = parseInt(m[2]);
+    if (seen.has(id)) continue;
+    seen.add(id);
+    if (count >= 1 && count <= 4) cards.push({ count, id });
+  }
+
+  // Deck name from <title> or first <h1>/<h2>
+  const titleM = html.match(/<title>([^|<]+)/i);
+  const deckName = titleM ? titleM[1].trim() : '';
+  const autoLabel = deckName || 'Bandai Deck Recipe';
+
+  res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+  if (!cards.length) {
+    res.end(JSON.stringify({ ok: false, error: 'No cards found — Bandai may have changed their markup' }));
+  } else {
+    res.end(JSON.stringify({ ok: true, cards, meta: { archetype: deckName, player: '', placement: '', autoLabel, source: 'bandai' } }));
+  }
+}
+
+// ── Bandai deck recipe proxy ──────────────────────────────────
+// Proxies en.onepiece-cardgame.com/feature/deck/deck_NNN.php
+if (url.startsWith('/api/fetch-bandai')) {
+  const targetUrl = new URL('http://x' + req.url).searchParams.get('url') || '';
+  if (!targetUrl.match(/^https?:\/\/([\w-]+\.)?onepiece-cardgame\.com\//)) {
+    res.writeHead(400, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ ok: false, error: 'Only onepiece-cardgame.com URLs are allowed' }));
+    return;
+  }
+  const parsedUrl = new URL(targetUrl);
+  const opts = {
+    hostname: parsedUrl.hostname, path: parsedUrl.pathname + parsedUrl.search,
+    headers: {
+      'User-Agent': 'Mozilla/5.0 (compatible; OPTCG-Guide-Bot/1.0)',
+      'Accept': 'text/html,application/xhtml+xml'
+    }
+  };
+  https.get(opts, proxyRes => {
+    // Follow one redirect if needed
+    if (proxyRes.statusCode >= 301 && proxyRes.statusCode <= 302 && proxyRes.headers.location) {
+      const redir = new URL(proxyRes.headers.location, targetUrl);
+      const rOpts = { hostname: redir.hostname, path: redir.pathname + redir.search, headers: opts.headers };
+      https.get(rOpts, r2 => {
+        let html = ''; r2.on('data', c => html += c);
+        r2.on('end', () => _parseBandaiHtml(res, html));
+      }).on('error', e => { res.writeHead(502); res.end(JSON.stringify({ ok: false, error: e.message })); });
+      return;
+    }
+    let html = ''; proxyRes.on('data', c => html += c);
+    proxyRes.on('end', () => _parseBandaiHtml(res, html));
+  }).on('error', e => { res.writeHead(502); res.end(JSON.stringify({ ok: false, error: e.message })); });
+  return;
+}
+
+// ── Card data proxy (avoids CORS on client side) ────────────
   if (url === '/api/cards') {
     const setId = (req.url.split('set=')[1] || '').split('&')[0];
     if (!setId) { res.writeHead(400); res.end('Missing set param'); return; }
