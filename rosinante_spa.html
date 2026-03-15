@@ -864,6 +864,26 @@ th.sort-active { color: var(--gl-gold-h); }
 }
 .variant-tab:hover { border-color:var(--gl-gold-h); color:var(--gl-gold-h); }
 .variant-tab.active { background:var(--gl-gold-h); border-color:var(--gl-gold-h); color:#000; }
+.variant-tab.consensus-tab { border-style:dashed; }
+.variant-tab.consensus-tab.active { background:linear-gradient(135deg,#3cb67a,#2a9a63); border-color:#3cb67a; color:#fff; }
+
+/* Consensus view badges */
+.cns-pct { font-size:0.6rem!important; font-weight:700!important; padding:2px 5px!important; border-radius:4px!important; }
+.pct-100 { background:rgba(50,185,100,0.9)!important; color:#fff!important; }
+.pct-high { background:rgba(200,155,0,0.9)!important; color:#000!important; }
+.pct-low  { background:rgba(110,110,110,0.75)!important; color:#fff!important; }
+.cns-avg  {
+  position:absolute; bottom:22px; left:0; right:0;
+  text-align:center; font-size:0.52rem; font-weight:600;
+  color:rgba(255,255,255,0.75); pointer-events:none;
+  text-shadow:0 1px 3px rgba(0,0,0,0.7);
+}
+.cns-summary {
+  font-size:0.65rem; color:var(--gl-text-muted);
+  background:var(--gl-card); border-radius:6px;
+  padding:8px 12px; margin-bottom:12px; line-height:1.7;
+}
+.cns-summary strong { color:var(--gl-text); }
 
 /* Admin variant panel */
 .admin-variant-panel {
@@ -8968,7 +8988,11 @@ function renderDeck(d, matchup, deckKey) {
     const tabs = _variants.map((v, i) =>
       `<button class="variant-tab${i === activeVI ? ' active' : ''}" onclick="switchVariant('${deckKey}',${i})">${v.label || 'Build ' + (i+1)}</button>`
     ).join('');
-    html += `<div class="variant-tabs">${tabs}</div>`;
+    // Consensus tab appears only when 3+ variants exist
+    const cnsTab = _variants.length >= 3
+      ? `<button class="variant-tab consensus-tab${activeVI === -1 ? ' active' : ''}" onclick="switchVariant('${deckKey}',-1)">📊 Consensus</button>`
+      : '';
+    html += `<div class="variant-tabs">${tabs}${cnsTab}</div>`;
   }
 
   // Admin: save-as-variant panel (only visible to admins)
@@ -8996,24 +9020,30 @@ function renderDeck(d, matchup, deckKey) {
     </div>`;
   }
 
-  html += _renderSection('Characters', _grpChar);
-  html += _renderSection('Events', _grpEvent);
-  html += _renderSection('Stages', _grpStage);
+  if (activeVI === -1) {
+    // ── Consensus view ──
+    html += _renderConsensusSection(deckKey);
+  } else {
+    // ── Normal variant view ──
+    html += _renderSection('Characters', _grpChar);
+    html += _renderSection('Events', _grpEvent);
+    html += _renderSection('Stages', _grpStage);
 
-  // Global counter summary (across all sections)
-  const _deckStats = _ctrStats(_allDeckCards);
-  const _deckAvgLabel = _deckStats.avg == null ? '…' : _deckStats.avg >= 1000 ? (_deckStats.avg/1000).toFixed(1)+'k' : _deckStats.avg;
-  const _deckCtrSummary = [
-    _deckStats.ctr1k > 0 ? `<span class="sec-stat ctr1k">1k ×${_deckStats.ctr1k}</span>` : '',
-    _deckStats.ctr2k > 0 ? `<span class="sec-stat ctr2k">2k ×${_deckStats.ctr2k}</span>` : '',
-    `<span class="sec-stat ${!_deckStats.avg?'noctr':'avg'}">avg ${_deckAvgLabel}/card</span>`,
-  ].filter(Boolean).join('');
+    // Global counter summary (across all sections)
+    const _deckStats = _ctrStats(_allDeckCards);
+    const _deckAvgLabel = _deckStats.avg == null ? '…' : _deckStats.avg >= 1000 ? (_deckStats.avg/1000).toFixed(1)+'k' : _deckStats.avg;
+    const _deckCtrSummary = [
+      _deckStats.ctr1k > 0 ? `<span class="sec-stat ctr1k">1k ×${_deckStats.ctr1k}</span>` : '',
+      _deckStats.ctr2k > 0 ? `<span class="sec-stat ctr2k">2k ×${_deckStats.ctr2k}</span>` : '',
+      `<span class="sec-stat ${!_deckStats.avg?'noctr':'avg'}">avg ${_deckAvgLabel}/card</span>`,
+    ].filter(Boolean).join('');
 
-  html += `<div class="total-bar">
-    <span class="tl">Total cards</span>
-    <span class="tc">${total}</span>
-  </div>
-  <div class="total-ctr-row">${_deckCtrSummary}</div>`;
+    html += `<div class="total-bar">
+      <span class="tl">Total cards</span>
+      <span class="tc">${total}</span>
+    </div>
+    <div class="total-ctr-row">${_deckCtrSummary}</div>`;
+  }
 
   // source link at bottom
   html += `<a class="ext-link-bottom" href="${d.sourceUrl}" target="_blank">→ Source: onepiecetopdecks.com</a>`;
@@ -9094,6 +9124,74 @@ function renderDeck(d, matchup, deckKey) {
       }
     });
   }
+}
+// ── CONSENSUS STATS ───────────────────────────────────────────
+function _renderConsensusSection(deckKey) {
+  const variants = _getVariants(deckKey);
+  if (variants.length < 3) return '<p style="color:var(--gl-text-muted);font-size:0.7rem">Need 3+ variants for consensus view.</p>';
+  const n = variants.length;
+
+  // Build per-card stats across all variants
+  const cardMap = {};
+  variants.forEach(v => {
+    const seen = new Set();
+    (v.sections || []).forEach(sec => {
+      sec.cards.forEach(c => {
+        const id = c.id;
+        if (!cardMap[id]) cardMap[id] = { name: c.name || id, totalCount: 0, variantCount: 0 };
+        if (!seen.has(id)) { cardMap[id].variantCount++; seen.add(id); }
+        cardMap[id].totalCount += c.count;
+      });
+    });
+  });
+
+  const cards = Object.entries(cardMap).map(([id, d]) => ({
+    id,
+    name: d.name,
+    inclPct: Math.round(d.variantCount / n * 100),
+    avgCount: Math.round(d.totalCount / d.variantCount * 10) / 10,
+  })).sort((a, b) => b.inclPct - a.inclPct || b.avgCount - a.avgCount);
+
+  // Split into tiers
+  const core   = cards.filter(c => c.inclPct === 100);
+  const common = cards.filter(c => c.inclPct >= 60 && c.inclPct < 100);
+  const tech   = cards.filter(c => c.inclPct < 60);
+
+  function renderGroup(label, list) {
+    if (!list.length) return '';
+    const groupTotal = list.reduce((s, c) => s + c.avgCount, 0);
+    let sh = `<div class="sec-wrap">
+      <div class="sec-hdr">
+        <span class="sec-title">${label}</span>
+        <span class="sec-cnt">${list.length} cards</span>
+      </div>
+      <div class="card-grid">`;
+    list.forEach((card, idx) => {
+      const src   = cardImg(card.id);
+      const delay = Math.min(idx * 18, 220);
+      const pctCls = card.inclPct === 100 ? 'pct-100' : card.inclPct >= 60 ? 'pct-high' : 'pct-low';
+      sh += `<div class="card-item" style="animation-delay:${delay}ms;position:relative" onclick="toggleCardZoom(event,this,'${card.id}')">
+        <img src="${src}" onload="this.classList.add('loaded')" onerror="this.onerror=null;" alt="${card.name}">
+        <div class="cns-avg">avg ×${card.avgCount}</div>
+        <div class="b-count cns-pct ${pctCls}">${card.inclPct}%</div>
+      </div>`;
+    });
+    sh += `</div></div>`;
+    return sh;
+  }
+
+  const coreCnt   = core.reduce((s, c) => s + c.avgCount, 0).toFixed(1);
+  const summary = `<div class="cns-summary">
+    Across <strong>${n} builds</strong> ·
+    <strong>${core.length}</strong> core cards (100% inclusion, avg ${coreCnt} copies) ·
+    <strong>${common.length}</strong> common (60–99%) ·
+    <strong>${tech.length}</strong> tech/flex (&lt;60%)
+  </div>`;
+
+  return summary
+    + (core.length   ? renderGroup('Core — 100% inclusion', core)   : '')
+    + (common.length ? renderGroup('Common — 60–99%',       common) : '')
+    + (tech.length   ? renderGroup('Tech / Flex — <60%',   tech)   : '');
 }
 // ── SWITCH VARIANT ────────────────────────────────────────────
 function switchVariant(deckKey, idx) {
