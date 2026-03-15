@@ -853,6 +853,18 @@ th.sort-active { color: var(--gl-gold-h); }
   line-height: 1.6;
 }
 
+/* Variant tabs */
+.variant-tabs { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:12px; }
+.variant-tab {
+  font-size:0.65rem; font-weight:600;
+  padding:4px 12px; border-radius:999px;
+  border:1px solid var(--gl-divider);
+  background:transparent; color:var(--gl-text-muted);
+  cursor:pointer; transition:all 0.15s; white-space:nowrap;
+}
+.variant-tab:hover { border-color:var(--gl-gold-h); color:var(--gl-gold-h); }
+.variant-tab.active { background:var(--gl-gold-h); border-color:var(--gl-gold-h); color:#000; }
+
 /* Card sections */
 .sec-wrap { margin-bottom: var(--sp-4); }
 .sec-hdr {
@@ -8792,13 +8804,16 @@ function _essCardGrid(essential, deckKey) {
 // ── RENDER DECK PAGE ─────────────────────────────────────────
 let _currentDeckMatchup = null;
 let _currentDeckKey = null;
+let _activeVariantIdx = {};
 function renderDeck(d, matchup, deckKey) {
   _currentDeckMatchup = matchup;
   _currentDeckKey = deckKey;
   _tipsEditMode = false;
   _essEditMode = false;
   _keyTipsEditMode = false;
-  const total = d.sections.reduce((a,s)=>a+s.cards.reduce((b,c)=>b+c.count,0),0);
+  const activeVI = _activeVariantIdx[deckKey] ?? 0;
+  const _activeSections = _getSections(deckKey, activeVI);
+  const total = _activeSections.reduce((a,s)=>a+s.cards.reduce((b,c)=>b+c.count,0),0);
 
   // color pips for leader
   const colorPips = d.leaderColors.split('/').map(c=>{
@@ -8851,7 +8866,7 @@ function renderDeck(d, matchup, deckKey) {
     ${matchupInfoHtml}`;
 
   // Flatten all non-leader cards from all sections
-  const _allDeckCards = d.sections.flatMap(s => s.cards);
+  const _allDeckCards = _activeSections.flatMap(s => s.cards);
 
   // Sort helper: prefer API cost cache, fall back to DECKLISTS cost field
   const _sortByCost = cards => [...cards].sort((a,b) => {
@@ -8862,7 +8877,7 @@ function renderDeck(d, matchup, deckKey) {
 
   // Group cards using section titles from the deck data (already classified)
   const _grpChar = [], _grpEvent = [], _grpStage = [];
-  d.sections.forEach(sec => {
+  _activeSections.forEach(sec => {
     const t = (sec.title || '').toLowerCase();
     const target = t.includes('event') ? _grpEvent
       : t.includes('stage') ? _grpStage
@@ -8921,6 +8936,15 @@ function renderDeck(d, matchup, deckKey) {
     });
     sh += `</div></div>`;
     return sh;
+  }
+
+  // Tab strip — only shown when 2+ variants exist
+  const _variants = _getVariants(deckKey);
+  if (_variants.length >= 2) {
+    const tabs = _variants.map((v, i) =>
+      `<button class="variant-tab${i === activeVI ? ' active' : ''}" onclick="switchVariant('${deckKey}',${i})">${v.label || 'Build ' + (i+1)}</button>`
+    ).join('');
+    html += `<div class="variant-tabs">${tabs}</div>`;
   }
 
   html += _renderSection('Characters', _grpChar);
@@ -9021,6 +9045,16 @@ function renderDeck(d, matchup, deckKey) {
       }
     });
   }
+}
+// ── SWITCH VARIANT ────────────────────────────────────────────
+function switchVariant(deckKey, idx) {
+  _activeVariantIdx[deckKey] = idx;
+  const d = DECKLISTS[deckKey];
+  if (!d) return;
+  renderDeck(d, _currentDeckMatchup, deckKey);
+  // Scroll back to top of deck screen so user sees the tab strip
+  const sd = document.getElementById('screen-deck');
+  if (sd) sd.scrollTop = 0;
 }
 // ── STAR FIELD GENERATOR ──────────────────────────────────────
 (function() {
