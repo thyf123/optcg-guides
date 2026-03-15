@@ -1690,6 +1690,34 @@ th.sort-active { color: var(--gl-gold-h); }
 .bnav-btn.active { color: var(--gl-gold); }
 .bnav-btn:active { color: var(--gl-gold-h); }
 
+/* ── Competitions page ─────────────────────────────────────── */
+#screen-competitions { padding: var(--sp-4) var(--sp-4) 80px; overflow-y: auto; }
+.comp-page-title { font-size: 1rem; font-weight: 700; color: var(--gl-gold); margin-bottom: 16px; }
+.comp-group { margin-bottom: 22px; }
+.comp-group-hdr {
+  display: flex; justify-content: space-between; align-items: baseline;
+  border-bottom: 1px solid var(--gl-divider); padding-bottom: 5px; margin-bottom: 8px;
+}
+.comp-name { font-size: 0.72rem; font-weight: 700; color: var(--gl-text); }
+.comp-date { font-size: 0.6rem; color: var(--gl-text-muted); }
+.comp-entry {
+  display: flex; align-items: center; gap: 10px;
+  padding: 7px 10px; border-radius: 8px; background: var(--gl-card);
+  margin-bottom: 5px; cursor: pointer; transition: background 0.12s;
+}
+.comp-entry:hover { background: rgba(255,255,255,0.07); }
+.comp-leader-img { width: 34px; height: auto; border-radius: 4px; flex-shrink: 0; }
+.comp-rank { font-size: 0.68rem; font-weight: 700; min-width: 26px; text-align: center; flex-shrink: 0; }
+.rank-1    { color: #ffd700; }
+.rank-top4 { color: var(--gl-gold); }
+.rank-top8 { color: var(--gl-text-muted); }
+.rank-other{ color: var(--gl-text-faint); }
+.comp-info { flex: 1; min-width: 0; }
+.comp-player { font-size: 0.72rem; font-weight: 600; color: var(--gl-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.comp-arch   { font-size: 0.6rem; color: var(--gl-text-muted); }
+.comp-arrow  { color: var(--gl-text-faint); font-size: 1rem; flex-shrink: 0; }
+.comp-empty  { font-size: 0.75rem; color: var(--gl-text-muted); text-align: center; padding: 48px 20px; line-height: 1.8; }
+
 /* ═══════════════════════════════════════════════════
    MOBILE — iPhone Safari & Chrome (≤768px)
    ═══════════════════════════════════════════════════ */
@@ -2034,6 +2062,12 @@ th.sort-active { color: var(--gl-gold-h); }
   <div id="stats-content"></div>
 </div>
 
+<!-- ════ SCREEN: COMPETITIONS ════ -->
+<div class="screen" id="screen-competitions">
+  <div class="comp-page-title">🏆 Competitions</div>
+  <div id="comp-content"></div>
+</div>
+
 <!-- ════ BOTTOM NAV (mobile) ════ -->
 <nav id="bottom-nav">
   <button class="bnav-btn" id="bnav-home" onclick="showHome()">
@@ -2041,6 +2075,9 @@ th.sort-active { color: var(--gl-gold-h); }
   </button>
   <button class="bnav-btn" id="bnav-matchup" onclick="_bnavMatchup()">
     <span class="bni">⚔</span><span>Matchups</span>
+  </button>
+  <button class="bnav-btn" id="bnav-comps" onclick="showCompetitions()">
+    <span class="bni">🏆</span><span>Comps</span>
   </button>
   <button class="bnav-btn" id="bnav-stats" onclick="showStats()">
     <span class="bni">📊</span><span>Stats</span>
@@ -7314,6 +7351,107 @@ function goBackFromStats() {
   sm.classList.add('active');
   _bnavSetActive('bnav-matchup');
 }
+// ── COMPETITIONS PAGE ─────────────────────────────────────────
+function showCompetitions() {
+  document.querySelectorAll('.screen').forEach(s => { s.classList.remove('active'); s.style.display = ''; });
+  const sc = document.getElementById('screen-competitions');
+  sc.classList.add('active');
+  sc.scrollTop = 0;
+  _bnavSetActive('bnav-comps');
+  document.getElementById('comp-content').innerHTML = renderCompetitionsPage();
+}
+
+function showCompDeck(deckKey, variantIdx) {
+  _activeVariantIdx[deckKey] = variantIdx;
+  showDeck(deckKey);
+}
+
+function renderCompetitionsPage() {
+  // Gather all variants with tournament meta across all decklists
+  const entries = [];
+  for (const deckKey of Object.keys(DECKLISTS)) {
+    const d = DECKLISTS[deckKey];
+    _getVariants(deckKey).forEach((v, idx) => {
+      if (!v.meta || !v.meta.player) return;
+      // Strip rank prefix from placement to get tournament name
+      const tourName = (v.meta.placement || '')
+        .replace(/^\d+(?:st|nd|rd|th)\s+[Pp]lace\s*/i, '').trim()
+        || v.meta.archetype || 'Unknown Tournament';
+      entries.push({
+        deckKey, variantIdx: idx,
+        player:    v.meta.player,
+        placement: v.meta.placement || '',
+        archetype: v.meta.archetype || '',
+        date:      v.meta.date || '',
+        tournament: tourName,
+        leader:    d.leaderName || deckKey,
+        leaderCard: d.leader,
+        label:     v.label,
+      });
+    });
+  }
+
+  if (!entries.length) {
+    return `<div class="comp-empty">No competition decklists yet.<br>
+      Import from Limitless on any deck page:<br>
+      open a deck → ⚙ Admin panel → 🌐 Import from Limitless</div>`;
+  }
+
+  // Group by tournament name
+  const groups = {};
+  entries.forEach(e => {
+    if (!groups[e.tournament]) groups[e.tournament] = { name: e.tournament, date: e.date, entries: [] };
+    groups[e.tournament].entries.push(e);
+    if (e.date && e.date > groups[e.tournament].date) groups[e.tournament].date = e.date;
+  });
+
+  // Sort groups: dated ones first (newest → oldest), undated at the bottom
+  const sorted = Object.values(groups).sort((a, b) => {
+    if (a.date && b.date) return b.date.localeCompare(a.date);
+    if (a.date) return -1;
+    if (b.date) return 1;
+    return a.name.localeCompare(b.name);
+  });
+
+  // Within each group sort by placement rank
+  sorted.forEach(g => {
+    g.entries.sort((a, b) => {
+      const rA = parseInt((a.placement.match(/^(\d+)/) || [,999])[1]);
+      const rB = parseInt((b.placement.match(/^(\d+)/) || [,999])[1]);
+      return rA - rB;
+    });
+  });
+
+  let html = '';
+  sorted.forEach(group => {
+    const dateLabel = group.date
+      ? new Date(group.date + 'T00:00:00').toLocaleDateString(undefined, { month: 'short', year: 'numeric' })
+      : '';
+    html += `<div class="comp-group">
+      <div class="comp-group-hdr">
+        <span class="comp-name">${group.name}</span>
+        ${dateLabel ? `<span class="comp-date">${dateLabel}</span>` : ''}
+      </div>`;
+    group.entries.forEach(e => {
+      const rank = parseInt((e.placement.match(/^(\d+)/) || [,99])[1]);
+      const medal = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : `${rank}th`;
+      const rankCls = rank === 1 ? 'rank-1' : rank <= 4 ? 'rank-top4' : rank <= 8 ? 'rank-top8' : 'rank-other';
+      html += `<div class="comp-entry" onclick="showCompDeck('${e.deckKey}',${e.variantIdx})">
+        <span class="comp-rank ${rankCls}">${medal}</span>
+        <img class="comp-leader-img" src="${cardImg(e.leaderCard)}"
+          onerror="this.style.display='none'" alt="${e.leader}">
+        <div class="comp-info">
+          <div class="comp-player">${e.player}</div>
+          <div class="comp-arch">${e.archetype || e.leader}</div>
+        </div>
+        <span class="comp-arrow">›</span>
+      </div>`;
+    });
+    html += `</div>`;
+  });
+  return html;
+}
+
 function _gameXwr(game) {
   const matchups = LEADERS[game.leaderKey]?.matchups;
   if (!matchups) return null;
@@ -9004,14 +9142,19 @@ function renderDeck(d, matchup, deckKey) {
         <button id="admin-limitless-toggle-btn" class="variant-tab" style="font-size:0.62rem" onclick="adminToggleLimitless('${deckKey}')">🌐 Import from Limitless</button>
       </div>
       <div id="admin-limitless-area" style="display:none;margin-bottom:8px">
-        <div style="display:flex;gap:6px;align-items:center">
+        <div style="display:flex;gap:6px;align-items:center;margin-bottom:4px">
           <input type="text" id="admin-limitless-url" class="variant-label-input"
             placeholder="https://onepiece.limitlesstcg.com/decks/list/6041">
           <button class="variant-save-btn"
             style="background:var(--gl-card);color:var(--gl-text);border:1px solid var(--gl-divider);white-space:nowrap"
             onclick="adminFetchLimitless('${deckKey}')">Fetch →</button>
         </div>
-        <span id="admin-limitless-preview" style="font-size:0.65rem;color:var(--gl-text-muted);display:block;margin-top:4px"></span>
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
+          <input type="date" id="admin-limitless-date" class="variant-label-input"
+            style="flex:0 0 auto;width:148px" title="Competition date">
+          <span style="font-size:0.6rem;color:var(--gl-text-muted)">Competition date (optional)</span>
+        </div>
+        <span id="admin-limitless-preview" style="font-size:0.65rem;color:var(--gl-text-muted);display:block;margin-top:2px"></span>
       </div>
       <div id="admin-paste-area" style="display:none;margin-bottom:8px">
         <textarea id="admin-paste-ta" class="variant-label-input"
@@ -9359,11 +9502,13 @@ async function adminFetchLimitless(deckKey) {
 
     // Attach tournament metadata to the pending variant so it gets saved
     const meta = data.meta || {};
+    const compDate = (document.getElementById('admin-limitless-date')?.value || '').trim();
     if (_pendingVariantSections[deckKey] && meta.player) {
       _pendingVariantSections[deckKey]._meta = {
         player:    meta.player,
         placement: meta.placement,
         archetype: meta.archetype,
+        date:      compDate,
         source:    'limitless',
         url:       targetUrl,
       };
