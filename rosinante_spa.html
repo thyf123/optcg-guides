@@ -9227,12 +9227,15 @@ async function adminSaveVariant(deckKey) {
   const d = DECKLISTS[deckKey];
   if (!d) return;
 
-  // Use parsed paste sections if available; otherwise snapshot the currently active variant
+  // Use parsed/fetched sections if pending; otherwise snapshot the currently active variant
   const activeVI = _activeVariantIdx[deckKey] ?? 0;
-  const sections = _pendingVariantSections[deckKey]
-    ? _pendingVariantSections[deckKey]
+  const pending  = _pendingVariantSections[deckKey];
+  const sections = pending
+    ? pending
     : JSON.parse(JSON.stringify(_getSections(deckKey, activeVI)));
-  delete _pendingVariantSections[deckKey]; // consume so next save uses active again
+  // Lift _meta off the sections array (it's a non-card property we attached)
+  const varMeta = (pending && pending._meta) ? pending._meta : null;
+  delete _pendingVariantSections[deckKey]; // consume
 
   // Ensure variants array exists; if deck only had legacy .sections, seed it first
   if (!d.variants || d.variants.length === 0) {
@@ -9240,7 +9243,9 @@ async function adminSaveVariant(deckKey) {
     d.variants = existing.length ? [{ label: 'Main Build', sections: existing }] : [];
   }
 
-  d.variants.push({ label, sections });
+  const newVariant = { label, sections };
+  if (varMeta) newVariant.meta = varMeta; // store player/placement/source info
+  d.variants.push(newVariant);
   _activeVariantIdx[deckKey] = d.variants.length - 1;
 
   const btn = document.getElementById('admin-save-variant-btn');
@@ -9335,7 +9340,7 @@ function adminToggleLimitless(deckKey) {
 }
 
 async function adminFetchLimitless(deckKey) {
-  const urlEl  = document.getElementById('admin-limitless-url');
+  const urlEl   = document.getElementById('admin-limitless-url');
   const preview = document.getElementById('admin-limitless-preview');
   if (!urlEl || !preview) return;
   const targetUrl = urlEl.value.trim();
@@ -9348,7 +9353,27 @@ async function adminFetchLimitless(deckKey) {
     const res  = await fetch('/api/fetch-limitless?url=' + encodeURIComponent(targetUrl));
     const data = await res.json();
     if (!data.ok) { preview.textContent = 'Error: ' + (data.error || res.status); return; }
+
+    // Process cards into sections
     await _processRawCards(deckKey, data.cards, preview, 0);
+
+    // Attach tournament metadata to the pending variant so it gets saved
+    const meta = data.meta || {};
+    if (_pendingVariantSections[deckKey] && meta.player) {
+      _pendingVariantSections[deckKey]._meta = {
+        player:    meta.player,
+        placement: meta.placement,
+        archetype: meta.archetype,
+        source:    'limitless',
+        url:       targetUrl,
+      };
+    }
+
+    // Auto-fill label with player · rank (admin can edit before saving)
+    if (meta.autoLabel) {
+      const labelEl = document.getElementById('variant-label-input');
+      if (labelEl && !labelEl.value) labelEl.value = meta.autoLabel;
+    }
   } catch(e) {
     preview.textContent = 'Error: ' + e.message;
   }

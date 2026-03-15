@@ -38,11 +38,13 @@ function serve(res, filePath, mime, transform) {
   res.end(content);
 }
 
-// Parse Limitless HTML: extract (count, cardId) pairs from decklist markup.
-// Count appears as:  src="…/images/decklist/N.png"
-// Card ID appears as: href="/cards/OP13-002"
-// They sit close together in the DOM so we match them as adjacent pairs.
+// Parse Limitless HTML: extract cards + tournament metadata from a /decks/list/{id} page.
+// Card count:  src="…/images/decklist/N.png"
+// Card ID:     href="/cards/OP13-002"
+// Player:      <title>Archetype by PlayerName – Limitless One Piece</title>
+// Placement:   <a href="/tournaments/NNN">1st Place Championship Finals Las Vegas</a>
 function _parseLimitlessHtml(res, html) {
+  // ── Cards ──
   const re = /\/images\/decklist\/(\d+)\.png[\s\S]{0,400}?href="\/cards\/([A-Z]{1,4}\d*-\d{3,4})"/gi;
   const cards = [];
   let m;
@@ -50,17 +52,33 @@ function _parseLimitlessHtml(res, html) {
   while ((m = re.exec(html)) !== null) {
     const count = parseInt(m[1]);
     const id    = m[2].toUpperCase();
-    // Skip duplicates (some cards appear in tooltips / related sections)
-    const key = id;
-    if (seen.has(key)) continue;
-    seen.add(key);
+    if (seen.has(id)) continue;
+    seen.add(id);
     if (count >= 1 && count <= 4) cards.push({ count, id });
   }
+
+  // ── Metadata ──
+  // Title: "Red/Blue Ace by Everydayclutch – Limitless One Piece"
+  const titleM = html.match(/<title>(.+?) by ([^–—<]+?)\s*[–—]/i);
+  const archetype = titleM ? titleM[1].trim() : '';
+  const player    = titleM ? titleM[2].trim() : '';
+
+  // Tournament link text: "1st Place Championship Finals Las Vegas"
+  const tourM = html.match(/href="\/tournaments\/\d+"[^>]*>\s*([^<]+?)\s*<\/a>/i);
+  const placement = tourM ? tourM[1].trim() : '';
+
+  // Short rank for label: "1st", "2nd", etc.
+  const rankM = placement.match(/^(\d+(?:st|nd|rd|th))/i);
+  const shortRank = rankM ? rankM[1] : '';
+
+  // Auto-label: "Everydayclutch · 1st" or fall back to archetype
+  const autoLabel = [player, shortRank].filter(Boolean).join(' · ') || archetype || 'Imported build';
+
   res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
   if (!cards.length) {
     res.end(JSON.stringify({ ok: false, error: 'No cards found — Limitless may have changed their markup' }));
   } else {
-    res.end(JSON.stringify({ ok: true, cards }));
+    res.end(JSON.stringify({ ok: true, cards, meta: { player, placement, archetype, autoLabel } }));
   }
 }
 
