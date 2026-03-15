@@ -564,6 +564,48 @@ if (url.startsWith('/api/fetch-bandai')) {
   }
 
   // ── Scrape status (public read) ─────────────────────────────
+  // ── Competition feed: tournaments + decklists joined ─────────
+  if (url.startsWith('/api/comp-feed')) {
+    const params  = new URL('http://x' + req.url).searchParams;
+    const limit   = Math.min(parseInt(params.get('limit')  || '200', 10), 500);
+    const offset  = parseInt(params.get('offset') || '0', 10);
+    const leader  = params.get('leader')  || '';   // filter by leader_id
+    const color   = params.get('color')   || '';   // filter by color (future)
+    const maxRank = parseInt(params.get('maxRank') || '999', 10);
+
+    try {
+      // Fetch decklists joined with tournament
+      let dlQuery = `select=id,tournament_id,player,placement,placement_rank,leader_id,leader_key,archetype,source,tournaments(id,name,date,url)`;
+      dlQuery += `&placement_rank=lte.${maxRank}`;
+      dlQuery += `&source=eq.limitless-auto`;
+      if (leader) dlQuery += `&leader_id=eq.${encodeURIComponent(leader)}`;
+      dlQuery += `&order=tournaments(date).desc,placement_rank.asc`;
+      dlQuery += `&limit=${limit}&offset=${offset}`;
+
+      const decklists = await _sbGet('decklists', dlQuery);
+      res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+      res.end(JSON.stringify({ ok: true, decklists: Array.isArray(decklists) ? decklists : [] }));
+    } catch(e) {
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: false, error: e.message }));
+    }
+    return;
+  }
+
+  // ── Single decklist cards ─────────────────────────────────────
+  if (url.startsWith('/api/comp-decklist/')) {
+    const decklistId = url.split('/api/comp-decklist/')[1].split('?')[0];
+    try {
+      const cards = await _sbGet('decklist_cards', `decklist_id=eq.${decklistId}&select=card_id,card_name,count,section&order=section.asc,card_name.asc`);
+      res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+      res.end(JSON.stringify({ ok: true, cards: Array.isArray(cards) ? cards : [] }));
+    } catch(e) {
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: false, error: e.message }));
+    }
+    return;
+  }
+
   if (url === '/api/scrape-status') {
     _getScrapeState().then(state => {
       res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
@@ -633,7 +675,7 @@ const LEADER_MAP = {
   "ST13-003":"st13luffy",  "ST29-001":"st29luffy",  "P-117":"p117nami",
 };
 
-// ── Helpers ───────────────────────────────────────────────────
+// ── HTTP helpers ──────────────────────────────────────────────
 
 function _scraperGet(url) {
   return new Promise((resolve, reject) => {
@@ -649,89 +691,87 @@ function _scraperGet(url) {
   });
 }
 
-function _scraperSbGet(path) {
+function _sbRequest(method, path, body) {
   return new Promise((resolve, reject) => {
-    if (!SB_URL || !SB_SERVICE_KEY) { resolve(null); return; }
+    if (!SB_URL || !SB_SERVICE_KEY) { resolve({ status: 503, data: null }); return; }
     const u = new URL(path, SB_URL);
-    https.get({ hostname: u.hostname, path: u.pathname + u.search,
-      headers: { 'apikey': SB_SERVICE_KEY, 'Authorization': 'Bearer ' + SB_SERVICE_KEY }
-    }, r => {
-      let b = ''; r.on('data', c => b += c);
-      r.on('end', () => { try { resolve(JSON.parse(b)); } catch(e) { resolve(null); } });
-    }).on('error', reject);
-  });
-}
-
-function _scraperSbUpsert(rows) {
-  return new Promise((resolve, reject) => {
-    if (!SB_URL || !SB_SERVICE_KEY) { resolve({ status: 503 }); return; }
-    const body = JSON.stringify(rows);
-    const u = new URL('/rest/v1/optcg_sync?on_conflict=id,user_id', SB_URL);
-    const opts = { hostname: u.hostname, path: u.pathname + u.search, method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body),
+    const bodyStr = body ? JSON.stringify(body) : null;
+    const opts = {
+      hostname: u.hostname, path: u.pathname + u.search, method,
+      headers: {
         'apikey': SB_SERVICE_KEY, 'Authorization': 'Bearer ' + SB_SERVICE_KEY,
-        'Prefer': 'resolution=merge-duplicates' } };
+        'Content-Type': 'application/json', 'Prefer': 'return=representation',
+        ...(bodyStr ? { 'Content-Length': Buffer.byteLength(bodyStr) } : {})
+      }
+    };
     const req = https.request(opts, r => {
       let b = ''; r.on('data', c => b += c);
-      r.on('end', () => resolve({ status: r.statusCode, body: b }));
+      r.on('end', () => {
+        try { resolve({ status: r.statusCode, data: JSON.parse(b) }); }
+        catch(e) { resolve({ status: r.statusCode, data: b }); }
+      });
     });
-    req.on('error', reject); req.write(body); req.end();
+    req.on('error', reject);
+    if (bodyStr) req.write(bodyStr);
+    req.end();
   });
 }
 
+function _sbGet(table, query) {
+  return _sbRequest('GET', `/rest/v1/${table}?${query}`, null).then(r => r.data);
+}
+
+function _sbInsert(table, rows) {
+  return _sbRequest('POST', `/rest/v1/${table}`, Array.isArray(rows) ? rows : [rows]);
+}
+
+function _sbUpsert(table, rows, onConflict) {
+  return _sbRequest('POST', `/rest/v1/${table}?on_conflict=${onConflict}`, Array.isArray(rows) ? rows : [rows]);
+}
+
+// ── Scrape state (stored in optcg_sync for backwards compat) ──
 async function _getScrapeState() {
   try {
-    const rows = await _scraperSbGet('/rest/v1/optcg_sync?id=eq.scrape%3Astate&select=payload');
+    const rows = await _sbGet('optcg_sync', 'id=eq.scrape%3Astate&select=payload');
     if (Array.isArray(rows) && rows[0]?.payload) return rows[0].payload;
   } catch(e) {}
   return { importedIds: [], lastRun: null, totalSaved: 0 };
 }
 
 async function _saveScrapeState(state) {
-  await _scraperSbUpsert([{
+  await _sbUpsert('optcg_sync', [{
     id: 'scrape:state', payload: state, user_id: 'admin',
     updated_at: new Date().toISOString()
-  }]);
+  }], 'id,user_id');
 }
 
+// ── Card metadata lookup ───────────────────────────────────────
 async function _getCardMeta(ids) {
   if (!ids.length) return {};
   const idList = ids.map(id => `"${id}"`).join(',');
-  const rows = await _scraperSbGet(`/rest/v1/card_metadata?id=in.(${idList})&select=id,card_type,card_name`);
+  const rows = await _sbGet('card_metadata', `id=in.(${idList})&select=id,card_type,card_name`);
   const map = {};
   if (Array.isArray(rows)) rows.forEach(r => { map[r.id] = { type: r.card_type, name: r.card_name }; });
   return map;
 }
 
-async function _buildSections(cards, leaderCardId) {
-  const others = cards.filter(c => c.id !== leaderCardId);
-  const metaMap = await _getCardMeta(others.map(c => c.id));
-  const chars = [], events = [], stages = [], other = [];
-  for (const card of others) {
-    const m = metaMap[card.id] || {};
-    const entry = { id: card.id, name: m.name || card.id, count: card.count };
-    if      (m.type === 'Character') chars.push(entry);
-    else if (m.type === 'Event')     events.push(entry);
-    else if (m.type === 'Stage')     stages.push(entry);
-    else                             other.push(entry);
-  }
-  const sections = [];
-  if (chars.length)  sections.push({ title: 'Character', cards: chars });
-  if (events.length) sections.push({ title: 'Event',     cards: events });
-  if (stages.length) sections.push({ title: 'Stage',     cards: stages });
-  if (other.length)  sections.push({ title: 'Other',     cards: other });
-  return sections;
+// ── Derive placement rank (for sorting) ───────────────────────
+function _placementRank(placement) {
+  if (!placement) return 999;
+  const p = placement.toLowerCase();
+  if (p.includes('1st') || p === '1') return 1;
+  if (p.includes('2nd') || p === '2') return 2;
+  if (p.includes('3rd') || p === '3') return 3;
+  if (p.includes('4th') || p === '4') return 4;
+  if (p.includes('top 4'))  return 4;
+  if (p.includes('top 8'))  return 8;
+  if (p.includes('top 16')) return 16;
+  if (p.includes('top 32')) return 32;
+  if (p.includes('top 64')) return 64;
+  return 999;
 }
 
-async function _countExistingVariants(deckKey) {
-  try {
-    const rows = await _scraperSbGet(`/rest/v1/optcg_sync?id=like.deck%3A${deckKey}%3A*&select=id`);
-    return Array.isArray(rows) ? rows.length : 0;
-  } catch(e) { return 0; }
-}
-
-// ── Main scrape function ───────────────────────────────────────
-// Fetch tournament IDs across multiple pages of the Limitless listing
+// ── Fetch tournament IDs from Limitless listing pages ─────────
 async function _scraperFetchTournamentIds(maxPages) {
   const ids = [];
   const seen = new Set();
@@ -744,10 +784,12 @@ async function _scraperFetchTournamentIds(maxPages) {
       let found = 0;
       while ((m = re.exec(html)) !== null) {
         const id = m[1];
+        // skip non-tournament links like "completed", "upcoming" etc.
+        if (['completed','upcoming','results'].includes(id)) continue;
         if (!seen.has(id)) { seen.add(id); ids.push(id); found++; }
       }
       console.log(`[scraper] Page ${page}: found ${found} tournament IDs`);
-      if (found === 0) break; // no more pages
+      if (found === 0) break;
       if (page < maxPages) await new Promise(r => setTimeout(r, 800));
     } catch(e) {
       console.error(`[scraper] Page ${page} fetch error:`, e.message);
@@ -757,6 +799,22 @@ async function _scraperFetchTournamentIds(maxPages) {
   return ids;
 }
 
+// ── Extract tournament name/date from listing page ────────────
+function _parseTournamentMeta(html, tournamentId) {
+  // Try to find name
+  const nameM = html.match(/<h1[^>]*>([^<]+)<\/h1>/i) ||
+                html.match(/class="[^"]*title[^"]*"[^>]*>([^<]+)</i);
+  const name = nameM ? nameM[1].trim() : `Tournament ${tournamentId}`;
+
+  // Try to find date (ISO or common formats)
+  const dateM = html.match(/(\d{4}-\d{2}-\d{2})/) ||
+                html.match(/(\w+ \d{1,2},?\s+\d{4})/);
+  const date = dateM ? dateM[1] : null;
+
+  return { name, date };
+}
+
+// ── Main scrape function ───────────────────────────────────────
 async function runDailyScrape({ maxPages } = {}) {
   if (!SB_URL || !SB_SERVICE_KEY) {
     console.log('[scraper] Supabase not configured — skipping');
@@ -766,9 +824,9 @@ async function runDailyScrape({ maxPages } = {}) {
   const importedIds = new Set((state.importedIds || []).map(String));
   const isFirstRun = importedIds.size === 0;
 
-  // First run ever → backfill 10 pages of history; daily → just page 1
   const pages = maxPages || (isFirstRun ? 10 : 1);
   console.log(`[scraper] Starting scrape (${pages} page${pages > 1 ? 's' : ''}, ${isFirstRun ? 'first run backfill' : 'daily update'})`);
+
   try {
     const ids = await _scraperFetchTournamentIds(pages);
     const newIds = ids.filter(id => !importedIds.has(String(id)));
@@ -784,40 +842,68 @@ async function runDailyScrape({ maxPages } = {}) {
 
         if (!decks.length) { importedIds.add(tournamentId); continue; }
 
+        // ── 1. Upsert tournament row ─────────────────────────────
+        const { name: tName, date: tDate } = _parseTournamentMeta(html, tournamentId);
+        await _sbUpsert('tournaments', [{
+          id:     tournamentId,
+          name:   tName,
+          date:   tDate,
+          format: 'OP',
+          source: 'limitless',
+          url:    `https://play.limitlesstcg.com/tournaments/${tournamentId}/decklists`
+        }], 'id');
+
+        // ── 2. Insert each decklist + its cards ──────────────────
         let saved = 0;
         for (const deck of decks) {
-          // Identify leader card
           const leaderCard = deck.cards.find(c => LEADER_MAP[c.id]);
           if (!leaderCard) continue;
           const deckKey = LEADER_MAP[leaderCard.id];
 
-          const sections = await _buildSections(deck.cards, leaderCard.id);
-          if (!sections.length) continue;
+          // Fetch card names for all cards in this deck
+          const allCardIds = deck.cards.map(c => c.id);
+          const metaMap = await _getCardMeta(allCardIds);
 
-          const nextIdx = await _countExistingVariants(deckKey);
-          const result  = await _scraperSbUpsert([{
-            id: `deck:${deckKey}:${nextIdx}`,
-            payload: {
-              label: deck.autoLabel,
-              sections,
-              meta: {
-                player: deck.player, placement: deck.placement,
-                archetype: deck.archetype, date: '',
-                source: 'limitless-auto',
-                url: `https://play.limitlesstcg.com/tournaments/${tournamentId}/decklists`
-              }
-            },
-            user_id: 'admin',
-            updated_at: new Date().toISOString()
+          // Derive colors from leader metadata
+          const leaderMeta = metaMap[leaderCard.id] || {};
+
+          // Insert decklist row, get back its generated id
+          const dlRes = await _sbInsert('decklists', [{
+            tournament_id:   tournamentId,
+            player:          deck.player   || null,
+            placement:       deck.placement || null,
+            placement_rank:  _placementRank(deck.placement),
+            leader_id:       leaderCard.id,
+            leader_key:      deckKey,
+            archetype:       deck.archetype || null,
+            source:          'limitless-auto'
           }]);
-          if (result.status < 300) { saved++; totalSaved++; }
-          await new Promise(r => setTimeout(r, 250)); // gentle rate limit
+
+          if (!dlRes || dlRes.status >= 300) continue;
+          const decklistId = dlRes.data?.[0]?.id;
+          if (!decklistId) continue;
+
+          // Insert all cards for this decklist
+          const cardRows = deck.cards.map(c => {
+            const meta = metaMap[c.id] || {};
+            const isLeader = c.id === leaderCard.id;
+            return {
+              decklist_id: decklistId,
+              card_id:     c.id,
+              card_name:   meta.name || c.id,
+              count:       c.count,
+              section:     isLeader ? 'Leader' : (meta.type || 'Other')
+            };
+          });
+
+          const cardsRes = await _sbInsert('decklist_cards', cardRows);
+          if (cardsRes && cardsRes.status < 300) { saved++; totalSaved++; }
+          await new Promise(r => setTimeout(r, 200));
         }
 
         console.log(`[scraper] Tournament ${tournamentId}: ${saved}/${decks.length} saved`);
         importedIds.add(tournamentId);
 
-        // Persist state after each tournament so a crash doesn't repeat work
         await _saveScrapeState({
           importedIds: [...importedIds], lastRun: new Date().toISOString(), totalSaved
         });
@@ -827,7 +913,7 @@ async function runDailyScrape({ maxPages } = {}) {
       }
     }
 
-    console.log(`[scraper] Done. Total decks ever saved: ${totalSaved}`);
+    console.log(`[scraper] Done. Total decks saved: ${totalSaved}`);
   } catch(e) {
     console.error('[scraper] Fatal error:', e.message);
   }

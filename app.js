@@ -5045,114 +5045,85 @@ function goBackFromStats() {
   _bnavSetActive('bnav-matchup');
 }
 // ── COMPETITIONS PAGE ─────────────────────────────────────────
+// ── Competitions page state ────────────────────────────────────
+let _compFilter     = 'all';
+let _compDecklists  = [];   // cached from last fetch
+let _compLoading    = false;
+let _compExpandedCards = {}; // decklistId → cards array once loaded
+
 function showCompetitions() {
   document.querySelectorAll('.screen').forEach(s => { s.classList.remove('active'); s.style.display = ''; });
   const sc = document.getElementById('screen-competitions');
   sc.classList.add('active');
   sc.scrollTop = 0;
   _bnavSetActive('bnav-comps');
-  document.getElementById('comp-content').innerHTML = renderCompetitionsPage();
-  // Load auto-scrape status
-  const statusEl = document.getElementById('comp-sync-status');
-  if (statusEl) {
-    fetch('/api/scrape-status').then(r => r.json()).then(d => {
-      if (!d.lastRun) { statusEl.textContent = '🤖 Auto-sync: not run yet — will run 3 min after deploy'; return; }
-      const ago = Math.round((Date.now() - new Date(d.lastRun)) / 3600000);
-      const agoStr = ago < 1 ? 'just now' : ago === 1 ? '1 hour ago' : ago < 24 ? `${ago}h ago` : `${Math.round(ago/24)}d ago`;
-      statusEl.textContent = `🤖 Auto-sync: last ran ${agoStr} · ${d.totalSaved || 0} decks saved total`;
-    }).catch(() => {});
-  }
+  _loadCompFeed();
+  // Scrape status
+  fetch('/api/scrape-status').then(r => r.json()).then(d => {
+    const statusEl = document.getElementById('comp-sync-status');
+    if (!statusEl) return;
+    if (!d.lastRun) { statusEl.textContent = '🤖 Auto-sync: not run yet — will run 3 min after deploy'; return; }
+    const ago = Math.round((Date.now() - new Date(d.lastRun)) / 3600000);
+    const agoStr = ago < 1 ? 'just now' : ago === 1 ? '1 hour ago' : ago < 24 ? `${ago}h ago` : `${Math.round(ago/24)}d ago`;
+    statusEl.textContent = `🤖 Last synced ${agoStr} · ${d.totalSaved || 0} decks total`;
+  }).catch(() => {});
 }
-
-let _compFilter = 'all';
 
 function setCompFilter(color, btn) {
   _compFilter = color;
   document.querySelectorAll('.comp-filter-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
-  document.getElementById('comp-content').innerHTML = renderCompetitionsPage();
+  _renderCompContent();
 }
 
-function toggleCompEntry(id) {
-  const inline = document.getElementById('comp-inline-' + id);
-  const toggle = document.getElementById('comp-toggle-' + id);
-  if (!inline) return;
-  const open = inline.classList.contains('open');
-  inline.classList.toggle('open', !open);
-  if (toggle) toggle.classList.toggle('open', !open);
-  if (toggle) toggle.textContent = open ? '›' : '▾';
-}
-
-function showCompDeck(deckKey, variantIdx) {
-  _activeVariantIdx[deckKey] = variantIdx;
-  showDeck(deckKey);
-}
-
-function _renderInlineDeck(sections) {
-  if (!sections || !sections.length) return '<div style="font-size:0.62rem;color:var(--gl-text-muted);padding:4px 0">No card data available</div>';
-  let html = '';
-  sections.forEach(sec => {
-    const title = sec.title || sec.name || '';
-    const cards = sec.cards || [];
-    if (!cards.length) return;
-    const total = cards.reduce((s, c) => s + (c.count || 1), 0);
-    html += `<div class="comp-inline-section">${title} <span style="font-weight:400;opacity:0.6">(${total})</span></div>`;
-    html += `<div class="comp-inline-cards">`;
-    cards.forEach(c => {
-      html += `<div class="comp-inline-card"><span class="comp-inline-count">${c.count}×</span><span>${c.name || c.id}</span></div>`;
+function _loadCompFeed() {
+  if (_compLoading) return;
+  _compLoading = true;
+  const el = document.getElementById('comp-content');
+  if (el) el.innerHTML = '<div class="comp-empty">Loading…</div>';
+  fetch('/api/comp-feed?limit=300')
+    .then(r => r.json())
+    .then(d => {
+      _compLoading = false;
+      _compDecklists = d.decklists || [];
+      _renderCompContent();
+    })
+    .catch(() => {
+      _compLoading = false;
+      const el = document.getElementById('comp-content');
+      if (el) el.innerHTML = '<div class="comp-empty">Failed to load. Check your connection.</div>';
     });
-    html += `</div>`;
-  });
-  return html;
 }
 
-function renderCompetitionsPage() {
-  const entries = [];
-  for (const deckKey of Object.keys(DECKLISTS)) {
-    const d = DECKLISTS[deckKey];
-    // Apply color filter
-    if (_compFilter !== 'all') {
-      const colors = (d.leaderColors || '').toLowerCase();
-      if (!colors.includes(_compFilter.toLowerCase())) continue;
-    }
-    _getVariants(deckKey).forEach((v, idx) => {
-      const meta = v.meta || {};
-      // Include if has player name OR has sections (auto-scraped may have player)
-      if (!meta.player && !meta.archetype) return;
-      const tourName = (meta.placement || '')
-        .replace(/^\d+(?:st|nd|rd|th)\s+[Pp]lace\s*/i, '').trim()
-        || meta.archetype || v.label || 'Unknown Tournament';
-      entries.push({
-        deckKey, variantIdx: idx,
-        id: deckKey + '_' + idx,
-        player:    meta.player || v.label || '—',
-        placement: meta.placement || '',
-        archetype: meta.archetype || d.leaderName || deckKey,
-        date:      meta.date || '',
-        source:    meta.source || '',
-        tournament: tourName,
-        leader:    d.leaderName || deckKey,
-        leaderCard: d.leader,
-        leaderColors: d.leaderColors || '',
-        label:     v.label,
-        sections:  v.sections || [],
-      });
+function _renderCompContent() {
+  const el = document.getElementById('comp-content');
+  if (!el) return;
+
+  let list = _compDecklists;
+
+  // Color filter — match against leader_key colors from DECKLISTS map
+  if (_compFilter !== 'all') {
+    list = list.filter(dl => {
+      const lk = dl.leader_key;
+      const d  = DECKLISTS[lk];
+      if (!d) return false;
+      return (d.leaderColors || '').toLowerCase().includes(_compFilter.toLowerCase());
     });
   }
 
-  if (!entries.length) {
-    return `<div class="comp-empty">No competition decklists yet.<br>
-      Open any deck → ⚙ Admin panel → import from:<br>
-      🌐 Limitless · 🏟 Bulk Tournament · 🏆 TopDecks · 🔵 GumGum · 🎌 Bandai</div>`;
+  if (!list.length) {
+    el.innerHTML = `<div class="comp-empty">No competition decklists yet.<br>
+      The auto-scraper runs 3 minutes after each deploy and fills this in.</div>`;
+    return;
   }
 
-  // Group by tournament name
+  // Group by tournament
   const groups = {};
-  entries.forEach(e => {
-    const key = e.tournament;
-    if (!groups[key]) groups[key] = { name: e.tournament, date: e.date, entries: [] };
-    groups[key].entries.push(e);
-    if (e.date && (!groups[key].date || e.date > groups[key].date)) groups[key].date = e.date;
+  list.forEach(dl => {
+    const t  = dl.tournaments || {};
+    const key = t.id || 'unknown';
+    if (!groups[key]) groups[key] = { id: key, name: t.name || key, date: t.date || '', url: t.url || '', entries: [] };
+    groups[key].entries.push(dl);
   });
 
   // Sort groups newest → oldest
@@ -5162,19 +5133,10 @@ function renderCompetitionsPage() {
     return a.name.localeCompare(b.name);
   });
 
-  // Within each group sort by rank
-  sorted.forEach(g => {
-    g.entries.sort((a, b) => {
-      const rA = parseInt((a.placement.match(/^(\d+)/) || [,999])[1]);
-      const rB = parseInt((b.placement.match(/^(\d+)/) || [,999])[1]);
-      return rA - rB;
-    });
-  });
-
   let html = '';
   sorted.forEach(group => {
     const dateLabel = group.date
-      ? new Date(group.date + 'T00:00:00').toLocaleDateString(undefined, { month: 'short', year: 'numeric' })
+      ? new Date(group.date + 'T00:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
       : '';
 
     html += `<div class="comp-group-hdr-flat">
@@ -5182,39 +5144,93 @@ function renderCompetitionsPage() {
       ${dateLabel ? `<span class="comp-group-date-flat">${dateLabel}</span>` : ''}
     </div>`;
 
-    group.entries.forEach(e => {
-      const rank = parseInt((e.placement.match(/^(\d+)/) || [,99])[1]);
-      const medal = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : rank <= 99 ? `${rank}` : '—';
+    group.entries.forEach(dl => {
+      const rank   = dl.placement_rank || 999;
+      const medal  = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : rank <= 8 ? `Top ${rank}` : dl.placement || '—';
       const rankCls = rank === 1 ? 'rank-1' : rank <= 4 ? 'rank-top4' : rank <= 8 ? 'rank-top8' : 'rank-other';
-      const colorDots = e.leaderColors.split('/').map(c => {
+      const lk     = dl.leader_key || '';
+      const d      = DECKLISTS[lk] || {};
+      const colorDots = (d.leaderColors || '').split('/').map(c => {
         const col = c.trim().toLowerCase();
-        const dot = col === 'red' ? '🔴' : col === 'blue' ? '🔵' : col === 'green' ? '🟢' : col === 'yellow' ? '🟡' : col === 'purple' ? '🟣' : col === 'black' ? '⚫' : '';
-        return dot;
+        return col === 'red' ? '🔴' : col === 'blue' ? '🔵' : col === 'green' ? '🟢' :
+               col === 'yellow' ? '🟡' : col === 'purple' ? '🟣' : col === 'black' ? '⚫' : '';
       }).join('');
 
-      html += `<div class="comp-flat-entry" id="comp-entry-${e.id}">
-        <div class="comp-flat-row" onclick="toggleCompEntry('${e.id}')">
+      const entryId = 'dl_' + dl.id;
+      html += `<div class="comp-flat-entry" id="comp-entry-${entryId}">
+        <div class="comp-flat-row" onclick="toggleCompEntry('${entryId}', ${dl.id})">
           <span class="comp-rank ${rankCls}">${medal}</span>
-          <img class="comp-leader-img" src="${cardImg(e.leaderCard)}"
-            onerror="this.style.display='none'" alt="${e.leader}">
+          <img class="comp-leader-img" src="${cardImg(dl.leader_id)}"
+            onerror="this.style.display='none'" alt="${d.leaderName || lk}">
           <div class="comp-info">
-            <div class="comp-player">${e.player}</div>
-            <div class="comp-arch">${colorDots} ${e.archetype}</div>
-            <div class="comp-tourn">${e.tournament}${e.source ? ' · ' + e.source : ''}</div>
+            <div class="comp-player">${dl.player || '—'}</div>
+            <div class="comp-arch">${colorDots} ${dl.archetype || d.leaderName || lk}</div>
           </div>
-          <span class="comp-toggle" id="comp-toggle-${e.id}">›</span>
+          <span class="comp-toggle" id="comp-toggle-${entryId}">›</span>
         </div>
-        <div class="comp-inline" id="comp-inline-${e.id}">
-          ${_renderInlineDeck(e.sections)}
+        <div class="comp-inline" id="comp-inline-${entryId}">
+          <div class="comp-inline-cards-wrap" id="comp-cards-${entryId}">
+            <div style="font-size:0.65rem;color:var(--gl-text-muted)">Loading cards…</div>
+          </div>
           <div class="comp-inline-footer">
-            <span style="font-size:0.58rem;color:var(--gl-text-faint)">${e.label}</span>
-            <span class="comp-open-btn" onclick="showCompDeck('${e.deckKey}',${e.variantIdx})">→ Open deck page</span>
+            <a href="${group.url}" target="_blank" style="font-size:0.58rem;color:var(--gl-text-faint)">View on Limitless ↗</a>
           </div>
         </div>
       </div>`;
     });
   });
-  return html;
+
+  el.innerHTML = html;
+}
+
+function toggleCompEntry(entryId, decklistId) {
+  const inline = document.getElementById('comp-inline-' + entryId);
+  const toggle = document.getElementById('comp-toggle-' + entryId);
+  if (!inline) return;
+  const open = inline.classList.contains('open');
+  inline.classList.toggle('open', !open);
+  if (toggle) toggle.textContent = open ? '›' : '▾';
+  // Lazy-load cards on first open
+  if (!open && decklistId) _loadCompDeckCards(entryId, decklistId);
+}
+
+function _loadCompDeckCards(entryId, decklistId) {
+  if (_compExpandedCards[decklistId]) {
+    _renderCompDeckCards(entryId, _compExpandedCards[decklistId]);
+    return;
+  }
+  fetch(`/api/comp-decklist/${decklistId}`)
+    .then(r => r.json())
+    .then(d => {
+      _compExpandedCards[decklistId] = d.cards || [];
+      _renderCompDeckCards(entryId, _compExpandedCards[decklistId]);
+    })
+    .catch(() => {});
+}
+
+function _renderCompDeckCards(entryId, cards) {
+  const wrap = document.getElementById('comp-cards-' + entryId);
+  if (!wrap || !cards.length) return;
+  // Group by section
+  const sections = {};
+  cards.forEach(c => {
+    const sec = c.section || 'Other';
+    if (!sections[sec]) sections[sec] = [];
+    sections[sec].push(c);
+  });
+  const order = ['Leader','Character','Event','Stage','DON!!','Other'];
+  let html = '';
+  order.forEach(sec => {
+    if (!sections[sec] || !sections[sec].length) return;
+    const total = sections[sec].reduce((s, c) => s + (c.count || 1), 0);
+    html += `<div class="comp-inline-section">${sec} <span style="font-weight:400;opacity:0.6">(${total})</span></div>`;
+    html += `<div class="comp-inline-cards">`;
+    sections[sec].forEach(c => {
+      html += `<div class="comp-inline-card"><span class="comp-inline-count">${c.count}×</span><span>${c.card_name || c.card_id}</span></div>`;
+    });
+    html += `</div>`;
+  });
+  wrap.innerHTML = html || '<div style="font-size:0.62rem;color:var(--gl-text-muted)">No cards found</div>';
 }
 
 function _gameXwr(game) {
