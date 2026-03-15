@@ -5006,9 +5006,15 @@ function openNewDeckFromRef(deckKey, leaderCardId) {
 
 // ── BOTTOM NAV ───────────────────────────────────────────────
 function _bnavSetActive(id) {
+  // bottom nav
   document.querySelectorAll('.bnav-btn').forEach(b => b.classList.remove('active'));
   const el = document.getElementById(id);
   if (el) el.classList.add('active');
+  // top nav — map bnav id → tnav id
+  document.querySelectorAll('.tnav-btn').forEach(b => b.classList.remove('active'));
+  const tmap = { 'bnav-home':'tnav-home', 'bnav-matchup':'tnav-matchup', 'bnav-comps':'tnav-comps', 'bnav-stats':'tnav-stats' };
+  const tel = document.getElementById(tmap[id]);
+  if (tel) tel.classList.add('active');
 }
 function _bnavMatchup() {
   // If we have a current leader, go to matchup screen; else go home

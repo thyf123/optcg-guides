@@ -1644,6 +1644,43 @@ th.sort-active { color: var(--gl-gold-h); }
 .card-ac-label { color: var(--gl-gold); opacity: 0.8; font-size: 0.58rem; font-weight: 700; text-transform: uppercase; margin-left: 4px; }
 
 /* ════════════════════════════════════════════
+   TOP NAV (desktop)
+   ════════════════════════════════════════════ */
+#top-nav {
+  display: none;
+  position: fixed; top: 0; left: 0; right: 0;
+  z-index: 250;
+  background: var(--gl-surface);
+  border-bottom: 1px solid var(--gl-border);
+  height: 52px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+#top-nav-logo {
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  color: var(--gl-gold);
+  letter-spacing: 0.06em;
+  flex-shrink: 0;
+}
+#top-nav-links {
+  display: flex; align-items: center; gap: 4px;
+}
+.tnav-btn {
+  background: none; border: none;
+  color: var(--gl-text-faint);
+  font-size: 0.82rem; font-weight: 500;
+  padding: 6px 16px; border-radius: var(--r-md);
+  cursor: pointer; transition: color var(--t), background var(--t);
+  letter-spacing: 0.02em;
+}
+.tnav-btn:hover { color: var(--gl-text); background: var(--gl-surface-2); }
+.tnav-btn.active { color: var(--gl-gold); background: rgba(201,168,76,0.1); font-weight: 600; }
+
+/* ════════════════════════════════════════════
    BOTTOM NAV (mobile)
    ════════════════════════════════════════════ */
 #bottom-nav {
@@ -1725,6 +1762,14 @@ th.sort-active { color: var(--gl-gold-h); }
 .comp-group-name-flat { font-size: 0.68rem; font-weight: 700; color: var(--gl-text); }
 .comp-group-date-flat { font-size: 0.58rem; color: var(--gl-text-muted); }
 .comp-empty  { font-size: 0.75rem; color: var(--gl-text-muted); text-align: center; padding: 48px 20px; line-height: 1.8; }
+
+/* ═══════════════════════════════════════════════════
+   DESKTOP — wider than 768px
+   ═══════════════════════════════════════════════════ */
+@media (min-width: 769px) {
+  #top-nav { display: flex; }
+  .screen { padding-top: calc(52px + var(--sp-4)); }
+}
 
 /* ═══════════════════════════════════════════════════
    MOBILE — iPhone Safari & Chrome (≤768px)
