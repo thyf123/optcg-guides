@@ -76,28 +76,20 @@ function _parseGumgumHtml(res, html) {
 // ── Limitless tournament bulk parser ─────────────────────────
 // /tournaments/{id}/decklists — multiple decks on one page.
 // Each deck is preceded by: <h2>1st PlayerName</h2><h3>Archetype [price]</h3>
-function _parseLimitlessTournamentHtml(res, html) {
+function _extractTournamentDecks(html) {
   const CARD_RE = /\/images\/decklist\/(\d+)\.png[\s\S]{0,400}?href="\/cards\/([A-Z]{1,4}\d*-\d{3,4})"/gi;
   const decks = [];
-
-  // Split by <h2> — each marks a new player's deck
   const parts = html.split(/<h2[^>]*>/i);
   for (let i = 1; i < parts.length; i++) {
     const chunk = parts[i];
-
-    // Placement + player from text before </h2>
     const h2M = chunk.match(/^([^<]+)<\/h2>/);
     if (!h2M) continue;
     const h2Text = h2M[1].trim();
     const rankM  = h2Text.match(/^(\d+(?:st|nd|rd|th))\s+(.+)$/i);
     const placement = rankM ? rankM[1] : '';
     const player    = rankM ? rankM[2].trim() : h2Text;
-
-    // Archetype from first <h3>
     const h3M = chunk.match(/<h3[^>]*>([^<[]+)/i);
     const archetype = h3M ? h3M[1].trim() : '';
-
-    // Cards in this deck section
     CARD_RE.lastIndex = 0;
     const cards = [];
     const seen  = new Set();
@@ -110,12 +102,15 @@ function _parseLimitlessTournamentHtml(res, html) {
       if (count >= 1 && count <= 4) cards.push({ count, id });
     }
     if (!cards.length) continue;
-
     const shortRank = placement.match(/^(\d+(?:st|nd|rd|th))/i)?.[1] || '';
     const autoLabel = [player, shortRank].filter(Boolean).join(' · ') || archetype || `Deck ${i}`;
     decks.push({ player, placement, archetype, autoLabel, cards });
   }
+  return decks;
+}
 
+function _parseLimitlessTournamentHtml(res, html) {
+  const decks = _extractTournamentDecks(html);
   res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
   if (!decks.length) {
     res.end(JSON.stringify({ ok: false, error: 'No decks found — make sure the URL ends in /decklists' }));
@@ -562,9 +557,241 @@ if (url.startsWith('/api/fetch-bandai')) {
     return;
   }
 
+  // ── Scrape status (public read) ─────────────────────────────
+  if (url === '/api/scrape-status') {
+    _getScrapeState().then(state => {
+      res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+      res.end(JSON.stringify({ ok: true, ...state }));
+    }).catch(() => { res.writeHead(500); res.end('{}'); });
+    return;
+  }
+
+  // ── Manual scrape trigger (admin only) ──────────────────────
+  if (url === '/api/trigger-scrape') {
+    const token = new URL('http://x' + req.url).searchParams.get('token') || '';
+    if (!ADMIN_TOKEN || token !== ADMIN_TOKEN) {
+      res.writeHead(401, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: false, error: 'Unauthorized' }));
+      return;
+    }
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ ok: true, message: 'Scrape triggered in background' }));
+    runDailyScrape().catch(e => console.error('[scraper] Manual trigger error:', e.message));
+    return;
+  }
+
   res.writeHead(404);
   res.end('Not found');
 
 }).listen(PORT, () => {
   console.log(`Grand Line running on port ${PORT}`);
 });
+
+// ════════════════════════════════════════════════════════════════
+// DAILY TOURNAMENT AUTO-SCRAPER
+// Runs 3 min after startup, then every 24 h.
+// Fetches all new Limitless One Piece tournaments → parses every
+// decklist → assigns each to the right leader via LEADER_MAP →
+// appends as a variant row in Supabase optcg_sync.
+// ════════════════════════════════════════════════════════════════
+
+// Leader card ID → deckKey (auto-generated from DECKLISTS in rosinante_spa.html)
+// Add new leaders here when new sets are released.
+const LEADER_MAP = {
+  "OP01-002":"op01_law",   "OP07-019":"op7bonney",  "OP08-021":"op8carrot",
+  "OP08-058":"op8sabo",    "OP09-001":"op9shanks",  "OP09-022":"op9lim",
+  "OP09-062":"op9robin",   "OP09-081":"op9teach",   "OP11-001":"op11koby",
+  "OP11-022":"op11shirahoshi","OP11-040":"op11luffy","OP11-041":"op11nami",
+  "OP12-001":"op12rayleigh","OP12-040":"op12kuzan", "OP12-041":"op12sanji",
+  "OP12-061":"op12mirror", "OP13-001":"op13luffy",  "OP13-002":"op13ace",
+  "OP13-003":"op13roger",  "OP13-004":"op13sabo",   "OP13-079":"op13imu",
+  "OP13-100":"op13bonney", "OP14-020":"op14mihawk", "OP14-040":"op14jinbe",
+  "OP14-041":"op14boa",    "OP14-060":"op14doffy",  "OP14-079":"op14crocodile",
+  "OP14-080":"op14moria",  "EB02-010":"eb2luffy",   "EB03-001":"eb3vivi",
+  "ST13-003":"st13luffy",  "ST29-001":"st29luffy",  "P-117":"p117nami",
+};
+
+// ── Helpers ───────────────────────────────────────────────────
+
+function _scraperGet(url) {
+  return new Promise((resolve, reject) => {
+    const parsedUrl = new URL(url);
+    const opts = { hostname: parsedUrl.hostname, path: parsedUrl.pathname + parsedUrl.search,
+      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; OPTCG-Guide-Bot/1.0)', 'Accept': 'text/html' } };
+    https.get(opts, r => {
+      if ((r.statusCode === 301 || r.statusCode === 302) && r.headers.location) {
+        return _scraperGet(new URL(r.headers.location, url).href).then(resolve).catch(reject);
+      }
+      let b = ''; r.on('data', c => b += c); r.on('end', () => resolve(b));
+    }).on('error', reject);
+  });
+}
+
+function _scraperSbGet(path) {
+  return new Promise((resolve, reject) => {
+    if (!SB_URL || !SB_SERVICE_KEY) { resolve(null); return; }
+    const u = new URL(path, SB_URL);
+    https.get({ hostname: u.hostname, path: u.pathname + u.search,
+      headers: { 'apikey': SB_SERVICE_KEY, 'Authorization': 'Bearer ' + SB_SERVICE_KEY }
+    }, r => {
+      let b = ''; r.on('data', c => b += c);
+      r.on('end', () => { try { resolve(JSON.parse(b)); } catch(e) { resolve(null); } });
+    }).on('error', reject);
+  });
+}
+
+function _scraperSbUpsert(rows) {
+  return new Promise((resolve, reject) => {
+    if (!SB_URL || !SB_SERVICE_KEY) { resolve({ status: 503 }); return; }
+    const body = JSON.stringify(rows);
+    const u = new URL('/rest/v1/optcg_sync?on_conflict=id,user_id', SB_URL);
+    const opts = { hostname: u.hostname, path: u.pathname + u.search, method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body),
+        'apikey': SB_SERVICE_KEY, 'Authorization': 'Bearer ' + SB_SERVICE_KEY,
+        'Prefer': 'resolution=merge-duplicates' } };
+    const req = https.request(opts, r => {
+      let b = ''; r.on('data', c => b += c);
+      r.on('end', () => resolve({ status: r.statusCode, body: b }));
+    });
+    req.on('error', reject); req.write(body); req.end();
+  });
+}
+
+async function _getScrapeState() {
+  try {
+    const rows = await _scraperSbGet('/rest/v1/optcg_sync?id=eq.scrape%3Astate&select=payload');
+    if (Array.isArray(rows) && rows[0]?.payload) return rows[0].payload;
+  } catch(e) {}
+  return { importedIds: [], lastRun: null, totalSaved: 0 };
+}
+
+async function _saveScrapeState(state) {
+  await _scraperSbUpsert([{
+    id: 'scrape:state', payload: state, user_id: 'admin',
+    updated_at: new Date().toISOString()
+  }]);
+}
+
+async function _getCardMeta(ids) {
+  if (!ids.length) return {};
+  const idList = ids.map(id => `"${id}"`).join(',');
+  const rows = await _scraperSbGet(`/rest/v1/card_metadata?id=in.(${idList})&select=id,card_type,card_name`);
+  const map = {};
+  if (Array.isArray(rows)) rows.forEach(r => { map[r.id] = { type: r.card_type, name: r.card_name }; });
+  return map;
+}
+
+async function _buildSections(cards, leaderCardId) {
+  const others = cards.filter(c => c.id !== leaderCardId);
+  const metaMap = await _getCardMeta(others.map(c => c.id));
+  const chars = [], events = [], stages = [], other = [];
+  for (const card of others) {
+    const m = metaMap[card.id] || {};
+    const entry = { id: card.id, name: m.name || card.id, count: card.count };
+    if      (m.type === 'Character') chars.push(entry);
+    else if (m.type === 'Event')     events.push(entry);
+    else if (m.type === 'Stage')     stages.push(entry);
+    else                             other.push(entry);
+  }
+  const sections = [];
+  if (chars.length)  sections.push({ title: 'Character', cards: chars });
+  if (events.length) sections.push({ title: 'Event',     cards: events });
+  if (stages.length) sections.push({ title: 'Stage',     cards: stages });
+  if (other.length)  sections.push({ title: 'Other',     cards: other });
+  return sections;
+}
+
+async function _countExistingVariants(deckKey) {
+  try {
+    const rows = await _scraperSbGet(`/rest/v1/optcg_sync?id=like.deck%3A${deckKey}%3A*&select=id`);
+    return Array.isArray(rows) ? rows.length : 0;
+  } catch(e) { return 0; }
+}
+
+// ── Main scrape function ───────────────────────────────────────
+async function runDailyScrape() {
+  if (!SB_URL || !SB_SERVICE_KEY) {
+    console.log('[scraper] Supabase not configured — skipping');
+    return;
+  }
+  console.log('[scraper] Daily tournament scrape starting');
+  try {
+    const state = await _getScrapeState();
+    const importedIds = new Set((state.importedIds || []).map(Number));
+
+    // Fetch recent tournament IDs from Limitless
+    const listHtml = await _scraperGet('https://onepiece.limitlesstcg.com/tournaments');
+    const ids = [];
+    const re = /href="\/tournaments\/(\d+)"/gi;
+    let m;
+    const seen = new Set();
+    while ((m = re.exec(listHtml)) !== null) {
+      const id = parseInt(m[1]);
+      if (!seen.has(id)) { seen.add(id); ids.push(id); }
+    }
+    const newIds = ids.slice(0, 30).filter(id => !importedIds.has(id));
+    console.log(`[scraper] ${ids.length} tournaments found, ${newIds.length} new`);
+
+    let totalSaved = state.totalSaved || 0;
+
+    for (const tournamentId of newIds) {
+      console.log(`[scraper] Fetching tournament ${tournamentId}`);
+      try {
+        const html  = await _scraperGet(`https://onepiece.limitlesstcg.com/tournaments/${tournamentId}/decklists`);
+        const decks = _extractTournamentDecks(html);
+
+        if (!decks.length) { importedIds.add(tournamentId); continue; }
+
+        let saved = 0;
+        for (const deck of decks) {
+          // Identify leader card
+          const leaderCard = deck.cards.find(c => LEADER_MAP[c.id]);
+          if (!leaderCard) continue;
+          const deckKey = LEADER_MAP[leaderCard.id];
+
+          const sections = await _buildSections(deck.cards, leaderCard.id);
+          if (!sections.length) continue;
+
+          const nextIdx = await _countExistingVariants(deckKey);
+          const result  = await _scraperSbUpsert([{
+            id: `deck:${deckKey}:${nextIdx}`,
+            payload: {
+              label: deck.autoLabel,
+              sections,
+              meta: {
+                player: deck.player, placement: deck.placement,
+                archetype: deck.archetype, date: '',
+                source: 'limitless-auto',
+                url: `https://onepiece.limitlesstcg.com/tournaments/${tournamentId}/decklists`
+              }
+            },
+            user_id: 'admin',
+            updated_at: new Date().toISOString()
+          }]);
+          if (result.status < 300) { saved++; totalSaved++; }
+          await new Promise(r => setTimeout(r, 250)); // gentle rate limit
+        }
+
+        console.log(`[scraper] Tournament ${tournamentId}: ${saved}/${decks.length} saved`);
+        importedIds.add(tournamentId);
+
+        // Persist state after each tournament so a crash doesn't repeat work
+        await _saveScrapeState({
+          importedIds: [...importedIds], lastRun: new Date().toISOString(), totalSaved
+        });
+        await new Promise(r => setTimeout(r, 1500));
+      } catch(e) {
+        console.error(`[scraper] Tournament ${tournamentId} error:`, e.message);
+      }
+    }
+
+    console.log(`[scraper] Done. Total decks ever saved: ${totalSaved}`);
+  } catch(e) {
+    console.error('[scraper] Fatal error:', e.message);
+  }
+}
+
+// ── Schedule ──────────────────────────────────────────────────
+// Run 3 min after startup (let server init), then every 24 h
+setTimeout(runDailyScrape, 3 * 60 * 1000);
+setInterval(runDailyScrape, 24 * 60 * 60 * 1000);

@@ -2065,6 +2065,7 @@ th.sort-active { color: var(--gl-gold-h); }
 <!-- ════ SCREEN: COMPETITIONS ════ -->
 <div class="screen" id="screen-competitions">
   <div class="comp-page-title">🏆 Competitions</div>
+  <div id="comp-sync-status" style="font-size:0.62rem;color:var(--gl-text-muted);margin-bottom:12px;min-height:16px"></div>
   <div id="comp-content"></div>
 </div>
 
@@ -7359,6 +7360,16 @@ function showCompetitions() {
   sc.scrollTop = 0;
   _bnavSetActive('bnav-comps');
   document.getElementById('comp-content').innerHTML = renderCompetitionsPage();
+  // Load auto-scrape status
+  const statusEl = document.getElementById('comp-sync-status');
+  if (statusEl) {
+    fetch('/api/scrape-status').then(r => r.json()).then(d => {
+      if (!d.lastRun) { statusEl.textContent = '🤖 Auto-sync: not run yet — will run 3 min after deploy'; return; }
+      const ago = Math.round((Date.now() - new Date(d.lastRun)) / 3600000);
+      const agoStr = ago < 1 ? 'just now' : ago === 1 ? '1 hour ago' : ago < 24 ? `${ago}h ago` : `${Math.round(ago/24)}d ago`;
+      statusEl.textContent = `🤖 Auto-sync: last ran ${agoStr} · ${d.totalSaved || 0} decks saved total`;
+    }).catch(() => {});
+  }
 }
 
 function showCompDeck(deckKey, variantIdx) {
