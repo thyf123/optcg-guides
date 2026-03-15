@@ -1938,13 +1938,30 @@ th.sort-active { color: var(--gl-gold-h); }
 <!-- Admin login modal -->
 <div id="admin-modal" onclick="if(event.target===this)closeAdminModal()">
   <div class="admin-box">
-    <h3>🔒 Admin Login</h3>
-    <input id="admin-pwd" class="admin-pwd-input" type="password" placeholder="Password"
-      onkeydown="if(event.key==='Enter')submitAdminLogin();if(event.key==='Escape')closeAdminModal()">
-    <div id="admin-err" class="admin-err"></div>
-    <div class="admin-btns">
-      <button class="admin-btn-cancel" onclick="closeAdminModal()">Cancel</button>
-      <button class="admin-btn-login" onclick="submitAdminLogin()">Login</button>
+    <!-- Login view -->
+    <div id="admin-login-section">
+      <h3>🔒 Admin Login</h3>
+      <input id="admin-pwd" class="admin-pwd-input" type="password" placeholder="Password"
+        onkeydown="if(event.key==='Enter')submitAdminLogin();if(event.key==='Escape')closeAdminModal()">
+      <div id="admin-err" class="admin-err"></div>
+      <div class="admin-btns">
+        <button class="admin-btn-cancel" onclick="closeAdminModal()">Cancel</button>
+        <button class="admin-btn-login" onclick="submitAdminLogin()">Login</button>
+      </div>
+    </div>
+    <!-- Admin panel view (shown when logged in) -->
+    <div id="admin-panel-section" style="display:none">
+      <h3>🔓 Admin Panel</h3>
+      <div style="display:flex;flex-direction:column;gap:10px;margin:12px 0">
+        <button id="save-deck-data-btn" class="admin-btn-login" onclick="saveDeckDataToSupabase()">
+          💾 Save deck data to Supabase
+        </button>
+      </div>
+      <div id="admin-panel-msg" style="font-size:12px;color:var(--accent);min-height:18px;text-align:center"></div>
+      <div class="admin-btns" style="margin-top:10px">
+        <button class="admin-btn-cancel" onclick="adminLogout()">Logout</button>
+        <button class="admin-btn-login" onclick="closeAdminModal()">Close</button>
+      </div>
     </div>
   </div>
 </div>
@@ -2246,18 +2263,30 @@ function _updateAdminLockBtn() {
 }
 
 function openAdminModal() {
-  if (_isAdmin()) {
-    // Already logged in — offer logout
-    if (confirm('Logged in as admin. Log out?')) {
-      _adminToken = '';
-      try { sessionStorage.removeItem('optcg-admin-token'); } catch(e) {}
-      _updateAdminLockBtn();
-      _refreshAdminButtons();
-    }
-    return;
-  }
   const m = document.getElementById('admin-modal');
-  if (m) { m.style.display = 'flex'; setTimeout(() => document.getElementById('admin-pwd')?.focus(), 50); }
+  if (!m) return;
+  if (_isAdmin()) {
+    // Show admin panel
+    document.getElementById('admin-login-section').style.display = 'none';
+    document.getElementById('admin-panel-section').style.display = '';
+    const msg = document.getElementById('admin-panel-msg');
+    if (msg) msg.textContent = '';
+    const btn = document.getElementById('save-deck-data-btn');
+    if (btn) btn.textContent = '💾 Save deck data to Supabase';
+  } else {
+    // Show login form
+    document.getElementById('admin-login-section').style.display = '';
+    document.getElementById('admin-panel-section').style.display = 'none';
+    setTimeout(() => document.getElementById('admin-pwd')?.focus(), 50);
+  }
+  m.style.display = 'flex';
+}
+function adminLogout() {
+  _adminToken = '';
+  try { sessionStorage.removeItem('optcg-admin-token'); } catch(e) {}
+  closeAdminModal();
+  _updateAdminLockBtn();
+  _refreshAdminButtons();
 }
 function closeAdminModal() {
   const m = document.getElementById('admin-modal');
@@ -2459,7 +2488,7 @@ function cardImg(id){
 }
 
 
-const LEADERS = {
+let LEADERS = {
   rosinante: {
     cardId: "OP12-061",
     name: "Donquixote Rosinante",
@@ -4057,7 +4086,7 @@ const LEADERS = {
 };
 
 
-const DECKLISTS = {
+let DECKLISTS = {
   op01_law: {
     leader: "OP01-002",
     leaderName: "Trafalgar Law",
@@ -6494,6 +6523,25 @@ async function syncFromSupabase() {
       allMatchupOverrides = mor.payload;
       try { localStorage.setItem('optcg-matchup-ov', JSON.stringify(allMatchupOverrides)); } catch(e) {}
     }
+    // Restore global deck data (leaders + decklists) — no user filter, admin-published
+    try {
+      const gdRes = await fetch(
+        _sbUrl + '/rest/v1/optcg_sync?id=in.(leaders-data,decklists-data)&select=id,payload',
+        { headers: _sbHeaders() }
+      );
+      if (gdRes.ok) {
+        const gdRows = await gdRes.json();
+        const ldr = gdRows.find(r => r.id === 'leaders-data');
+        if (ldr && ldr.payload && typeof ldr.payload === 'object' && !Array.isArray(ldr.payload)) {
+          LEADERS = ldr.payload;
+        }
+        const dlr = gdRows.find(r => r.id === 'decklists-data');
+        if (dlr && dlr.payload && typeof dlr.payload === 'object' && !Array.isArray(dlr.payload)) {
+          DECKLISTS = dlr.payload;
+        }
+      }
+    } catch(e) { /* non-fatal: keep hardcoded defaults */ }
+
     // Restore last active leader key so cross-device login lands on correct leader
     const clkr = rows.find(r => r.id === 'current-leader');
     if (clkr && clkr.payload && clkr.payload.key && LEADERS[clkr.payload.key]) {
@@ -6532,6 +6580,43 @@ async function syncToSupabase() {
   } catch(e) {
     _setSyncDot('error', '☁✗');
     console.warn('Supabase push failed:', e);
+  }
+}
+
+// ── ADMIN: Save LEADERS + DECKLISTS to Supabase ────────────────
+async function saveDeckDataToSupabase() {
+  const btn = document.getElementById('save-deck-data-btn');
+  const msg = document.getElementById('admin-panel-msg');
+  if (!_sbUrl || !_sbKey) {
+    if (msg) msg.textContent = '⚠ Supabase not configured';
+    return;
+  }
+  if (btn) btn.disabled = true;
+  if (btn) btn.textContent = 'Saving…';
+  if (msg) msg.textContent = '';
+  try {
+    const res = await fetch(_sbUrl + '/rest/v1/optcg_sync', {
+      method: 'POST',
+      headers: { ..._sbHeaders(), 'Prefer': 'resolution=merge-duplicates' },
+      body: JSON.stringify([
+        { id: 'leaders-data', payload: LEADERS, user_id: 'admin', updated_at: new Date().toISOString() },
+        { id: 'decklists-data', payload: DECKLISTS, user_id: 'admin', updated_at: new Date().toISOString() },
+      ])
+    });
+    if (!res.ok) {
+      const errTxt = await res.text().catch(() => '');
+      throw new Error(res.status + ' ' + errTxt.slice(0, 120));
+    }
+    if (btn) btn.textContent = '✓ Saved';
+    if (msg) msg.textContent = 'Leaders & decklists saved to Supabase';
+    setTimeout(() => {
+      if (btn) { btn.textContent = '💾 Save deck data to Supabase'; btn.disabled = false; }
+    }, 3000);
+  } catch(e) {
+    if (btn) { btn.textContent = '✗ Error'; btn.disabled = false; }
+    if (msg) msg.textContent = String(e);
+    setTimeout(() => { if (btn) btn.textContent = '💾 Save deck data to Supabase'; }, 3000);
+    console.error('saveDeckDataToSupabase failed:', e);
   }
 }
 
