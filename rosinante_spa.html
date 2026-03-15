@@ -1691,31 +1691,58 @@ th.sort-active { color: var(--gl-gold-h); }
 .bnav-btn:active { color: var(--gl-gold-h); }
 
 /* ── Competitions page ─────────────────────────────────────── */
-#screen-competitions { padding: var(--sp-4) var(--sp-4) 80px; overflow-y: auto; }
-.comp-page-title { font-size: 1rem; font-weight: 700; color: var(--gl-gold); margin-bottom: 16px; }
-.comp-group { margin-bottom: 22px; }
-.comp-group-hdr {
-  display: flex; justify-content: space-between; align-items: baseline;
-  border-bottom: 1px solid var(--gl-divider); padding-bottom: 5px; margin-bottom: 8px;
+#screen-competitions { padding: 0 0 80px; overflow-y: auto; display: flex; flex-direction: column; }
+.comp-page-title { font-size: 1rem; font-weight: 700; color: var(--gl-gold); margin-bottom: 4px; padding: 16px 16px 0; }
+.comp-filter-bar {
+  display: flex; gap: 6px; overflow-x: auto; padding: 10px 16px 10px;
+  scrollbar-width: none; flex-shrink: 0;
 }
-.comp-name { font-size: 0.72rem; font-weight: 700; color: var(--gl-text); }
-.comp-date { font-size: 0.6rem; color: var(--gl-text-muted); }
-.comp-entry {
-  display: flex; align-items: center; gap: 10px;
-  padding: 7px 10px; border-radius: 8px; background: var(--gl-card);
-  margin-bottom: 5px; cursor: pointer; transition: background 0.12s;
+.comp-filter-bar::-webkit-scrollbar { display: none; }
+.comp-filter-btn {
+  flex-shrink: 0; padding: 4px 10px; border-radius: 20px; border: 1px solid var(--gl-divider);
+  background: var(--gl-card); color: var(--gl-text-muted); font-size: 0.65rem; cursor: pointer;
+  transition: background 0.12s, color 0.12s;
 }
-.comp-entry:hover { background: rgba(255,255,255,0.07); }
-.comp-leader-img { width: 34px; height: auto; border-radius: 4px; flex-shrink: 0; }
+.comp-filter-btn.active { background: var(--gl-gold); color: #000; border-color: var(--gl-gold); font-weight: 700; }
+.comp-list { flex: 1; padding: 0 12px; }
+.comp-flat-entry { border-radius: 10px; background: var(--gl-card); margin-bottom: 8px; overflow: hidden; }
+.comp-flat-row {
+  display: flex; align-items: center; gap: 10px; padding: 9px 12px;
+  cursor: pointer; transition: background 0.12s;
+}
+.comp-flat-row:hover { background: rgba(255,255,255,0.05); }
+.comp-leader-img { width: 38px; height: auto; border-radius: 5px; flex-shrink: 0; object-fit: cover; }
 .comp-rank { font-size: 0.68rem; font-weight: 700; min-width: 26px; text-align: center; flex-shrink: 0; }
 .rank-1    { color: #ffd700; }
 .rank-top4 { color: var(--gl-gold); }
 .rank-top8 { color: var(--gl-text-muted); }
 .rank-other{ color: var(--gl-text-faint); }
 .comp-info { flex: 1; min-width: 0; }
-.comp-player { font-size: 0.72rem; font-weight: 600; color: var(--gl-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.comp-arch   { font-size: 0.6rem; color: var(--gl-text-muted); }
-.comp-arrow  { color: var(--gl-text-faint); font-size: 1rem; flex-shrink: 0; }
+.comp-player { font-size: 0.74rem; font-weight: 600; color: var(--gl-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.comp-arch   { font-size: 0.6rem; color: var(--gl-text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.comp-tourn  { font-size: 0.58rem; color: var(--gl-text-faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 1px; }
+.comp-toggle { color: var(--gl-text-faint); font-size: 0.9rem; flex-shrink: 0; transition: transform 0.18s; }
+.comp-toggle.open { transform: rotate(90deg); }
+/* Inline deck expansion */
+.comp-inline { display: none; padding: 0 12px 12px; border-top: 1px solid var(--gl-divider); }
+.comp-inline.open { display: block; }
+.comp-inline-section { font-size: 0.6rem; font-weight: 700; color: var(--gl-text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin: 8px 0 4px; }
+.comp-inline-cards {
+  display: grid; grid-template-columns: repeat(2, 1fr); gap: 2px 8px;
+}
+.comp-inline-card {
+  font-size: 0.63rem; color: var(--gl-text); display: flex; gap: 4px; align-items: baseline;
+}
+.comp-inline-count { color: var(--gl-gold); font-weight: 700; min-width: 14px; }
+.comp-inline-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; }
+.comp-open-btn { font-size: 0.6rem; color: var(--gl-gold); cursor: pointer; text-decoration: underline; }
+/* Group header (tournament name) */
+.comp-group-hdr-flat {
+  display: flex; justify-content: space-between; align-items: baseline;
+  padding: 6px 4px 4px; margin-bottom: 4px;
+}
+.comp-group-name-flat { font-size: 0.68rem; font-weight: 700; color: var(--gl-text); }
+.comp-group-date-flat { font-size: 0.58rem; color: var(--gl-text-muted); }
 .comp-empty  { font-size: 0.75rem; color: var(--gl-text-muted); text-align: center; padding: 48px 20px; line-height: 1.8; }
 
 /* ═══════════════════════════════════════════════════
@@ -2065,8 +2092,17 @@ th.sort-active { color: var(--gl-gold-h); }
 <!-- ════ SCREEN: COMPETITIONS ════ -->
 <div class="screen" id="screen-competitions">
   <div class="comp-page-title">🏆 Competitions</div>
-  <div id="comp-sync-status" style="font-size:0.62rem;color:var(--gl-text-muted);margin-bottom:12px;min-height:16px"></div>
-  <div id="comp-content"></div>
+  <div id="comp-sync-status" style="font-size:0.6rem;color:var(--gl-text-muted);padding:0 16px 2px;min-height:14px"></div>
+  <div class="comp-filter-bar" id="comp-filter-bar">
+    <button class="comp-filter-btn active" onclick="setCompFilter('all',this)">All</button>
+    <button class="comp-filter-btn" onclick="setCompFilter('Red',this)">🔴 Red</button>
+    <button class="comp-filter-btn" onclick="setCompFilter('Blue',this)">🔵 Blue</button>
+    <button class="comp-filter-btn" onclick="setCompFilter('Green',this)">🟢 Green</button>
+    <button class="comp-filter-btn" onclick="setCompFilter('Yellow',this)">🟡 Yellow</button>
+    <button class="comp-filter-btn" onclick="setCompFilter('Purple',this)">🟣 Purple</button>
+    <button class="comp-filter-btn" onclick="setCompFilter('Black',this)">⚫ Black</button>
+  </div>
+  <div class="comp-list" id="comp-content"></div>
 </div>
 
 <!-- ════ BOTTOM NAV (mobile) ════ -->
@@ -7372,32 +7408,78 @@ function showCompetitions() {
   }
 }
 
+let _compFilter = 'all';
+
+function setCompFilter(color, btn) {
+  _compFilter = color;
+  document.querySelectorAll('.comp-filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('comp-content').innerHTML = renderCompetitionsPage();
+}
+
+function toggleCompEntry(id) {
+  const inline = document.getElementById('comp-inline-' + id);
+  const toggle = document.getElementById('comp-toggle-' + id);
+  if (!inline) return;
+  const open = inline.classList.contains('open');
+  inline.classList.toggle('open', !open);
+  if (toggle) toggle.classList.toggle('open', !open);
+  if (toggle) toggle.textContent = open ? '›' : '▾';
+}
+
 function showCompDeck(deckKey, variantIdx) {
   _activeVariantIdx[deckKey] = variantIdx;
   showDeck(deckKey);
 }
 
+function _renderInlineDeck(sections) {
+  if (!sections || !sections.length) return '<div style="font-size:0.62rem;color:var(--gl-text-muted);padding:4px 0">No card data available</div>';
+  let html = '';
+  sections.forEach(sec => {
+    const title = sec.title || sec.name || '';
+    const cards = sec.cards || [];
+    if (!cards.length) return;
+    const total = cards.reduce((s, c) => s + (c.count || 1), 0);
+    html += `<div class="comp-inline-section">${title} <span style="font-weight:400;opacity:0.6">(${total})</span></div>`;
+    html += `<div class="comp-inline-cards">`;
+    cards.forEach(c => {
+      html += `<div class="comp-inline-card"><span class="comp-inline-count">${c.count}×</span><span>${c.name || c.id}</span></div>`;
+    });
+    html += `</div>`;
+  });
+  return html;
+}
+
 function renderCompetitionsPage() {
-  // Gather all variants with tournament meta across all decklists
   const entries = [];
   for (const deckKey of Object.keys(DECKLISTS)) {
     const d = DECKLISTS[deckKey];
+    // Apply color filter
+    if (_compFilter !== 'all') {
+      const colors = (d.leaderColors || '').toLowerCase();
+      if (!colors.includes(_compFilter.toLowerCase())) continue;
+    }
     _getVariants(deckKey).forEach((v, idx) => {
-      if (!v.meta || !v.meta.player) return;
-      // Strip rank prefix from placement to get tournament name
-      const tourName = (v.meta.placement || '')
+      const meta = v.meta || {};
+      // Include if has player name OR has sections (auto-scraped may have player)
+      if (!meta.player && !meta.archetype) return;
+      const tourName = (meta.placement || '')
         .replace(/^\d+(?:st|nd|rd|th)\s+[Pp]lace\s*/i, '').trim()
-        || v.meta.archetype || 'Unknown Tournament';
+        || meta.archetype || v.label || 'Unknown Tournament';
       entries.push({
         deckKey, variantIdx: idx,
-        player:    v.meta.player,
-        placement: v.meta.placement || '',
-        archetype: v.meta.archetype || '',
-        date:      v.meta.date || '',
+        id: deckKey + '_' + idx,
+        player:    meta.player || v.label || '—',
+        placement: meta.placement || '',
+        archetype: meta.archetype || d.leaderName || deckKey,
+        date:      meta.date || '',
+        source:    meta.source || '',
         tournament: tourName,
         leader:    d.leaderName || deckKey,
         leaderCard: d.leader,
+        leaderColors: d.leaderColors || '',
         label:     v.label,
+        sections:  v.sections || [],
       });
     });
   }
@@ -7411,20 +7493,20 @@ function renderCompetitionsPage() {
   // Group by tournament name
   const groups = {};
   entries.forEach(e => {
-    if (!groups[e.tournament]) groups[e.tournament] = { name: e.tournament, date: e.date, entries: [] };
-    groups[e.tournament].entries.push(e);
-    if (e.date && e.date > groups[e.tournament].date) groups[e.tournament].date = e.date;
+    const key = e.tournament;
+    if (!groups[key]) groups[key] = { name: e.tournament, date: e.date, entries: [] };
+    groups[key].entries.push(e);
+    if (e.date && (!groups[key].date || e.date > groups[key].date)) groups[key].date = e.date;
   });
 
-  // Sort groups: dated ones first (newest → oldest), undated at the bottom
+  // Sort groups newest → oldest
   const sorted = Object.values(groups).sort((a, b) => {
     if (a.date && b.date) return b.date.localeCompare(a.date);
-    if (a.date) return -1;
-    if (b.date) return 1;
+    if (a.date) return -1; if (b.date) return 1;
     return a.name.localeCompare(b.name);
   });
 
-  // Within each group sort by placement rank
+  // Within each group sort by rank
   sorted.forEach(g => {
     g.entries.sort((a, b) => {
       const rA = parseInt((a.placement.match(/^(\d+)/) || [,999])[1]);
@@ -7438,27 +7520,43 @@ function renderCompetitionsPage() {
     const dateLabel = group.date
       ? new Date(group.date + 'T00:00:00').toLocaleDateString(undefined, { month: 'short', year: 'numeric' })
       : '';
-    html += `<div class="comp-group">
-      <div class="comp-group-hdr">
-        <span class="comp-name">${group.name}</span>
-        ${dateLabel ? `<span class="comp-date">${dateLabel}</span>` : ''}
-      </div>`;
+
+    html += `<div class="comp-group-hdr-flat">
+      <span class="comp-group-name-flat">${group.name}</span>
+      ${dateLabel ? `<span class="comp-group-date-flat">${dateLabel}</span>` : ''}
+    </div>`;
+
     group.entries.forEach(e => {
       const rank = parseInt((e.placement.match(/^(\d+)/) || [,99])[1]);
-      const medal = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : `${rank}th`;
+      const medal = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : rank <= 99 ? `${rank}` : '—';
       const rankCls = rank === 1 ? 'rank-1' : rank <= 4 ? 'rank-top4' : rank <= 8 ? 'rank-top8' : 'rank-other';
-      html += `<div class="comp-entry" onclick="showCompDeck('${e.deckKey}',${e.variantIdx})">
-        <span class="comp-rank ${rankCls}">${medal}</span>
-        <img class="comp-leader-img" src="${cardImg(e.leaderCard)}"
-          onerror="this.style.display='none'" alt="${e.leader}">
-        <div class="comp-info">
-          <div class="comp-player">${e.player}</div>
-          <div class="comp-arch">${e.archetype || e.leader}</div>
+      const colorDots = e.leaderColors.split('/').map(c => {
+        const col = c.trim().toLowerCase();
+        const dot = col === 'red' ? '🔴' : col === 'blue' ? '🔵' : col === 'green' ? '🟢' : col === 'yellow' ? '🟡' : col === 'purple' ? '🟣' : col === 'black' ? '⚫' : '';
+        return dot;
+      }).join('');
+
+      html += `<div class="comp-flat-entry" id="comp-entry-${e.id}">
+        <div class="comp-flat-row" onclick="toggleCompEntry('${e.id}')">
+          <span class="comp-rank ${rankCls}">${medal}</span>
+          <img class="comp-leader-img" src="${cardImg(e.leaderCard)}"
+            onerror="this.style.display='none'" alt="${e.leader}">
+          <div class="comp-info">
+            <div class="comp-player">${e.player}</div>
+            <div class="comp-arch">${colorDots} ${e.archetype}</div>
+            <div class="comp-tourn">${e.tournament}${e.source ? ' · ' + e.source : ''}</div>
+          </div>
+          <span class="comp-toggle" id="comp-toggle-${e.id}">›</span>
         </div>
-        <span class="comp-arrow">›</span>
+        <div class="comp-inline" id="comp-inline-${e.id}">
+          ${_renderInlineDeck(e.sections)}
+          <div class="comp-inline-footer">
+            <span style="font-size:0.58rem;color:var(--gl-text-faint)">${e.label}</span>
+            <span class="comp-open-btn" onclick="showCompDeck('${e.deckKey}',${e.variantIdx})">→ Open deck page</span>
+          </div>
+        </div>
       </div>`;
     });
-    html += `</div>`;
   });
   return html;
 }
