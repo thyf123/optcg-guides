@@ -38,6 +38,92 @@ function serve(res, filePath, mime, transform) {
   res.end(content);
 }
 
+// ── GumGum.gg deck parser ─────────────────────────────────────
+// Individual deck page: https://gumgum.gg/decklists/deck/[region]/[format]/[uuid]
+// Deck data in deckbuilder link: /deckbuilder?deck=4xOP10-065;4xOP09-069;...
+function _parseGumgumHtml(res, html) {
+  // Deck string from deckbuilder link (semicolons may be URL-encoded as %3B)
+  const deckM = html.match(/deckbuilder\?deck=([^"&\s<>]+)/i);
+  const cards = [];
+  if (deckM) {
+    const deckStr = decodeURIComponent(deckM[1]);
+    const re = /(\d+)x([A-Z0-9]+(?:-[A-Z0-9]+)*)/gi;
+    let m;
+    const seen = new Set();
+    while ((m = re.exec(deckStr)) !== null) {
+      const count = parseInt(m[1]);
+      const id    = m[2].toUpperCase();
+      if (seen.has(id)) continue;
+      seen.add(id);
+      if (count >= 1 && count <= 4) cards.push({ count, id });
+    }
+  }
+
+  // Rank: first occurrence of "1st" / "2nd" etc. on the page
+  const rankM = html.match(/\b(\d+(?:st|nd|rd|th))\b/i);
+  const placement = rankM ? rankM[1] : '';
+
+  const autoLabel = placement ? `GumGum · ${placement}` : 'GumGum build';
+
+  res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+  if (!cards.length) {
+    res.end(JSON.stringify({ ok: false, error: 'No cards found — paste the full deck page URL (not the list page)' }));
+  } else {
+    res.end(JSON.stringify({ ok: true, cards, meta: { player: '', placement, archetype: '', autoLabel, source: 'gumgum' } }));
+  }
+}
+
+// ── Limitless tournament bulk parser ─────────────────────────
+// /tournaments/{id}/decklists — multiple decks on one page.
+// Each deck is preceded by: <h2>1st PlayerName</h2><h3>Archetype [price]</h3>
+function _parseLimitlessTournamentHtml(res, html) {
+  const CARD_RE = /\/images\/decklist\/(\d+)\.png[\s\S]{0,400}?href="\/cards\/([A-Z]{1,4}\d*-\d{3,4})"/gi;
+  const decks = [];
+
+  // Split by <h2> — each marks a new player's deck
+  const parts = html.split(/<h2[^>]*>/i);
+  for (let i = 1; i < parts.length; i++) {
+    const chunk = parts[i];
+
+    // Placement + player from text before </h2>
+    const h2M = chunk.match(/^([^<]+)<\/h2>/);
+    if (!h2M) continue;
+    const h2Text = h2M[1].trim();
+    const rankM  = h2Text.match(/^(\d+(?:st|nd|rd|th))\s+(.+)$/i);
+    const placement = rankM ? rankM[1] : '';
+    const player    = rankM ? rankM[2].trim() : h2Text;
+
+    // Archetype from first <h3>
+    const h3M = chunk.match(/<h3[^>]*>([^<[]+)/i);
+    const archetype = h3M ? h3M[1].trim() : '';
+
+    // Cards in this deck section
+    CARD_RE.lastIndex = 0;
+    const cards = [];
+    const seen  = new Set();
+    let m;
+    while ((m = CARD_RE.exec(chunk)) !== null) {
+      const count = parseInt(m[1]);
+      const id    = m[2].toUpperCase();
+      if (seen.has(id)) continue;
+      seen.add(id);
+      if (count >= 1 && count <= 4) cards.push({ count, id });
+    }
+    if (!cards.length) continue;
+
+    const shortRank = placement.match(/^(\d+(?:st|nd|rd|th))/i)?.[1] || '';
+    const autoLabel = [player, shortRank].filter(Boolean).join(' · ') || archetype || `Deck ${i}`;
+    decks.push({ player, placement, archetype, autoLabel, cards });
+  }
+
+  res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+  if (!decks.length) {
+    res.end(JSON.stringify({ ok: false, error: 'No decks found — make sure the URL ends in /decklists' }));
+  } else {
+    res.end(JSON.stringify({ ok: true, decks }));
+  }
+}
+
 // Parse Limitless HTML: extract cards + tournament metadata from a /decks/list/{id} page.
 // Card count:  src="…/images/decklist/N.png"
 // Card ID:     href="/cards/OP13-002"
@@ -293,6 +379,55 @@ if (url.startsWith('/api/fetch-bandai')) {
   }).on('error', e => { res.writeHead(502); res.end(JSON.stringify({ ok: false, error: e.message })); });
   return;
 }
+
+// ── GumGum.gg decklist proxy ─────────────────────────────────
+  if (url.startsWith('/api/fetch-gumgum')) {
+    const targetUrl = new URL('http://x' + req.url).searchParams.get('url') || '';
+    if (!targetUrl.match(/^https?:\/\/([\w-]+\.)?gumgum\.gg\//)) {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: false, error: 'Only gumgum.gg URLs are allowed' }));
+      return;
+    }
+    const parsedUrl = new URL(targetUrl);
+    const opts = {
+      hostname: parsedUrl.hostname, path: parsedUrl.pathname + parsedUrl.search,
+      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; OPTCG-Guide-Bot/1.0)', 'Accept': 'text/html,application/xhtml+xml' }
+    };
+    https.get(opts, proxyRes => {
+      if (proxyRes.statusCode >= 301 && proxyRes.statusCode <= 302 && proxyRes.headers.location) {
+        const redir = new URL(proxyRes.headers.location, targetUrl);
+        const rOpts = { hostname: redir.hostname, path: redir.pathname + redir.search, headers: opts.headers };
+        https.get(rOpts, r2 => {
+          let html = ''; r2.on('data', c => html += c);
+          r2.on('end', () => _parseGumgumHtml(res, html));
+        }).on('error', e => { res.writeHead(502); res.end(JSON.stringify({ ok: false, error: e.message })); });
+        return;
+      }
+      let html = ''; proxyRes.on('data', c => html += c);
+      proxyRes.on('end', () => _parseGumgumHtml(res, html));
+    }).on('error', e => { res.writeHead(502); res.end(JSON.stringify({ ok: false, error: e.message })); });
+    return;
+  }
+
+  // ── Limitless tournament bulk decklist proxy ─────────────────
+  if (url.startsWith('/api/fetch-limitless-tournament')) {
+    const targetUrl = new URL('http://x' + req.url).searchParams.get('url') || '';
+    if (!targetUrl.match(/^https?:\/\/([\w-]+\.)?limitlesstcg\.com\/tournaments\//)) {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: false, error: 'Only limitlesstcg.com/tournaments/... URLs are allowed' }));
+      return;
+    }
+    const parsedUrl = new URL(targetUrl);
+    const opts = {
+      hostname: parsedUrl.hostname, path: parsedUrl.pathname + parsedUrl.search,
+      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; OPTCG-Guide-Bot/1.0)', 'Accept': 'text/html,application/xhtml+xml' }
+    };
+    https.get(opts, proxyRes => {
+      let html = ''; proxyRes.on('data', c => html += c);
+      proxyRes.on('end', () => _parseLimitlessTournamentHtml(res, html));
+    }).on('error', e => { res.writeHead(502); res.end(JSON.stringify({ ok: false, error: e.message })); });
+    return;
+  }
 
 // ── Card data proxy (avoids CORS on client side) ────────────
   if (url === '/api/cards') {

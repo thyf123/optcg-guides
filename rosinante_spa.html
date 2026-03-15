@@ -7393,8 +7393,8 @@ function renderCompetitionsPage() {
 
   if (!entries.length) {
     return `<div class="comp-empty">No competition decklists yet.<br>
-      Import from Limitless on any deck page:<br>
-      open a deck → ⚙ Admin panel → 🌐 Import from Limitless</div>`;
+      Open any deck → ⚙ Admin panel → import from:<br>
+      🌐 Limitless · 🏟 Bulk Tournament · 🏆 TopDecks · 🔵 GumGum · 🎌 Bandai</div>`;
   }
 
   // Group by tournament name
@@ -9141,6 +9141,54 @@ function renderDeck(d, matchup, deckKey) {
         <button id="admin-paste-toggle-btn" class="variant-tab" style="font-size:0.62rem" onclick="adminTogglePaste('${deckKey}')">📋 Paste decklist</button>
         <button id="admin-limitless-toggle-btn" class="variant-tab" style="font-size:0.62rem" onclick="adminToggleLimitless('${deckKey}')">🌐 Import from Limitless</button>
         <button id="admin-bandai-toggle-btn" class="variant-tab" style="font-size:0.62rem" onclick="adminToggleBandai('${deckKey}')">🎌 Import from Bandai</button>
+        <button id="admin-topdecks-toggle-btn" class="variant-tab" style="font-size:0.62rem" onclick="adminToggleTopDecks('${deckKey}')">🏆 Import from TopDecks</button>
+        <button id="admin-gumgum-toggle-btn" class="variant-tab" style="font-size:0.62rem" onclick="adminToggleGumgum('${deckKey}')">🔵 Import from GumGum</button>
+        <button id="admin-tournament-toggle-btn" class="variant-tab" style="font-size:0.62rem" onclick="adminToggleTournament('${deckKey}')">🏟 Bulk Tournament</button>
+      </div>
+      <div id="admin-topdecks-area" style="display:none;margin-bottom:8px">
+        <div style="font-size:0.6rem;color:var(--gl-text-muted);margin-bottom:4px">
+          Paste a deck URL from <strong>onepiecetopdecks.com</strong> — full URL with <code>?dn=...&dg=...</code> params
+        </div>
+        <div style="display:flex;gap:6px;align-items:center;margin-bottom:4px">
+          <input type="text" id="admin-topdecks-url" class="variant-label-input"
+            placeholder="https://www.onepiecetopdecks.com/deck-list/deckgen?dn=…&dg=…">
+          <button class="variant-save-btn"
+            style="background:var(--gl-card);color:var(--gl-text);border:1px solid var(--gl-divider);white-space:nowrap"
+            onclick="adminFetchTopDecks('${deckKey}')">Parse →</button>
+        </div>
+        <span id="admin-topdecks-preview" style="font-size:0.65rem;color:var(--gl-text-muted);display:block;margin-top:2px"></span>
+      </div>
+      <div id="admin-gumgum-area" style="display:none;margin-bottom:8px">
+        <div style="font-size:0.6rem;color:var(--gl-text-muted);margin-bottom:4px">
+          Paste an individual deck URL from <strong>gumgum.gg/decklists/deck/…</strong>
+        </div>
+        <div style="display:flex;gap:6px;align-items:center;margin-bottom:4px">
+          <input type="text" id="admin-gumgum-url" class="variant-label-input"
+            placeholder="https://gumgum.gg/decklists/deck/east/op15/…">
+          <button class="variant-save-btn"
+            style="background:var(--gl-card);color:var(--gl-text);border:1px solid var(--gl-divider);white-space:nowrap"
+            onclick="adminFetchGumgum('${deckKey}')">Fetch →</button>
+        </div>
+        <span id="admin-gumgum-preview" style="font-size:0.65rem;color:var(--gl-text-muted);display:block;margin-top:2px"></span>
+      </div>
+      <div id="admin-tournament-area" style="display:none;margin-bottom:8px">
+        <div style="font-size:0.6rem;color:var(--gl-text-muted);margin-bottom:4px">
+          Paste a <strong>Limitless tournament decklists</strong> URL — imports every decklist in one go
+        </div>
+        <div style="display:flex;gap:6px;align-items:center;margin-bottom:4px">
+          <input type="text" id="admin-tournament-url" class="variant-label-input"
+            placeholder="https://onepiece.limitlesstcg.com/tournaments/273/decklists">
+          <button class="variant-save-btn"
+            style="background:var(--gl-card);color:var(--gl-text);border:1px solid var(--gl-divider);white-space:nowrap"
+            onclick="adminFetchTournament('${deckKey}')">Fetch →</button>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
+          <input type="date" id="admin-tournament-date" class="variant-label-input"
+            style="flex:0 0 auto;width:148px" title="Tournament date">
+          <span style="font-size:0.6rem;color:var(--gl-text-muted)">Tournament date (optional)</span>
+        </div>
+        <span id="admin-tournament-preview" style="font-size:0.65rem;color:var(--gl-text-muted);display:block;margin-top:2px"></span>
+        <div id="admin-tournament-list" style="margin-top:6px;max-height:200px;overflow-y:auto"></div>
       </div>
       <div id="admin-bandai-area" style="display:none;margin-bottom:8px">
         <div style="font-size:0.6rem;color:var(--gl-text-muted);margin-bottom:4px">
@@ -9481,7 +9529,218 @@ async function adminParsePaste(deckKey) {
   await _processRawCards(deckKey, cards, preview, errors);
 }
 
-/// ── ADMIN: IMPORT FROM BANDAI ─────────────────────────────────
+/// ── ADMIN: IMPORT FROM ONEPIECETOPDECKS ──────────────────────
+function adminToggleTopDecks(deckKey) {
+  const area = document.getElementById('admin-topdecks-area');
+  const btn  = document.getElementById('admin-topdecks-toggle-btn');
+  if (!area) return;
+  const open = area.style.display === 'none';
+  area.style.display = open ? 'block' : 'none';
+  if (btn) btn.textContent = open ? '▲ Hide' : '🏆 Import from TopDecks';
+  if (open) { delete _pendingVariantSections[deckKey]; const prev = document.getElementById('admin-topdecks-preview'); if (prev) prev.textContent = ''; }
+}
+
+async function adminFetchTopDecks(deckKey) {
+  const urlEl   = document.getElementById('admin-topdecks-url');
+  const preview = document.getElementById('admin-topdecks-preview');
+  if (!urlEl || !preview) return;
+  const rawUrl = urlEl.value.trim();
+  if (!rawUrl || !rawUrl.includes('onepiecetopdecks.com')) {
+    preview.textContent = 'Enter an onepiecetopdecks.com/deck-list/deckgen?... URL';
+    return;
+  }
+  try {
+    const urlObj    = new URL(rawUrl);
+    const dg        = urlObj.searchParams.get('dg') || '';
+    const player    = urlObj.searchParams.get('au')   || '';
+    const placement = urlObj.searchParams.get('pl')   || '';
+    const date      = urlObj.searchParams.get('date') || '';
+    const deckName  = urlObj.searchParams.get('dn')   || '';
+    const tournament= urlObj.searchParams.get('tn')   || '';
+
+    if (!dg) { preview.textContent = 'No card data in URL (missing dg= parameter)'; return; }
+
+    // Parse cards: "4nOP12-071" separated by "a"
+    const rawCards = [];
+    for (const part of dg.split('a')) {
+      const m = part.match(/^(\d+)n([A-Z0-9-]+)$/i);
+      if (m) rawCards.push({ count: parseInt(m[1]), id: m[2].toUpperCase() });
+    }
+    if (!rawCards.length) { preview.textContent = 'Could not parse cards from URL'; return; }
+
+    await _processRawCards(deckKey, rawCards, preview, 0);
+    if (_pendingVariantSections[deckKey]) {
+      _pendingVariantSections[deckKey]._meta = { player, placement, archetype: deckName, date, source: 'topdecks', url: rawUrl, tournament };
+    }
+    const autoLabel = [player, placement].filter(Boolean).join(' · ') || deckName || 'TopDecks build';
+    const labelEl = document.getElementById('variant-label-input');
+    if (labelEl && !labelEl.value) labelEl.value = autoLabel;
+  } catch(e) {
+    preview.textContent = 'Error parsing URL: ' + e.message;
+  }
+}
+
+// ── ADMIN: IMPORT FROM GUMGUM ─────────────────────────────────
+function adminToggleGumgum(deckKey) {
+  const area = document.getElementById('admin-gumgum-area');
+  const btn  = document.getElementById('admin-gumgum-toggle-btn');
+  if (!area) return;
+  const open = area.style.display === 'none';
+  area.style.display = open ? 'block' : 'none';
+  if (btn) btn.textContent = open ? '▲ Hide' : '🔵 Import from GumGum';
+  if (open) { delete _pendingVariantSections[deckKey]; const prev = document.getElementById('admin-gumgum-preview'); if (prev) prev.textContent = ''; }
+}
+
+async function adminFetchGumgum(deckKey) {
+  const urlEl   = document.getElementById('admin-gumgum-url');
+  const preview = document.getElementById('admin-gumgum-preview');
+  if (!urlEl || !preview) return;
+  const targetUrl = urlEl.value.trim();
+  if (!targetUrl || !targetUrl.includes('gumgum.gg')) {
+    preview.textContent = 'Enter a gumgum.gg/decklists/deck/... URL';
+    return;
+  }
+  preview.textContent = 'Fetching from GumGum…';
+  try {
+    const res  = await fetch('/api/fetch-gumgum?url=' + encodeURIComponent(targetUrl));
+    const data = await res.json();
+    if (!data.ok) { preview.textContent = 'Error: ' + (data.error || res.status); return; }
+    await _processRawCards(deckKey, data.cards, preview, 0);
+    if (_pendingVariantSections[deckKey]) {
+      const meta = data.meta || {};
+      _pendingVariantSections[deckKey]._meta = { player: meta.player || '', placement: meta.placement || '', archetype: '', date: '', source: 'gumgum', url: targetUrl };
+    }
+    const meta = data.meta || {};
+    if (meta.autoLabel) { const labelEl = document.getElementById('variant-label-input'); if (labelEl && !labelEl.value) labelEl.value = meta.autoLabel; }
+  } catch(e) {
+    preview.textContent = 'Error: ' + e.message;
+  }
+}
+
+// ── ADMIN: LIMITLESS TOURNAMENT BULK IMPORT ───────────────────
+let _tournamentDecks = {};  // keyed by deckKey
+
+function adminToggleTournament(deckKey) {
+  const area = document.getElementById('admin-tournament-area');
+  const btn  = document.getElementById('admin-tournament-toggle-btn');
+  if (!area) return;
+  const open = area.style.display === 'none';
+  area.style.display = open ? 'block' : 'none';
+  if (btn) btn.textContent = open ? '▲ Hide' : '🏟 Bulk Tournament';
+  if (open) {
+    _tournamentDecks[deckKey] = null;
+    const prev = document.getElementById('admin-tournament-preview');
+    const list = document.getElementById('admin-tournament-list');
+    if (prev) prev.textContent = '';
+    if (list) list.innerHTML = '';
+  }
+}
+
+async function adminFetchTournament(deckKey) {
+  const urlEl   = document.getElementById('admin-tournament-url');
+  const preview = document.getElementById('admin-tournament-preview');
+  const listEl  = document.getElementById('admin-tournament-list');
+  if (!urlEl || !preview || !listEl) return;
+  const targetUrl = urlEl.value.trim();
+  if (!targetUrl || !targetUrl.includes('limitlesstcg.com/tournaments/')) {
+    preview.textContent = 'Enter a limitlesstcg.com/tournaments/.../decklists URL';
+    return;
+  }
+  preview.textContent = 'Fetching tournament decklists…';
+  listEl.innerHTML = '';
+  try {
+    const res  = await fetch('/api/fetch-limitless-tournament?url=' + encodeURIComponent(targetUrl));
+    const data = await res.json();
+    if (!data.ok) { preview.textContent = 'Error: ' + (data.error || res.status); return; }
+
+    _tournamentDecks[deckKey] = data.decks;
+    preview.textContent = `Found ${data.decks.length} decks — click + to add one, or import all at once ↓`;
+
+    listEl.innerHTML = data.decks.map((deck, i) => `
+      <div style="display:flex;gap:6px;align-items:center;padding:3px 0;border-bottom:1px solid var(--gl-divider);font-size:0.65rem">
+        <span style="color:var(--gl-text-muted);min-width:32px;font-size:0.6rem">${deck.placement || i+1}</span>
+        <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${deck.player}">${deck.player || '—'}</span>
+        <span style="color:var(--gl-text-muted);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:0.6rem">${deck.archetype}</span>
+        <button class="variant-save-btn" style="font-size:0.58rem;padding:2px 6px;flex-shrink:0;background:var(--gl-card);color:var(--gl-text);border:1px solid var(--gl-divider)"
+          onclick="adminImportTournamentDeck('${deckKey}',${i})">+</button>
+      </div>`).join('') +
+      `<button class="variant-save-btn" style="width:100%;margin-top:8px"
+        onclick="adminImportAllTournamentDecks('${deckKey}')">⬇ Import All ${data.decks.length} as variants</button>`;
+  } catch(e) {
+    preview.textContent = 'Error: ' + e.message;
+  }
+}
+
+async function adminImportTournamentDeck(deckKey, idx) {
+  const deck = _tournamentDecks[deckKey]?.[idx];
+  if (!deck) return;
+  const preview = document.getElementById('admin-tournament-preview');
+  if (preview) preview.textContent = `Importing ${deck.player || deck.autoLabel}…`;
+  await _processRawCards(deckKey, deck.cards, preview, 0);
+  if (_pendingVariantSections[deckKey]) {
+    _pendingVariantSections[deckKey]._meta = {
+      player: deck.player, placement: deck.placement, archetype: deck.archetype,
+      date: document.getElementById('admin-tournament-date')?.value || '', source: 'limitless', url: ''
+    };
+  }
+  const labelEl = document.getElementById('variant-label-input');
+  if (labelEl) labelEl.value = deck.autoLabel || deck.player || 'Imported';
+}
+
+async function adminImportAllTournamentDecks(deckKey) {
+  const decks = _tournamentDecks[deckKey];
+  if (!decks?.length) return;
+  const preview = document.getElementById('admin-tournament-preview');
+  const d = DECKLISTS[deckKey];
+  if (!d) return;
+
+  // Seed variants array from legacy if needed
+  if (!d.variants || d.variants.length === 0) {
+    const existing = d.sections ? JSON.parse(JSON.stringify(d.sections)) : [];
+    d.variants = existing.length ? [{ label: 'Main Build', sections: existing }] : [];
+  }
+
+  const compDate = document.getElementById('admin-tournament-date')?.value || '';
+  let imported = 0;
+  for (let i = 0; i < decks.length; i++) {
+    const deck = decks[i];
+    if (preview) preview.textContent = `Importing ${i+1}/${decks.length}: ${deck.player || deck.autoLabel}…`;
+    const allIds = deck.cards.map(c => c.id);
+    try { await _mydLoadDeckMeta(allIds); } catch(e) {}
+
+    const chars = [], events = [], stages = [], other = [];
+    deck.cards.forEach(c => {
+      const type = _mydCardTypeCache[c.id];
+      if (type === 'Leader') return;
+      const entry = { id: c.id, name: _mydCardNameCache[c.id] || c.id, count: c.count };
+      if      (type === 'Character') chars.push(entry);
+      else if (type === 'Event')     events.push(entry);
+      else if (type === 'Stage')     stages.push(entry);
+      else                           other.push(entry);
+    });
+    const sections = [];
+    if (chars.length)  sections.push({ title: 'Character', cards: chars });
+    if (events.length) sections.push({ title: 'Event',     cards: events });
+    if (stages.length) sections.push({ title: 'Stage',     cards: stages });
+    if (other.length)  sections.push({ title: 'Other',     cards: other });
+    if (!sections.length) continue;
+
+    d.variants.push({
+      label: deck.autoLabel || deck.player || `Import ${i+1}`,
+      sections,
+      meta: { player: deck.player||'', placement: deck.placement||'', archetype: deck.archetype||'', date: compDate, source: 'limitless', url: '' }
+    });
+    imported++;
+  }
+
+  if (!imported) { if (preview) preview.textContent = 'No decks could be imported.'; return; }
+  _activeVariantIdx[deckKey] = d.variants.length - 1;
+  await saveDeckDataToSupabase();
+  if (preview) preview.textContent = `✅ Imported ${imported} decks as variants!`;
+  setTimeout(() => renderDeck(d, _currentDeckMatchup, deckKey), 1200);
+}
+
+// ── ADMIN: IMPORT FROM BANDAI ─────────────────────────────────
 function adminToggleBandai(deckKey) {
   const area = document.getElementById('admin-bandai-area');
   const btn  = document.getElementById('admin-bandai-toggle-btn');
