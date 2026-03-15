@@ -2322,8 +2322,8 @@ function _refreshAdminButtons() {
   if (_currentDeckKey) {
     const topLogBtn = document.getElementById('deck-top-log-btn');
     const fab = document.getElementById('deck-fab');
-    if (topLogBtn) topLogBtn.style.display = _isAdmin() ? '' : 'none';
-    if (fab) fab.style.display = _isAdmin() ? '' : 'none';
+    if (topLogBtn) topLogBtn.style.display = '';
+    if (fab) fab.style.display = '';
     _rerenderEssSection(_currentDeckKey);
     _renderCustomTips(_currentDeckKey);
     _rerenderKeyTips(_currentDeckKey);
@@ -5641,15 +5641,13 @@ function saveTipEdit(deckKey, idx, value) {
 function _buildCustomTipsHtml(deckKey) {
   const tips = _getCustomTips(deckKey);
   // Always show the My Tips header so the section is discoverable even when empty
-  const editBtn = _isAdmin()
-    ? `<button class="tips-edit-btn${_tipsEditMode?' active':''}" onclick="toggleTipsEditMode('${deckKey}')">${_tipsEditMode?'Done':'Edit'}</button>`
-    : '';
+  const editBtn = `<button class="tips-edit-btn${_tipsEditMode?' active':''}" onclick="toggleTipsEditMode('${deckKey}')">${_tipsEditMode?'Done':'Edit'}</button>`;
   const headerHtml = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
       <span style="font-size:0.62rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#c9a84c88">My Tips</span>
       ${editBtn}
      </div>`;
   let items = '';
-  if (_isAdmin() && _tipsEditMode) {
+  if (_tipsEditMode) {
     items = tips.map((t, i) =>
       `<li class="custom-tip-item">
         <input class="cti-edit-input" value="${t.replace(/&/g,'&amp;').replace(/"/g,'&quot;')}"
@@ -5664,11 +5662,9 @@ function _buildCustomTipsHtml(deckKey) {
     ).join('');
   }
   const listHtml = items ? `<ul class="mi-tips custom-tips">${items}</ul>` : '';
-  const addHtml = _isAdmin()
-    ? (_tipsEditMode
-        ? '<div id="add-tip-area"></div>'
-        : `<div id="add-tip-area"></div><button class="add-tip-btn" onclick="showAddTipInput('${deckKey}')">+ Add tip</button>`)
-    : '<div id="add-tip-area"></div>';
+  const addHtml = _tipsEditMode
+    ? '<div id="add-tip-area"></div>'
+    : `<div id="add-tip-area"></div><button class="add-tip-btn" onclick="showAddTipInput('${deckKey}')">+ Add tip</button>`;
   return headerHtml + listHtml + addHtml;
 }
 function _renderCustomTips(deckKey) {
@@ -8891,12 +8887,12 @@ function renderDeck(d, matchup, deckKey) {
   const _mNameTop = (matchup ? matchup.name : deckKey).replace(/'/g,'&#39;');
   const topLogBtn = document.getElementById('deck-top-log-btn');
   if (topLogBtn) {
-    topLogBtn.style.display = _isAdmin() ? '' : 'none';
+    topLogBtn.style.display = '';
     topLogBtn.onclick = (e) => openLogModal(deckKey, _mNameTop, e);
   }
   const fab = document.getElementById('deck-fab');
   if (fab) {
-    fab.style.display = _isAdmin() ? '' : 'none';
+    fab.style.display = '';
     fab.onclick = (e) => openLogModal(deckKey, _mNameTop, e);
   }
   // append my-section
