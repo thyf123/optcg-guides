@@ -2486,7 +2486,9 @@ function _userId() {
 <script>
 function cardImg(id){
   if(!id) return '';
-  return `https://en.onepiece-cardgame.com/images/cardlist/card/${id}.png`;
+  // Strip promo/reprint suffixes (_P1, _R1, etc.) — official site doesn't use them in image URLs
+  const cleanId = id.replace(/[_-][RP]\d+$/i, '');
+  return `https://en.onepiece-cardgame.com/images/cardlist/card/${cleanId}.png`;
 }
 
 
@@ -6412,10 +6414,11 @@ function _renderMentions(text) {
   if (!text) return '';
   const safe = String(text).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   return safe.replace(/@\[([^\]]+)\]\(([^)]+)\)/g, (_, name, id) => {
-    const escapedId   = id.replace(/&/g,'&amp;').replace(/"/g,'&quot;');
+    const cleanId     = id.replace(/[_-][RP]\d+$/i, '');
+    const escapedId   = cleanId.replace(/&/g,'&amp;').replace(/"/g,'&quot;');
     const escapedName = name.replace(/&/g,'&amp;').replace(/"/g,'&quot;');
     const escapedImg  = cardImg(id).replace(/&/g,'&amp;').replace(/"/g,'&quot;');
-    return `<span class="card-mention" data-card-img="${escapedImg}" data-card-label="${escapedId} · ${escapedName}">${name} <span style="font-size:0.75em;opacity:0.65">${id}</span></span>`;
+    return `<span class="card-mention" data-card-img="${escapedImg}" data-card-label="${escapedId} · ${escapedName}">${name} <span style="font-size:0.75em;opacity:0.65">${cleanId}</span></span>`;
   });
 }
 

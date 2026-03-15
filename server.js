@@ -128,7 +128,7 @@ http.createServer((req, res) => {
           const cards = await httpsGet(`${GH_RAW}/data/${packId}.json`);
           if (!Array.isArray(cards) || !cards.length) { res.write(`${label}: skipped (empty)\n`); continue; }
           const rows = cards.map(c => {
-            const id = (c.id || '').trim().toUpperCase().replace(/_R\d+$/, ''); // strip promo variants like _r1
+            const id = (c.id || '').trim().toUpperCase().replace(/[_-][RP]\d+$/i, ''); // strip promo/reprint variants like _r1, _p1
             const setId = id.split('-')[0];
             const ctr = c.counter != null ? Number(String(c.counter).replace(/[^0-9]/g,'')) : null;
             const color = Array.isArray(c.colors) ? c.colors[0] : (c.colors || null);
