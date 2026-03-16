@@ -163,7 +163,7 @@ function _parseLimitlessHtml(res, html) {
   }
 }
 
-http.createServer((req, res) => {
+http.createServer(async (req, res) => {
   const url = req.url.split('?')[0].replace(/\/+$/, '') || '/';
 
   // ── Landing page ────────────────────────────────────────────
