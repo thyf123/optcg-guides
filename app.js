@@ -72,6 +72,21 @@ function adminLogout() {
   _updateAdminLockBtn();
   _refreshAdminButtons();
 }
+async function adminRunBackfill(pages) {
+  const msg = document.getElementById('admin-panel-msg');
+  if (msg) msg.textContent = `⏳ Starting backfill for ${pages} pages…`;
+  try {
+    const r = await fetch(`/api/backfill-scrape?pages=${pages}&token=${encodeURIComponent(_adminToken)}`);
+    const d = await r.json();
+    if (d.ok) {
+      if (msg) msg.textContent = `✅ Backfill running in background (${pages} pages). Check Comps in ~2 min.`;
+    } else {
+      if (msg) msg.textContent = `❌ ${d.error || 'Failed'}`;
+    }
+  } catch(e) {
+    if (msg) msg.textContent = `❌ ${e.message}`;
+  }
+}
 function closeAdminModal() {
   const m = document.getElementById('admin-modal');
   if (m) m.style.display = 'none';

@@ -256,6 +256,12 @@
         <button id="save-deck-data-btn" class="admin-btn-login" onclick="saveDeckDataToSupabase()">
           💾 Save deck data to Supabase
         </button>
+        <button class="admin-btn-login" onclick="adminRunBackfill(10)" style="background:var(--gl-surface2)">
+          🌊 Backfill Comps — 10 pages
+        </button>
+        <button class="admin-btn-login" onclick="adminRunBackfill(30)" style="background:var(--gl-surface2)">
+          🌊 Backfill Comps — 30 pages (deep)
+        </button>
       </div>
       <div id="admin-panel-msg" style="font-size:12px;color:var(--accent);min-height:18px;text-align:center"></div>
       <div class="admin-btns" style="margin-top:10px">
