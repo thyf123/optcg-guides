@@ -1708,6 +1708,62 @@ th.sort-active { color: var(--gl-gold-h); }
 .bnav-btn.active { color: var(--gl-gold); }
 .bnav-btn:active { color: var(--gl-gold-h); }
 
+/* ── Stats: Recommended Practice card ─────────────────────── */
+.stats-rec-card {
+  display: flex; align-items: center; justify-content: space-between;
+  background: linear-gradient(135deg, rgba(201,168,76,0.10) 0%, rgba(201,168,76,0.04) 100%);
+  border: 1px solid var(--gl-gold-dim);
+  border-left: 3px solid var(--gl-gold);
+  border-radius: 10px;
+  padding: 12px 14px;
+  cursor: pointer;
+  gap: 12px;
+  margin-bottom: 4px;
+  transition: background 0.15s;
+}
+.stats-rec-card:hover { background: rgba(201,168,76,0.13); }
+.rec-left { flex: 1; min-width: 0; }
+.rec-name { font-size: 0.85rem; font-weight: 700; color: var(--gl-text); margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rec-reason { font-size: 0.68rem; color: var(--gl-text-muted); }
+.rec-right { text-align: right; flex-shrink: 0; }
+.rec-wr-row { display: flex; align-items: baseline; gap: 5px; justify-content: flex-end; }
+.rec-wr { font-size: 1.1rem; font-weight: 700; }
+.rec-wr.pos { color: var(--wr-great-fg); }
+.rec-wr.neu { color: var(--gl-text-muted); }
+.rec-wr.neg { color: var(--wr-bad-fg); }
+.rec-xwr { font-size: 0.65rem; color: var(--gl-text-muted); }
+.rec-games { font-size: 0.62rem; color: var(--gl-text-muted); margin-top: 1px; }
+.rec-cta { font-size: 0.65rem; color: var(--gl-gold); margin-top: 4px; font-weight: 600; }
+
+/* ── Stats: Recent Games feed ──────────────────────────────── */
+.stats-recent-feed { display: flex; flex-direction: column; gap: 5px; margin-bottom: 4px; }
+.srf-row {
+  display: flex; align-items: center; gap: 9px;
+  padding: 8px 10px;
+  background: var(--gl-surface-2);
+  border-radius: 8px;
+  border-left: 3px solid transparent;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+.srf-row:hover { background: var(--gl-surface-3); }
+.srf-w { border-left-color: var(--wr-great-fg); }
+.srf-l { border-left-color: var(--wr-bad-fg); }
+.srf-chip { font-size: 0.72rem; font-weight: 700; width: 18px; flex-shrink: 0; }
+.srf-chip-w { color: var(--wr-great-fg); }
+.srf-chip-l { color: var(--wr-bad-fg); }
+.srf-name { flex: 1; font-size: 0.75rem; color: var(--gl-text); font-weight: 500; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.srf-go { font-size: 0.65rem; color: var(--gl-text-muted); background: var(--gl-surface-3); border-radius: 4px; padding: 1px 5px; flex-shrink: 0; }
+.srf-note { flex: 0.8; font-size: 0.65rem; color: var(--gl-text-muted); font-style: italic; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.srf-time { font-size: 0.62rem; color: var(--gl-text-muted); text-align: right; flex-shrink: 0; line-height: 1.3; }
+
+/* ── Stats: Matchup History modal KPIs ─────────────────────── */
+.mhist-kpi { flex: 1; background: var(--gl-surface-2); border-radius: 8px; padding: 8px 10px; text-align: center; }
+.mhist-kpi-val { font-size: 1.1rem; font-weight: 700; color: var(--gl-text); margin-bottom: 2px; }
+.mhist-kpi-val.pos { color: var(--wr-great-fg); }
+.mhist-kpi-val.neg { color: var(--wr-bad-fg); }
+.mhist-kpi-lbl { font-size: 0.6rem; color: var(--gl-text-muted); }
+
 /* ── Competitions page ─────────────────────────────────────── */
 #screen-competitions { padding-left: 0; padding-right: 0; padding-bottom: 80px; overflow-y: auto; flex-direction: column; background: var(--gl-bg); }
 #screen-competitions.active { display: flex; }

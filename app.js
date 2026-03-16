@@ -5409,12 +5409,52 @@ function renderStats(leaderKey) {
     </div>
   </div>`;
 
-  // Priority focus
+  // ── Recommended Practice ──
+  const rec = _calcRecommendedMatchup(leaderKey, rows);
+  if (rec) {
+    const recWrCls = wrCls2(rec.wr);
+    html += `<div class="stats-section-hdr">🎯 Recommended Practice</div>
+    <div class="stats-rec-card" onclick="showMatchupHistory('${leaderKey}','${rec.deck}',${JSON.stringify(rec.name)})">
+      <div class="rec-left">
+        <div class="rec-name">${rec.name}</div>
+        <div class="rec-reason">${rec.reason}</div>
+      </div>
+      <div class="rec-right">
+        <div class="rec-wr-row">
+          <span class="rec-wr ${recWrCls}">${rec.wr}%</span>
+          ${rec.xwr !== null ? `<span class="rec-xwr">vs ${rec.xwr}% xWR</span>` : ''}
+        </div>
+        <div class="rec-games">${rec.g} game${rec.g !== 1 ? 's' : ''}</div>
+        <div class="rec-cta">View history ›</div>
+      </div>
+    </div>`;
+  }
+
+  // ── Recent Games ──
+  const recentGames = [...games].sort((a, b) => b.ts - a.ts).slice(0, 10);
+  html += `<div class="stats-section-hdr">Recent Games</div>
+  <div class="stats-recent-feed">`;
+  recentGames.forEach(g => {
+    const d   = new Date(g.ts);
+    const day = d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+    const t   = d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+    const wl  = g.result === 'W';
+    html += `<div class="srf-row ${wl ? 'srf-w' : 'srf-l'}" onclick="showMatchupHistory('${leaderKey}','${g.deckKey}',${JSON.stringify(g.matchupName || g.deckKey)})">
+      <span class="srf-chip ${wl ? 'srf-chip-w' : 'srf-chip-l'}">${g.result}</span>
+      <span class="srf-name">${g.matchupName || g.deckKey}</span>
+      <span class="srf-go">${g.go}</span>
+      ${g.note ? `<span class="srf-note">"${g.note}"</span>` : '<span class="srf-note"></span>'}
+      <span class="srf-time">${day}<br><span style="opacity:0.5">${t}</span></span>
+    </div>`;
+  });
+  if (!recentGames.length) html += `<div style="padding:12px 0;color:var(--gl-text-muted);font-size:0.75rem">No games yet.</div>`;
+  html += `</div>`;
+
+  // Priority focus (legacy — keep for context)
   if (priority.length > 0) {
-    html += `<div class="stats-section-hdr">Priority Focus</div>
+    html += `<div class="stats-section-hdr">Also Underperforming</div>
     <div class="stats-priority">
-      <div class="stats-priority-title">⚠ Most Underperforming vs Meta</div>
-      ${priority.map((r, idx) => `<div class="stats-priority-item">
+      ${priority.map((r, idx) => `<div class="stats-priority-item" onclick="showMatchupHistory('${leaderKey}','${r.deck}',${JSON.stringify(r.name)})">
         <div class="spi-rank">${idx + 1}</div>
         <div class="spi-name">${r.name}</div>
         <div class="spi-delta">${r.delta}%</div>
@@ -5423,7 +5463,7 @@ function renderStats(leaderKey) {
   }
 
   // Delta table
-  html += `<div class="stats-section-hdr">Matchup Breakdown <span style="font-size:0.6rem;color:#444;font-weight:400;text-transform:none">(sorted: worst delta first)</span></div>
+  html += `<div class="stats-section-hdr">Matchup Breakdown <span style="font-size:0.6rem;color:#444;font-weight:400;text-transform:none">(tap row for history)</span></div>
   <table class="stats-delta-table">
     <thead><tr>
       <th>Matchup</th>
@@ -5437,9 +5477,9 @@ function renderStats(leaderKey) {
   sorted.forEach(r => {
     const dCls = r.delta === null ? 'neu' : r.delta > 2 ? 'pos' : r.delta < -2 ? 'neg' : 'neu';
     const dStr = r.delta === null ? '—' : (r.delta > 0 ? '+' : '') + r.delta + '%';
-    const clickable = r.deck ? `style="cursor:pointer" onclick="showDeck('${r.deck}')" title="Open ${r.name} matchup"` : '';
+    const clickable = r.deck ? `style="cursor:pointer" onclick="showMatchupHistory('${leaderKey}','${r.deck}',${JSON.stringify(r.name)})" title="History vs ${r.name}"` : '';
     html += `<tr class="sdt-row" ${clickable}>
-      <td class="sdt-name">${r.name}${r.deck ? ' <span style="font-size:0.6rem;opacity:0.35">›</span>' : ''}</td>
+      <td class="sdt-name">${r.name}${r.deck ? ' <span style="font-size:0.6rem;opacity:0.35">📋</span>' : ''}</td>
       <td class="r sdt-games">${r.g}</td>
       <td class="r sdt-wr ${wrCls2(r.wr)}">${r.wr}%</td>
       <td class="r" style="color:#555">${r.xwr !== null ? r.xwr + '%' : '—'}</td>
@@ -5493,6 +5533,127 @@ function renderStats(leaderKey) {
     _renderWrChart(leaderKey, _wrWindow);
     _renderAlphaChart(leaderKey, _alphaWindow);
   });
+}
+
+// ── RECOMMENDED PRACTICE ALGORITHM ──────────────────────────
+function _calcRecommendedMatchup(leaderKey, rows) {
+  // rows: [{name, deck, g, w, wr, xwr, delta}]
+  // Only consider matchups with at least 1 game played
+  const candidates = rows.filter(r => r.g > 0 && r.deck);
+  if (!candidates.length) return null;
+
+  const scored = candidates.map(r => {
+    const n = r.g;
+    // Bayesian confidence: approaches 1 as games increase (5 = half-weight anchor)
+    const confidence = n / (n + 5);
+
+    let score = 0;
+    let reason = '';
+
+    if (r.xwr !== null && r.delta !== null) {
+      const gap = Math.max(0, -r.delta); // positive = underperforming vs meta
+
+      // Primary: underperformance weighted by confidence
+      score += gap * confidence;
+
+      // Boost if difficult matchup (harder to master = more important to fix)
+      if (r.xwr < 50) score += (50 - r.xwr) * 0.15;
+
+      // Recency: check last 3 games vs this matchup
+      const mg = allGames
+        .filter(g => g.leaderKey === leaderKey && g.deckKey === r.deck)
+        .sort((a, b) => b.ts - a.ts);
+      const daysSinceLast = mg.length ? (Date.now() - mg[0].ts) / 86400000 : 999;
+      const recentLosses  = mg.slice(0, 3).filter(g => g.result === 'L').length;
+
+      if (daysSinceLast < 14 && recentLosses >= 2) score += 10;
+      else if (daysSinceLast < 7 && recentLosses >= 1) score += 5;
+
+      if (gap > 15 && confidence > 0.5)  reason = `${gap}% below expected — biggest skill gap`;
+      else if (recentLosses >= 2)         reason = `Lost ${recentLosses} of last 3 — needs attention`;
+      else if (gap > 5)                   reason = `${gap}% below expected win rate`;
+      else if (r.xwr < 45)               reason = `Tough matchup (${r.xwr}% meta WR) — keep grinding`;
+      else                               reason = `Consistent weak spot — more reps needed`;
+    } else {
+      // No meta data: penalise low sample, still might recommend
+      score = n < 3 ? 1.5 : 0;
+      reason = 'Low sample — get more reps to build confidence';
+    }
+
+    return { ...r, score, reason };
+  });
+
+  const best = scored.sort((a, b) => b.score - a.score)[0];
+  return best.score > 0 ? best : null;
+}
+
+// ── MATCHUP HISTORY MODAL ────────────────────────────────────
+function showMatchupHistory(leaderKey, deckKey, matchupName) {
+  const games = allGames
+    .filter(g => g.leaderKey === leaderKey && g.deckKey === deckKey)
+    .sort((a, b) => b.ts - a.ts);
+
+  const w   = games.filter(g => g.result === 'W').length;
+  const wr  = games.length ? Math.round(w / games.length * 100) : 0;
+  const g1  = games.filter(g => g.go === '1st');
+  const g2  = games.filter(g => g.go === '2nd');
+  const wr1 = g1.length ? Math.round(g1.filter(g => g.result === 'W').length / g1.length * 100) : null;
+  const wr2 = g2.length ? Math.round(g2.filter(g => g.result === 'W').length / g2.length * 100) : null;
+
+  // Find xWR for context
+  const leaderMatchups = (LEADERS[leaderKey] || {}).matchups || [];
+  const meta = leaderMatchups.find(m => m.deck === deckKey);
+  const xwr1 = meta ? meta.wr1st : null;
+  const xwr2 = meta ? meta.wr2nd : null;
+
+  const wrCls = wr >= 55 ? 'pos' : wr >= 45 ? 'neu' : 'neg';
+
+  let html = `<div id="matchup-hist-overlay" onclick="if(event.target===this)closeMatchupHistory()"
+    style="position:fixed;inset:0;background:rgba(0,0,0,0.72);z-index:500;display:flex;align-items:flex-end;justify-content:center">
+    <div style="background:var(--gl-surface);border-radius:16px 16px 0 0;width:100%;max-width:600px;max-height:82vh;overflow-y:auto;padding:20px 16px 32px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px">
+        <div>
+          <div style="font-size:1rem;font-weight:700;color:var(--gl-gold);margin-bottom:2px">${matchupName}</div>
+          <div style="font-size:0.72rem;color:var(--gl-text-muted)">${games.length} game${games.length !== 1 ? 's' : ''} logged</div>
+        </div>
+        <button onclick="closeMatchupHistory()" style="background:none;border:none;color:var(--gl-text-muted);font-size:1.3rem;cursor:pointer;padding:0 4px">✕</button>
+      </div>
+      <div style="display:flex;gap:10px;margin-bottom:16px">
+        <div class="mhist-kpi"><div class="mhist-kpi-val ${wrCls}">${games.length ? wr + '%' : '—'}</div><div class="mhist-kpi-lbl">Your WR</div></div>
+        <div class="mhist-kpi"><div class="mhist-kpi-val">${wr1 !== null ? wr1 + '%' : '—'}</div><div class="mhist-kpi-lbl">Going 1st${xwr1 ? ` <span style="opacity:0.5">(${xwr1}%)</span>` : ''}</div></div>
+        <div class="mhist-kpi"><div class="mhist-kpi-val">${wr2 !== null ? wr2 + '%' : '—'}</div><div class="mhist-kpi-lbl">Going 2nd${xwr2 ? ` <span style="opacity:0.5">(${xwr2}%)</span>` : ''}</div></div>
+      </div>`;
+
+  if (!games.length) {
+    html += `<div style="text-align:center;color:var(--gl-text-muted);padding:24px 0">No games logged yet</div>`;
+  } else {
+    html += `<div style="display:flex;flex-direction:column;gap:6px">`;
+    games.forEach(g => {
+      const d    = new Date(g.ts);
+      const day  = d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+      const t    = d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+      const wl   = g.result === 'W';
+      html += `<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;background:var(--gl-surface-2);border-radius:8px;border-left:3px solid ${wl ? 'var(--wr-great-fg)' : 'var(--wr-bad-fg)'}">
+        <span style="font-weight:700;color:${wl ? 'var(--wr-great-fg)' : 'var(--wr-bad-fg)'};font-size:0.9rem;width:14px">${g.result}</span>
+        <span style="font-size:0.7rem;background:var(--gl-surface-3);border-radius:4px;padding:1px 5px;color:var(--gl-text-muted)">${g.go}</span>
+        <span style="flex:1;font-size:0.7rem;color:var(--gl-text-muted);font-style:italic">${g.note ? `"${g.note}"` : ''}</span>
+        <span style="font-size:0.62rem;color:var(--gl-text-muted);text-align:right;line-height:1.3">${day}<br><span style="opacity:0.5">${t}</span></span>
+      </div>`;
+    });
+    html += `</div>`;
+  }
+
+  html += `<button onclick="showDeck('${deckKey}');closeMatchupHistory()" style="margin-top:16px;width:100%;padding:10px;background:var(--gl-gold-dim);border:1px solid var(--gl-gold);border-radius:8px;color:var(--gl-gold);font-size:0.8rem;font-weight:600;cursor:pointer">Open Matchup Guide →</button>`;
+  html += `</div></div>`;
+
+  const existing = document.getElementById('matchup-hist-overlay');
+  if (existing) existing.remove();
+  document.body.insertAdjacentHTML('beforeend', html);
+}
+
+function closeMatchupHistory() {
+  const el = document.getElementById('matchup-hist-overlay');
+  if (el) el.remove();
 }
 
 // ── ROLLING WR CHART ─────────────────────────────────────────
