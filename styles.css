@@ -1709,7 +1709,8 @@ th.sort-active { color: var(--gl-gold-h); }
 .bnav-btn:active { color: var(--gl-gold-h); }
 
 /* ── Competitions page ─────────────────────────────────────── */
-#screen-competitions { padding: 0 0 80px; overflow-y: auto; display: flex; flex-direction: column; background: var(--gl-bg); }
+#screen-competitions { padding: 0 0 80px; overflow-y: auto; flex-direction: column; background: var(--gl-bg); }
+#screen-competitions.active { display: flex; }
 .comp-page-title { font-size: 1rem; font-weight: 700; color: var(--gl-gold); margin-bottom: 4px; padding: 16px 16px 0; }
 .comp-filter-bar {
   display: flex; gap: 6px; overflow-x: auto; padding: 10px 16px 10px;
