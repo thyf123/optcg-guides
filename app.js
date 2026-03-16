@@ -4662,7 +4662,7 @@ function toggleCardZoom(e, el, cardId) {
     el.classList.remove('zoomed');
     el.style.transformOrigin = '';
   } else {
-    document.querySelectorAll('.card-item.zoomed').forEach(c => { c.classList.remove('zoomed'); c.style.transformOrigin = ''; });
+    document.querySelectorAll('.card-item.zoomed, .mhist-card-item.zoomed').forEach(c => { c.classList.remove('zoomed'); c.style.transformOrigin = ''; });
     // Set transform-origin based on position so card stays on screen
     const r = el.getBoundingClientRect();
     const vw = window.innerWidth, vh = window.innerHeight;
@@ -5409,12 +5409,15 @@ function renderStats(leaderKey) {
     </div>
   </div>`;
 
+  // Safe-encode a string for use inside a single-quoted JS onclick attribute
+  const _q = s => String(s).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+
   // ── Recommended Practice ──
   const rec = _calcRecommendedMatchup(leaderKey, rows);
   if (rec) {
     const recWrCls = wrCls2(rec.wr);
     html += `<div class="stats-section-hdr">🎯 Recommended Practice</div>
-    <div class="stats-rec-card" onclick="showMatchupHistory('${leaderKey}','${rec.deck}',${JSON.stringify(rec.name)})">
+    <div class="stats-rec-card" onclick="showMatchupHistory('${leaderKey}','${rec.deck}','${_q(rec.name)}')">
       <div class="rec-left">
         <div class="rec-name">${rec.name}</div>
         <div class="rec-reason">${rec.reason}</div>
@@ -5435,26 +5438,27 @@ function renderStats(leaderKey) {
   html += `<div class="stats-section-hdr">Recent Games</div>
   <div class="stats-recent-feed">`;
   recentGames.forEach(g => {
-    const d   = new Date(g.ts);
-    const day = d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-    const t   = d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
-    const wl  = g.result === 'W';
-    html += `<div class="srf-row ${wl ? 'srf-w' : 'srf-l'}" onclick="showMatchupHistory('${leaderKey}','${g.deckKey}',${JSON.stringify(g.matchupName || g.deckKey)})">
+    const d    = new Date(g.ts);
+    const day  = d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+    const t    = d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+    const wl   = g.result === 'W';
+    const mName = g.matchupName || g.deckKey;
+    html += `<div class="srf-row ${wl ? 'srf-w' : 'srf-l'}" onclick="showMatchupHistory('${leaderKey}','${g.deckKey}','${_q(mName)}')">
       <span class="srf-chip ${wl ? 'srf-chip-w' : 'srf-chip-l'}">${g.result}</span>
-      <span class="srf-name">${g.matchupName || g.deckKey}</span>
+      <span class="srf-name">${mName}</span>
       <span class="srf-go">${g.go}</span>
-      ${g.note ? `<span class="srf-note">"${g.note}"</span>` : '<span class="srf-note"></span>'}
+      ${g.note ? `<span class="srf-note">&ldquo;${g.note}&rdquo;</span>` : '<span class="srf-note"></span>'}
       <span class="srf-time">${day}<br><span style="opacity:0.5">${t}</span></span>
     </div>`;
   });
   if (!recentGames.length) html += `<div style="padding:12px 0;color:var(--gl-text-muted);font-size:0.75rem">No games yet.</div>`;
   html += `</div>`;
 
-  // Priority focus (legacy — keep for context)
+  // Priority focus
   if (priority.length > 0) {
     html += `<div class="stats-section-hdr">Also Underperforming</div>
     <div class="stats-priority">
-      ${priority.map((r, idx) => `<div class="stats-priority-item" onclick="showMatchupHistory('${leaderKey}','${r.deck}',${JSON.stringify(r.name)})">
+      ${priority.map((r, idx) => `<div class="stats-priority-item" onclick="showMatchupHistory('${leaderKey}','${r.deck}','${_q(r.name)}')">
         <div class="spi-rank">${idx + 1}</div>
         <div class="spi-name">${r.name}</div>
         <div class="spi-delta">${r.delta}%</div>
@@ -5477,7 +5481,7 @@ function renderStats(leaderKey) {
   sorted.forEach(r => {
     const dCls = r.delta === null ? 'neu' : r.delta > 2 ? 'pos' : r.delta < -2 ? 'neg' : 'neu';
     const dStr = r.delta === null ? '—' : (r.delta > 0 ? '+' : '') + r.delta + '%';
-    const clickable = r.deck ? `style="cursor:pointer" onclick="showMatchupHistory('${leaderKey}','${r.deck}',${JSON.stringify(r.name)})" title="History vs ${r.name}"` : '';
+    const clickable = r.deck ? `style="cursor:pointer" onclick="showMatchupHistory('${leaderKey}','${r.deck}','${_q(r.name)}')" title="History vs ${r.name}"` : '';
     html += `<tr class="sdt-row" ${clickable}>
       <td class="sdt-name">${r.name}${r.deck ? ' <span style="font-size:0.6rem;opacity:0.35">📋</span>' : ''}</td>
       <td class="r sdt-games">${r.g}</td>
