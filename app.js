@@ -3502,13 +3502,11 @@ function _rerenderKeyTips(deckKey) {
 }
 function _buildKeyTipsHtml(deckKey, matchup) {
   const tips = _getEffectiveKeyTips(deckKey, matchup);
-  const editBtn = _isAdmin()
-    ? `<button class="tips-edit-btn${_keyTipsEditMode?' active':''}" onclick="toggleKeyTipsEditMode('${deckKey}')">${_keyTipsEditMode?'Done':'Edit'}</button>`
-    : '';
+  const editBtn = `<button class="tips-edit-btn${_keyTipsEditMode?' active':''}" onclick="toggleKeyTipsEditMode('${deckKey}')">${_keyTipsEditMode?'Done':'Edit'}</button>`;
   const header = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
     <div class="mi-section-title" style="margin-bottom:0">Key Tips</div>${editBtn}</div>`;
   let items = '';
-  if (_isAdmin() && _keyTipsEditMode) {
+  if (_keyTipsEditMode) {
     items = tips.map((t, i) =>
       `<li class="custom-tip-item">
         <input class="cti-edit-input" value="${t.replace(/&/g,'&amp;').replace(/"/g,'&quot;')}"
@@ -3521,11 +3519,9 @@ function _buildKeyTipsHtml(deckKey, matchup) {
     items = tips.map(t => `<li>${_renderMentions(t)}</li>`).join('');
   }
   const listHtml = items ? `<ul class="mi-tips">${items}</ul>` : '';
-  const addHtml = _isAdmin()
-    ? (_keyTipsEditMode
-        ? '<div id="add-key-tip-area"></div>'
-        : `<div id="add-key-tip-area"></div><button class="add-tip-btn" onclick="showAddKeyTipInput('${deckKey}')">+ Add key tip</button>`)
-    : '';
+  const addHtml = _keyTipsEditMode
+    ? '<div id="add-key-tip-area"></div>'
+    : `<div id="add-key-tip-area"></div><button class="add-tip-btn" onclick="showAddKeyTipInput('${deckKey}')">+ Add key tip</button>`;
   return `<div class="mi-section" id="key-tips-wrap">${header}${listHtml}${addHtml}</div>`;
 }
 function saveKeyTipEdit(deckKey, idx, value) {
@@ -4381,10 +4377,77 @@ async function syncFromSupabase() {
       try { localStorage.setItem('optcg-current-leader', clkr.payload.key); } catch(e) {}
     }
     _setSyncDot('synced');
+
+    // ── One-time migration: seed all built-in tips & essentials ──
+    // Runs once per user account, marked by 'data-seeded-v1' flag
+    const seeded = rows.find(r => r.id === 'data-seeded-v1');
+    if (!seeded) {
+      _seedBuiltInDataToUser();
+    }
+
   } catch(e) {
     _setSyncDot('error', '☁✗');
     console.warn('Supabase sync failed:', e);
   }
+}
+
+// ── Seed built-in tips & essentials into user-owned storage ───
+// Runs once on first load. After this, the user owns all content
+// and can freely edit/delete without needing admin access.
+function _seedBuiltInDataToUser() {
+  let changed = false;
+  const nk = (a, b) => `${a}||${b}`;
+
+  for (const leaderKey of Object.keys(LEADERS)) {
+    const leader = LEADERS[leaderKey];
+    const matchups = leader.matchups || [];
+
+    matchups.forEach(matchup => {
+      const dk = matchup.deck;
+      const k  = nk(leaderKey, dk);
+
+      // Seed Key Tips → into matchupOverrides (user-owned, editable)
+      if (Array.isArray(matchup.tips) && matchup.tips.length) {
+        if (!allMatchupOverrides[k]) allMatchupOverrides[k] = {};
+        if (allMatchupOverrides[k].tips == null) {
+          allMatchupOverrides[k].tips = [...matchup.tips];
+          changed = true;
+        }
+      }
+
+      // Seed built-in essential cards → into allCustomEssentials (user-owned)
+      if (Array.isArray(matchup.essential) && matchup.essential.length) {
+        if (!allCustomEssentials[k] || !allCustomEssentials[k].length) {
+          allCustomEssentials[k] = matchup.essential.map(e => ({
+            id:     e.card || e.id || '',
+            name:   e.card || e.name || '',
+            reason: e.reason || ''
+          }));
+          changed = true;
+        }
+      }
+    });
+  }
+
+  if (changed) {
+    try { localStorage.setItem('optcg-matchup-ov', JSON.stringify(allMatchupOverrides)); } catch(e) {}
+    try { localStorage.setItem('optcg-essentials', JSON.stringify(allCustomEssentials)); } catch(e) {}
+  }
+
+  // Mark as seeded so this never runs again
+  fetch(_sbUrl + '/rest/v1/optcg_sync', {
+    method: 'POST',
+    headers: { ..._sbHeaders(), 'Prefer': 'resolution=merge-duplicates' },
+    body: JSON.stringify([
+      { id: 'data-seeded-v1', payload: { seededAt: new Date().toISOString() },
+        user_id: _userId(), updated_at: new Date().toISOString() },
+      { id: 'matchup-overrides', payload: allMatchupOverrides,
+        user_id: _userId(), updated_at: new Date().toISOString() },
+      { id: 'essentials', payload: allCustomEssentials,
+        user_id: _userId(), updated_at: new Date().toISOString() }
+    ])
+  }).then(() => console.log('[seed] Built-in tips & essentials claimed to user account'))
+    .catch(e => console.warn('[seed] Seed save failed:', e));
 }
 
 async function syncToSupabase() {
