@@ -5600,55 +5600,132 @@ function showMatchupHistory(leaderKey, deckKey, matchupName) {
   const wr1 = g1.length ? Math.round(g1.filter(g => g.result === 'W').length / g1.length * 100) : null;
   const wr2 = g2.length ? Math.round(g2.filter(g => g.result === 'W').length / g2.length * 100) : null;
 
-  // Find xWR for context
   const leaderMatchups = (LEADERS[leaderKey] || {}).matchups || [];
   const meta = leaderMatchups.find(m => m.deck === deckKey);
   const xwr1 = meta ? meta.wr1st : null;
   const xwr2 = meta ? meta.wr2nd : null;
-
   const wrCls = wr >= 55 ? 'pos' : wr >= 45 ? 'neu' : 'neg';
 
-  let html = `<div id="matchup-hist-overlay" onclick="if(event.target===this)closeMatchupHistory()"
-    style="position:fixed;inset:0;background:rgba(0,0,0,0.72);z-index:500;display:flex;align-items:flex-end;justify-content:center">
-    <div style="background:var(--gl-surface);border-radius:16px 16px 0 0;width:100%;max-width:600px;max-height:82vh;overflow-y:auto;padding:20px 16px 32px">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px">
-        <div>
-          <div style="font-size:1rem;font-weight:700;color:var(--gl-gold);margin-bottom:2px">${matchupName}</div>
-          <div style="font-size:0.72rem;color:var(--gl-text-muted)">${games.length} game${games.length !== 1 ? 's' : ''} logged</div>
-        </div>
-        <button onclick="closeMatchupHistory()" style="background:none;border:none;color:var(--gl-text-muted);font-size:1.3rem;cursor:pointer;padding:0 4px">✕</button>
-      </div>
-      <div style="display:flex;gap:10px;margin-bottom:16px">
-        <div class="mhist-kpi"><div class="mhist-kpi-val ${wrCls}">${games.length ? wr + '%' : '—'}</div><div class="mhist-kpi-lbl">Your WR</div></div>
-        <div class="mhist-kpi"><div class="mhist-kpi-val">${wr1 !== null ? wr1 + '%' : '—'}</div><div class="mhist-kpi-lbl">Going 1st${xwr1 ? ` <span style="opacity:0.5">(${xwr1}%)</span>` : ''}</div></div>
-        <div class="mhist-kpi"><div class="mhist-kpi-val">${wr2 !== null ? wr2 + '%' : '—'}</div><div class="mhist-kpi-lbl">Going 2nd${xwr2 ? ` <span style="opacity:0.5">(${xwr2}%)</span>` : ''}</div></div>
-      </div>`;
+  // Deck card data from DECKLISTS
+  const dl     = DECKLISTS[deckKey] || {};
+  const sections = dl.sections || [];
+  const leaderId = dl.leader || '';
+  const leaderColors = dl.leaderColors || '';
 
+  // ── History tab content ──
+  let histHtml = '';
   if (!games.length) {
-    html += `<div style="text-align:center;color:var(--gl-text-muted);padding:24px 0">No games logged yet</div>`;
+    histHtml = `<div style="text-align:center;color:var(--gl-text-muted);padding:32px 0">No games logged yet.<br>
+      <span style="font-size:0.7rem">Head to the matchup and tap <b>+ Log Game</b></span></div>`;
   } else {
-    html += `<div style="display:flex;flex-direction:column;gap:6px">`;
+    histHtml = `<div style="display:flex;flex-direction:column;gap:6px">`;
     games.forEach(g => {
       const d    = new Date(g.ts);
       const day  = d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
       const t    = d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
       const wl   = g.result === 'W';
-      html += `<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;background:var(--gl-surface-2);border-radius:8px;border-left:3px solid ${wl ? 'var(--wr-great-fg)' : 'var(--wr-bad-fg)'}">
+      histHtml += `<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;background:var(--gl-surface-2);border-radius:8px;border-left:3px solid ${wl ? 'var(--wr-great-fg)' : 'var(--wr-bad-fg)'}">
         <span style="font-weight:700;color:${wl ? 'var(--wr-great-fg)' : 'var(--wr-bad-fg)'};font-size:0.9rem;width:14px">${g.result}</span>
         <span style="font-size:0.7rem;background:var(--gl-surface-3);border-radius:4px;padding:1px 5px;color:var(--gl-text-muted)">${g.go}</span>
         <span style="flex:1;font-size:0.7rem;color:var(--gl-text-muted);font-style:italic">${g.note ? `"${g.note}"` : ''}</span>
         <span style="font-size:0.62rem;color:var(--gl-text-muted);text-align:right;line-height:1.3">${day}<br><span style="opacity:0.5">${t}</span></span>
       </div>`;
     });
-    html += `</div>`;
+    histHtml += `</div>`;
   }
 
-  html += `<button onclick="showDeck('${deckKey}');closeMatchupHistory()" style="margin-top:16px;width:100%;padding:10px;background:var(--gl-gold-dim);border:1px solid var(--gl-gold);border-radius:8px;color:var(--gl-gold);font-size:0.8rem;font-weight:600;cursor:pointer">Open Matchup Guide →</button>`;
-  html += `</div></div>`;
+  // ── Deck tab content ──
+  let deckHtml = '';
+  if (!sections.length) {
+    deckHtml = `<div style="text-align:center;color:var(--gl-text-muted);padding:32px 0">No decklist data available yet.</div>`;
+  } else {
+    // Leader card featured at top
+    if (leaderId) {
+      const totalCards = sections.reduce((s, sec) => s + sec.cards.reduce((a, c) => a + c.count, 0), 0);
+      deckHtml += `<div class="mhist-deck-header">
+        <img class="mhist-leader-img" src="${cardImg(leaderId)}" alt="${matchupName}"
+          onerror="this.style.opacity='0.2'" loading="lazy">
+        <div class="mhist-deck-meta">
+          <div class="mhist-deck-name">${dl.leaderName || matchupName}</div>
+          ${leaderColors ? `<div class="mhist-deck-colors">${leaderColors}</div>` : ''}
+          ${dl.leaderStats ? `<div class="mhist-deck-stat">${dl.leaderStats}</div>` : ''}
+          <div class="mhist-deck-count">${totalCards} cards</div>
+        </div>
+      </div>`;
+      if (dl.leaderEffect) {
+        deckHtml += `<div class="mhist-leader-effect">${dl.leaderEffect}</div>`;
+      }
+    }
+    // Sections → card grids
+    sections.forEach(sec => {
+      const total = sec.cards.reduce((a, c) => a + c.count, 0);
+      deckHtml += `<div class="mhist-sec-hdr"><span>${sec.title}</span><span style="color:var(--gl-text-muted)">×${total}</span></div>
+        <div class="mhist-card-grid">`;
+      sec.cards.forEach(card => {
+        deckHtml += `<div class="mhist-card-item" onclick="toggleCardZoom(event,this,'${card.id}')">
+          <img src="${cardImg(card.id)}" alt="${card.name}"
+            onload="this.classList.add('loaded')" onerror="this.style.opacity='0.15'">
+          <div class="mhist-card-count">×${card.count}</div>
+        </div>`;
+      });
+      deckHtml += `</div>`;
+    });
+  }
+
+  // ── Assemble modal ──
+  let html = `<div id="matchup-hist-overlay" onclick="if(event.target===this)closeMatchupHistory()"
+    style="position:fixed;inset:0;background:rgba(0,0,0,0.72);z-index:500;display:flex;align-items:flex-end;justify-content:center">
+    <div id="matchup-hist-sheet" style="background:var(--gl-surface);border-radius:16px 16px 0 0;width:100%;max-width:600px;max-height:85vh;display:flex;flex-direction:column;">
+
+      <!-- Fixed header -->
+      <div style="padding:16px 16px 0;flex-shrink:0">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px">
+          <div>
+            <div style="font-size:1rem;font-weight:700;color:var(--gl-gold);margin-bottom:2px">${matchupName}</div>
+            <div style="font-size:0.7rem;color:var(--gl-text-muted)">${leaderColors}</div>
+          </div>
+          <button onclick="closeMatchupHistory()" style="background:none;border:none;color:var(--gl-text-muted);font-size:1.3rem;cursor:pointer;padding:0 4px">✕</button>
+        </div>
+        <!-- KPI row -->
+        <div style="display:flex;gap:8px;margin-bottom:12px">
+          <div class="mhist-kpi"><div class="mhist-kpi-val ${wrCls}">${games.length ? wr + '%' : '—'}</div><div class="mhist-kpi-lbl">Your WR</div></div>
+          <div class="mhist-kpi"><div class="mhist-kpi-val">${wr1 !== null ? wr1 + '%' : '—'}</div><div class="mhist-kpi-lbl">1st${xwr1 ? ` <span style="opacity:0.45;font-size:0.55rem">(${xwr1}%)</span>` : ''}</div></div>
+          <div class="mhist-kpi"><div class="mhist-kpi-val">${wr2 !== null ? wr2 + '%' : '—'}</div><div class="mhist-kpi-lbl">2nd${xwr2 ? ` <span style="opacity:0.45;font-size:0.55rem">(${xwr2}%)</span>` : ''}</div></div>
+        </div>
+        <!-- Tabs -->
+        <div class="mhist-tabs">
+          <button class="mhist-tab active" id="mhist-tab-hist" onclick="_switchHistTab('hist')">📋 History</button>
+          <button class="mhist-tab" id="mhist-tab-deck" onclick="_switchHistTab('deck')">🃏 Deck</button>
+        </div>
+      </div>
+
+      <!-- Scrollable body -->
+      <div id="mhist-body" style="overflow-y:auto;flex:1;padding:12px 16px 24px">
+        <div id="mhist-pane-hist">${histHtml}</div>
+        <div id="mhist-pane-deck" style="display:none">${deckHtml}</div>
+      </div>
+
+      <!-- Bottom action -->
+      <div style="padding:0 16px 20px;flex-shrink:0">
+        <button onclick="showDeck('${deckKey}');closeMatchupHistory()"
+          style="width:100%;padding:10px;background:var(--gl-gold-dim);border:1px solid var(--gl-gold);border-radius:8px;color:var(--gl-gold);font-size:0.8rem;font-weight:600;cursor:pointer">
+          Open Full Matchup Guide →
+        </button>
+      </div>
+    </div>
+  </div>`;
 
   const existing = document.getElementById('matchup-hist-overlay');
   if (existing) existing.remove();
   document.body.insertAdjacentHTML('beforeend', html);
+}
+
+function _switchHistTab(tab) {
+  document.getElementById('mhist-tab-hist').classList.toggle('active', tab === 'hist');
+  document.getElementById('mhist-tab-deck').classList.toggle('active', tab === 'deck');
+  document.getElementById('mhist-pane-hist').style.display = tab === 'hist' ? '' : 'none';
+  document.getElementById('mhist-pane-deck').style.display = tab === 'deck' ? '' : 'none';
+  document.getElementById('mhist-body').scrollTop = 0;
 }
 
 function closeMatchupHistory() {
