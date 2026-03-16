@@ -1769,7 +1769,7 @@ th.sort-active { color: var(--gl-gold-h); }
    ═══════════════════════════════════════════════════ */
 @media (min-width: 769px) {
   #top-nav { display: flex; }
-  .screen { padding-top: calc(52px + var(--sp-4)); }
+  .screen { padding-top: calc(52px + var(--sp-4)) !important; }
 }
 
 /* ═══════════════════════════════════════════════════
