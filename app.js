@@ -287,6 +287,36 @@ function cardImg(id){
 }
 
 
+
+// Color lookup for leader cards (used as fallback when colorMap has no entry)
+const CARD_COLORS = {
+  "EB01-001":"red","EB01-021":"blue","EB01-040":"black","EB02-010":"green","EB03-001":"red",
+  "OP01-001":"red","OP01-002":"red","OP01-003":"red","OP01-031":"green","OP01-060":"blue",
+  "OP01-061":"blue","OP01-062":"blue","OP01-091":"purple","OP02-001":"red","OP02-002":"red",
+  "OP02-025":"green","OP02-026":"green","OP02-049":"blue","OP02-071":"purple","OP02-072":"purple",
+  "OP02-093":"black","OP03-001":"red","OP03-021":"green","OP03-022":"green","OP03-040":"blue",
+  "OP03-058":"purple","OP03-076":"black","OP03-077":"black","OP03-099":"yellow","OP04-001":"red",
+  "OP04-019":"green","OP04-020":"green","OP04-039":"blue","OP04-040":"blue","OP04-058":"purple",
+  "OP05-001":"red","OP05-002":"red","OP05-022":"green","OP05-041":"blue","OP05-060":"purple",
+  "OP05-098":"yellow","OP06-001":"red","OP06-020":"green","OP06-021":"green","OP06-022":"green",
+  "OP06-042":"blue","OP06-080":"black","OP07-001":"red","OP07-019":"green","OP07-038":"blue",
+  "OP07-059":"purple","OP07-079":"black","OP07-097":"yellow","OP08-001":"red","OP08-002":"red",
+  "OP08-021":"green","OP08-057":"purple","OP08-058":"purple","OP08-098":"yellow","OP09-001":"red",
+  "OP09-022":"green","OP09-042":"blue","OP09-061":"purple","OP09-062":"purple","OP09-081":"black",
+  "OP10-001":"red","OP10-002":"red","OP10-003":"red","OP10-022":"green","OP10-042":"blue",
+  "OP10-099":"yellow","OP11-001":"red","OP11-021":"green","OP11-022":"green","OP11-040":"blue",
+  "OP11-041":"blue","OP11-062":"purple","OP12-001":"red","OP12-020":"green","OP12-040":"blue",
+  "OP12-041":"blue","OP12-061":"purple","OP12-081":"black","OP13-001":"red","OP13-002":"red",
+  "OP13-003":"red","OP13-004":"red","OP13-079":"black","OP13-100":"yellow","OP14-001":"red",
+  "OP14-020":"green","OP14-040":"blue","OP14-041":"blue","OP14-060":"purple","OP14-079":"black",
+  "OP14-080":"black","P-011":"red","P-047":"blue","P-076":"blue","PRB01-001":"red",
+  "ST01-001":"red","ST02-001":"green","ST03-001":"blue","ST04-001":"purple","ST05-001":"purple",
+  "ST06-001":"black","ST07-001":"yellow","ST08-001":"black","ST09-001":"yellow","ST10-001":"red",
+  "ST10-002":"red","ST10-003":"red","ST11-001":"green","ST12-001":"green","ST13-001":"red",
+  "ST13-002":"blue","ST13-003":"black","ST14-001":"black","ST21-001":"red","ST22-001":"blue",
+  "ST29-001":"yellow"
+};
+
 let LEADERS = {
   rosinante: {
     cardId: "OP12-061",
@@ -5552,7 +5582,8 @@ function getLM() {
       // Use title (e.g. "OP01-003 Monkey D. Luffy") so set-badge extraction works
       name: LEADERS[k].title || LEADERS[k].name, deck: k, warn: false,
       go: '?', wr1: null, wr2: null, style: '—',
-      essential: [], tips: []
+      essential: [], tips: [],
+      cardColor: CARD_COLORS[LEADERS[k].cardId] || null
     }));
   return [...hardcoded, ...auto];
 }
@@ -5590,8 +5621,13 @@ function matchVisible(m) {
   if (currentColor === 'warn') {
     colorMatch = m.warn;
   } else if (currentColor !== 'all') {
-    const cols = getLCM()[m.name] || [];
-    colorMatch = cols.includes(currentColor);
+    const cols = getLCM()[m.name];
+    if (cols !== undefined) {
+      colorMatch = cols.includes(currentColor);
+    } else if (m.cardColor) {
+      colorMatch = m.cardColor === currentColor;
+    }
+    // If no color info at all, show the entry (don't hide unknown leaders)
   }
   return nameMatch && colorMatch;
 }
