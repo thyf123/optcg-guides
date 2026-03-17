@@ -1118,6 +1118,20 @@ th.sort-active { color: var(--gl-gold-h); }
   font-size: 0.65rem; color: var(--gl-gold); font-weight: 700;
   text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: var(--sp-2);
 }
+/* ── Deck page tournament results section ─────────────────── */
+.deck-comp-sub {
+  font-size: 0.62rem; font-weight: 700; color: var(--gl-text-muted);
+  text-transform: uppercase; letter-spacing: 0.05em; margin: 6px 0 4px;
+}
+.deck-comp-table { display: flex; flex-direction: column; gap: 4px; }
+.deck-comp-row {
+  display: flex; align-items: center; gap: 8px;
+  padding: 5px 8px; border-radius: 6px; background: var(--gl-surface2);
+}
+.deck-comp-rank { font-size: 0.75rem; min-width: 26px; text-align: center; }
+.deck-comp-info { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.deck-comp-player { font-size: 0.65rem; font-weight: 700; color: var(--gl-text); }
+.deck-comp-event { font-size: 0.58rem; color: var(--gl-text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .my-notes-area {
   width: 100%; min-height: 76px;
   background: var(--gl-bg);

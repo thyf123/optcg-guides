@@ -8492,6 +8492,13 @@ function renderDeck(d, matchup, deckKey) {
   const _lk = currentLeaderKey;
   const existingNote = allNotes[_nk(_lk, deckKey)] || '';
   const _mName = (matchup ? matchup.name : deckKey).replace(/'/g, '&#39;');
+  // ── Tournament results section (lazy-loaded after render) ──
+  html += `
+  <div class="my-section" id="deck-comp-section">
+    <div class="my-section-title">🏆 Tournament Results</div>
+    <div id="deck-comp-wrap"><div style="font-size:0.62rem;color:var(--gl-text-muted);padding:6px 0">Loading…</div></div>
+  </div>`;
+
   html += `
   <div class="my-section">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
@@ -8518,6 +8525,8 @@ function renderDeck(d, matchup, deckKey) {
   if (ta) { ta.value = existingNote; _setupAtMention(ta, deckKey, matchup); }
   // render history
   _refreshMySection(deckKey);
+  // Lazy-load tournament results for this leader
+  _loadDeckCompSection(d.leader);
 
   // Async: fetch types for any unknown cards, then re-render sections in-place
   // Fetch cost/counter/color data for this deck's cards (grouping already correct from section titles)
@@ -8549,6 +8558,86 @@ function renderDeck(d, matchup, deckKey) {
     });
   }
 }
+// ── TOURNAMENT RESULTS ON DECK PAGE ───────────────────────────
+async function _loadDeckCompSection(leaderId) {
+  const wrap = document.getElementById('deck-comp-wrap');
+  if (!wrap || !leaderId) return;
+
+  try {
+    // Fetch top cards + recent placements in parallel
+    const [archRes, feedRes] = await Promise.all([
+      fetch(`/api/comp-archetype?leader_id=${encodeURIComponent(leaderId)}&maxRank=8`).then(r => r.json()),
+      fetch(`/api/comp-feed?leader=${encodeURIComponent(leaderId)}&maxRank=8&limit=30`).then(r => r.json())
+    ]);
+    _renderDeckCompSection(wrap, leaderId, archRes, feedRes);
+  } catch(e) {
+    wrap.innerHTML = '<div style="font-size:0.62rem;color:var(--gl-text-muted)">No tournament data available.</div>';
+  }
+}
+
+function _renderDeckCompSection(wrap, leaderId, archData, feedData) {
+  const { totalDecks = 0, cards = [] } = archData.ok ? archData : {};
+  const decklists = (feedData.ok ? feedData.decklists : null) || [];
+
+  if (!totalDecks && !decklists.length) {
+    wrap.innerHTML = '<div style="font-size:0.62rem;color:var(--gl-text-muted)">No tournament data yet for this leader.</div>';
+    return;
+  }
+
+  let html = '';
+
+  // ── Top cards grid ──────────────────────────────────────────
+  if (cards.length) {
+    const order = ['Character','Event','Stage','DON!!','Other'];
+    const sections = {};
+    cards.forEach(c => {
+      const sec = order.includes(c.section) ? c.section : 'Other';
+      if (!sections[sec]) sections[sec] = [];
+      sections[sec].push(c);
+    });
+
+    html += `<div class="deck-comp-sub">Top cards <span style="font-weight:400;opacity:0.6">(${totalDecks} deck${totalDecks!==1?'s':''}, top 8 finishers)</span></div>`;
+
+    order.forEach(sec => {
+      if (!sections[sec] || !sections[sec].length) return;
+      html += `<div class="comp-inline-section">${sec}</div><div class="comp-visual-grid">`;
+      sections[sec].forEach(c => {
+        const pct = c.inclusion_pct;
+        const pctCls = pct >= 75 ? 'arch-pct--hi' : pct >= 40 ? 'arch-pct--mid' : 'arch-pct--lo';
+        html += `<div class="comp-visual-card comp-arch-card" title="${c.card_name} · ${c.card_id} — ${pct}% of decks, avg ×${c.avg_copies}">
+          <img src="${cardImg(c.card_id)}" loading="lazy" alt="${c.card_name}"
+            onerror="this.parentElement.classList.add('comp-visual-card--err')">
+          <span class="arch-pct ${pctCls}">${pct}%</span>
+        </div>`;
+      });
+      html += `</div>`;
+    });
+  }
+
+  // ── Recent placements table ─────────────────────────────────
+  if (decklists.length) {
+    html += `<div class="deck-comp-sub" style="margin-top:14px">Recent results</div>`;
+    html += `<div class="deck-comp-table">`;
+    decklists.slice(0, 20).forEach(dl => {
+      const t = dl.tournaments || {};
+      const rank = dl.placement_rank || 999;
+      const medal = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : dl.placement || `#${rank}`;
+      const dateStr = t.date ? new Date(t.date + 'T00:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : '';
+      const tName = (t.name || '').replace(/^Standings:\s*/i, '');
+      html += `<div class="deck-comp-row">
+        <span class="deck-comp-rank">${medal}</span>
+        <div class="deck-comp-info">
+          <span class="deck-comp-player">${dl.player || '—'}</span>
+          <span class="deck-comp-event">${tName}${dateStr ? ' · ' + dateStr : ''}</span>
+        </div>
+      </div>`;
+    });
+    html += `</div>`;
+  }
+
+  wrap.innerHTML = html || '<div style="font-size:0.62rem;color:var(--gl-text-muted)">No data.</div>';
+}
+
 // ── CONSENSUS STATS ───────────────────────────────────────────
 function _renderConsensusSection(deckKey) {
   const variants = _getVariants(deckKey);
