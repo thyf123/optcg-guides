@@ -805,7 +805,32 @@ function _sbInsert(table, rows) {
 }
 
 function _sbUpsert(table, rows, onConflict) {
-  return _sbRequest('POST', `/rest/v1/${table}?on_conflict=${onConflict}`, Array.isArray(rows) ? rows : [rows]);
+  // PostgREST requires resolution=merge-duplicates for ON CONFLICT UPDATE behaviour.
+  // Without it, the POST acts as a plain INSERT and silently fails if the row exists.
+  return new Promise((resolve, reject) => {
+    if (!SB_URL || !SB_SERVICE_KEY) { resolve({ status: 503, data: null }); return; }
+    const path   = `/rest/v1/${table}?on_conflict=${onConflict}`;
+    const u      = new URL(path, SB_URL);
+    const bodyArr = Array.isArray(rows) ? rows : [rows];
+    const bodyStr = JSON.stringify(bodyArr);
+    const opts = {
+      hostname: u.hostname, path: u.pathname + u.search, method: 'POST',
+      headers: {
+        'apikey': SB_SERVICE_KEY, 'Authorization': 'Bearer ' + SB_SERVICE_KEY,
+        'Content-Type': 'application/json',
+        'Prefer': 'resolution=merge-duplicates,return=representation',
+        'Content-Length': Buffer.byteLength(bodyStr)
+      }
+    };
+    const req = https.request(opts, r => {
+      let b = ''; r.on('data', c => b += c);
+      r.on('end', () => {
+        try { resolve({ status: r.statusCode, data: JSON.parse(b) }); }
+        catch(e) { resolve({ status: r.statusCode, data: b }); }
+      });
+    });
+    req.on('error', reject); req.write(bodyStr); req.end();
+  });
 }
 
 // ── Scrape state (stored in optcg_sync for backwards compat) ──
