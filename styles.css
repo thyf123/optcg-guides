@@ -643,6 +643,7 @@ tr.data-row:hover td { background: var(--gl-surface); }
 tr.data-row.active td { background: var(--gl-surface-2); }
 
 .mname { font-weight: 600; white-space: nowrap; color: var(--gl-text); }
+.set-badge { display: inline-block; font-size: 0.55rem; font-weight: 700; letter-spacing: 0.03em; color: var(--gl-text-muted); background: var(--gl-surface-3); border-radius: 3px; padding: 1px 4px; margin-left: 5px; vertical-align: middle; opacity: 0.7; }
 .warn { color: var(--gl-warn); margin-left: 3px; font-size: 0.7rem; }
 
 /* Win rate badges */

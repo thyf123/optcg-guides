@@ -3957,11 +3957,31 @@ function _refreshMiniGames(deckKey) {
 }
 
 // ── PERSONAL STATS HELPERS ────────────────────────────────────
+// ── SET ORDER HELPERS ─────────────────────────────────────────
+// Extract set prefix from a matchup name like "OP14 Mihawk" → "OP14"
+function _deckSetLabel(name) {
+  const m = String(name).match(/^(OP\d+|EB\d+|ST\d+|P\d+)/i);
+  return m ? m[1].toUpperCase() : '??';
+}
+// Return a numeric sort key: OP=1xxx, EB=2xxx, ST=3xxx, P/other=9xxx
+function _deckSetOrder(name) {
+  const s = _deckSetLabel(name);
+  const n = parseInt(s.match(/\d+/)?.[0] || '0', 10);
+  if (s.startsWith('OP')) return 1000 + n;
+  if (s.startsWith('EB')) return 2000 + n;
+  if (s.startsWith('ST')) return 3000 + n;
+  return 9000 + n;
+}
+
 // ── TABLE SORT ───────────────────────────────────────────────
 let _tableSort = { col: null, dir: 1 };
+let _setSort    = 0;   // 0 = off  |  1 = newest first  |  -1 = oldest first
+
 function sortTable(col) {
   if (_tableSort.col === col) _tableSort.dir *= -1; else { _tableSort.col = col; _tableSort.dir = -1; }
-  // update indicators
+  // clear set-sort when column sort is used
+  _setSort = 0;
+  _updateSetSortBtn();
   ['name','wr1','wr2','you'].forEach(c => {
     const el = document.getElementById('si-' + c);
     if (el) el.textContent = _tableSort.col === c ? (_tableSort.dir === -1 ? ' ▼' : ' ▲') : '';
@@ -3969,8 +3989,37 @@ function sortTable(col) {
   document.querySelectorAll('th.sortable').forEach(th => th.classList.toggle('sort-active', th.dataset.col === _tableSort.col));
   rebuildMatchupTable();
 }
+
+function toggleSetSort() {
+  _setSort = _setSort === 0 ? 1 : _setSort === 1 ? -1 : 0;
+  // clear column sort when set sort is used
+  _tableSort = { col: null, dir: 1 };
+  ['name','wr1','wr2','you'].forEach(c => {
+    const el = document.getElementById('si-' + c);
+    if (el) el.textContent = '';
+  });
+  document.querySelectorAll('th.sortable').forEach(th => th.classList.remove('sort-active'));
+  _updateSetSortBtn();
+  rebuildMatchupTable();
+  applyFilters();
+}
+function _updateSetSortBtn() {
+  const btn = document.getElementById('set-sort-btn');
+  if (!btn) return;
+  btn.textContent = _setSort === 1 ? '↓ Newest Set' : _setSort === -1 ? '↑ Oldest Set' : '↕ Set';
+  btn.classList.toggle('active', _setSort !== 0);
+}
+
 function _sortedMatchups() {
   const ms = getLM().map((m, i) => ({ m, i }));
+  // Set sort takes priority
+  if (_setSort !== 0) {
+    return ms.sort((a, b) => {
+      const diff = _deckSetOrder(a.m.name) - _deckSetOrder(b.m.name);
+      if (diff !== 0) return -_setSort * diff;   // newest first = higher order first → negate when _setSort=1
+      return a.m.name.localeCompare(b.m.name);   // tiebreak: alphabetical within same set
+    });
+  }
   if (!_tableSort.col) return ms;
   const d = _tableSort.dir;
   return ms.sort((a, b) => {
@@ -4865,7 +4914,7 @@ function rebuildMatchupTable() {
   tr.dataset.idx = i;
   tr.innerHTML = `
     ${starCell}
-    <td><span class="mname">${m.name}</span>${colorDots(m.name)}${m.warn?`<span class="warn" title="Fewer than 50 games in dataset — treat with caution">⚠</span>`:''}${notePip}</td>
+    <td><span class="mname">${m.name}</span><span class="set-badge">${_deckSetLabel(m.name)}</span>${colorDots(m.name)}${m.warn?`<span class="warn" title="Fewer than 50 games in dataset — treat with caution">⚠</span>`:''}${notePip}</td>
     <td><span class="go ${m.go==='1st'?'go1':'go2'}">${m.go}</span></td>
     <td><span class="wr ${wrCls(m.wr1)}">${wrLbl(m.wr1)}</span></td>
     <td><span class="wr ${wrCls(m.wr2)}">${wrLbl(m.wr2)}</span></td>
