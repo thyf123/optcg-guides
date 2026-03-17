@@ -1119,19 +1119,51 @@ th.sort-active { color: var(--gl-gold-h); }
   text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: var(--sp-2);
 }
 /* ── Deck page tournament results section ─────────────────── */
-.deck-comp-sub {
-  font-size: 0.62rem; font-weight: 700; color: var(--gl-text-muted);
-  text-transform: uppercase; letter-spacing: 0.05em; margin: 6px 0 4px;
+.deck-comp-loading { font-size: 0.62rem; color: var(--gl-text-muted); padding: 6px 0; }
+
+/* Filter bar */
+.deck-comp-filters { display: flex; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
+.deck-comp-fgroup  { display: flex; gap: 3px; }
+.deck-comp-fbtn {
+  font-size: 0.6rem; padding: 3px 9px; border-radius: 4px;
+  border: 1px solid var(--gl-divider); background: transparent;
+  color: var(--gl-text-muted); cursor: pointer;
 }
-.deck-comp-table { display: flex; flex-direction: column; gap: 4px; }
-.deck-comp-row {
-  display: flex; align-items: center; gap: 8px;
-  padding: 5px 8px; border-radius: 6px; background: var(--gl-surface2);
+.deck-comp-fbtn.active { background: var(--gl-gold); color: #000; border-color: var(--gl-gold); font-weight: 700; }
+
+/* Two-column layout */
+.deck-comp-cols { display: flex; gap: 10px; align-items: flex-start; }
+.deck-comp-col-left  { flex: 0 0 42%; min-width: 0; }
+.deck-comp-col-right { flex: 1; min-width: 0; }
+
+/* Column sub-header */
+.deck-comp-col-hdr {
+  font-size: 0.6rem; font-weight: 700; color: var(--gl-text-muted);
+  text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px;
 }
-.deck-comp-rank { font-size: 0.75rem; min-width: 26px; text-align: center; }
-.deck-comp-info { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
-.deck-comp-player { font-size: 0.65rem; font-weight: 700; color: var(--gl-text); }
-.deck-comp-event { font-size: 0.58rem; color: var(--gl-text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.deck-comp-col-meta { font-weight: 400; opacity: 0.7; }
+
+/* Right column: smaller cards to fit narrower space */
+.deck-comp-grid { gap: 3px; }
+.deck-comp-grid .comp-visual-card { width: 56px; }
+
+/* Left column: decklist entry rows */
+.deck-comp-entry { border-radius: 5px; overflow: hidden; margin-bottom: 4px; background: var(--gl-surface2); }
+.deck-comp-entry-row {
+  display: flex; align-items: center; gap: 6px;
+  padding: 5px 6px; cursor: pointer;
+}
+.deck-comp-entry-row:active { background: rgba(255,255,255,0.06); }
+.deck-comp-rank   { font-size: 0.72rem; min-width: 22px; text-align: center; flex-shrink: 0; }
+.deck-comp-info   { display: flex; flex-direction: column; gap: 1px; min-width: 0; flex: 1; }
+.deck-comp-player { font-size: 0.62rem; font-weight: 700; color: var(--gl-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.deck-comp-event  { font-size: 0.54rem; color: var(--gl-text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.deck-comp-chevron { font-size: 0.8rem; color: var(--gl-text-muted); flex-shrink: 0; }
+
+/* Expanded deck cards inside left-column entry */
+.deck-comp-entry-cards { padding: 4px 6px 6px; border-top: 1px solid var(--gl-divider); }
+.deck-comp-entry-grid { gap: 3px; }
+.deck-comp-entry-grid .comp-visual-card { width: 50px; }
 .my-notes-area {
   width: 100%; min-height: 76px;
   background: var(--gl-bg);

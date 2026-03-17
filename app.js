@@ -6065,6 +6065,12 @@ let _compExpandedCards = {}; // decklistId → cards array once loaded
 let _compMainTab       = 'results';
 let _compArchCache     = {}; // leaderId → archetype top cards response
 
+// ── Deck page tournament section state ────────────────────────
+let _deckCompLeaderId  = null;
+let _deckCompDays      = 0;    // 0=all, 7=1w, 30=1m
+let _deckCompMaxRank   = 8;
+let _deckCompCardCache = {};   // decklistId → cards[]
+
 function showCompetitions() {
   document.querySelectorAll('.screen').forEach(s => { s.classList.remove('active'); s.style.display = ''; });
   const sc = document.getElementById('screen-competitions');
@@ -8496,7 +8502,18 @@ function renderDeck(d, matchup, deckKey) {
   html += `
   <div class="my-section" id="deck-comp-section">
     <div class="my-section-title">🏆 Tournament Results</div>
-    <div id="deck-comp-wrap"><div style="font-size:0.62rem;color:var(--gl-text-muted);padding:6px 0">Loading…</div></div>
+    <div class="deck-comp-filters">
+      <div class="deck-comp-fgroup">
+        <button class="deck-comp-fbtn${_deckCompDays===7?' active':''}"  onclick="_setDeckCompFilter(7,  'days', this)">1w</button>
+        <button class="deck-comp-fbtn${_deckCompDays===30?' active':''}" onclick="_setDeckCompFilter(30, 'days', this)">1m</button>
+        <button class="deck-comp-fbtn${_deckCompDays===0?' active':''}"  onclick="_setDeckCompFilter(0,  'days', this)">All</button>
+      </div>
+      <div class="deck-comp-fgroup">
+        <button class="deck-comp-fbtn${_deckCompMaxRank===8?' active':''}"  onclick="_setDeckCompFilter(8,  'rank', this)">Top 8</button>
+        <button class="deck-comp-fbtn${_deckCompMaxRank===16?' active':''}" onclick="_setDeckCompFilter(16, 'rank', this)">Top 16</button>
+      </div>
+    </div>
+    <div id="deck-comp-wrap"><div class="deck-comp-loading">Loading…</div></div>
   </div>`;
 
   html += `
@@ -8526,7 +8543,9 @@ function renderDeck(d, matchup, deckKey) {
   // render history
   _refreshMySection(deckKey);
   // Lazy-load tournament results for this leader
-  _loadDeckCompSection(d.leader);
+  _deckCompLeaderId = d.leader;
+  _deckCompCardCache = {};
+  _loadDeckCompSection();
 
   // Async: fetch types for any unknown cards, then re-render sections in-place
   // Fetch cost/counter/color data for this deck's cards (grouping already correct from section titles)
@@ -8559,83 +8578,158 @@ function renderDeck(d, matchup, deckKey) {
   }
 }
 // ── TOURNAMENT RESULTS ON DECK PAGE ───────────────────────────
-async function _loadDeckCompSection(leaderId) {
+function _setDeckCompFilter(val, type, btn) {
+  if (type === 'days') {
+    _deckCompDays = val;
+    btn.closest('.deck-comp-fgroup').querySelectorAll('.deck-comp-fbtn').forEach(b => b.classList.remove('active'));
+  } else {
+    _deckCompMaxRank = val;
+    btn.closest('.deck-comp-fgroup').querySelectorAll('.deck-comp-fbtn').forEach(b => b.classList.remove('active'));
+  }
+  btn.classList.add('active');
   const wrap = document.getElementById('deck-comp-wrap');
+  if (wrap) wrap.innerHTML = '<div class="deck-comp-loading">Loading…</div>';
+  _loadDeckCompSection();
+}
+
+async function _loadDeckCompSection() {
+  const wrap = document.getElementById('deck-comp-wrap');
+  const leaderId = _deckCompLeaderId;
   if (!wrap || !leaderId) return;
 
+  const days = _deckCompDays;
+  const rank = _deckCompMaxRank;
+  const daysParam = days > 0 ? `&days=${days}` : '';
+
   try {
-    // Fetch top cards + recent placements in parallel
     const [archRes, feedRes] = await Promise.all([
-      fetch(`/api/comp-archetype?leader_id=${encodeURIComponent(leaderId)}&maxRank=8`).then(r => r.json()),
-      fetch(`/api/comp-feed?leader=${encodeURIComponent(leaderId)}&maxRank=8&limit=30`).then(r => r.json())
+      fetch(`/api/comp-archetype?leader_id=${encodeURIComponent(leaderId)}&maxRank=${rank}${daysParam}`).then(r => r.json()),
+      fetch(`/api/comp-feed?leader=${encodeURIComponent(leaderId)}&maxRank=${rank}&limit=50${daysParam}`).then(r => r.json())
     ]);
-    _renderDeckCompSection(wrap, leaderId, archRes, feedRes);
+    _renderDeckCompSection(wrap, archRes, feedRes);
   } catch(e) {
     wrap.innerHTML = '<div style="font-size:0.62rem;color:var(--gl-text-muted)">No tournament data available.</div>';
   }
 }
 
-function _renderDeckCompSection(wrap, leaderId, archData, feedData) {
+function _renderDeckCompSection(wrap, archData, feedData) {
   const { totalDecks = 0, cards = [] } = archData.ok ? archData : {};
   const decklists = (feedData.ok ? feedData.decklists : null) || [];
 
   if (!totalDecks && !decklists.length) {
-    wrap.innerHTML = '<div style="font-size:0.62rem;color:var(--gl-text-muted)">No tournament data yet for this leader.</div>';
+    wrap.innerHTML = '<div style="font-size:0.62rem;color:var(--gl-text-muted)">No tournament data for this filter.</div>';
     return;
   }
 
-  let html = '';
-
-  // ── Top cards grid ──────────────────────────────────────────
+  // ── Build top cards HTML (right column) ─────────────────────
+  const order = ['Character','Event','Stage','DON!!','Other'];
+  let topCardsHtml = '';
   if (cards.length) {
-    const order = ['Character','Event','Stage','DON!!','Other'];
     const sections = {};
     cards.forEach(c => {
       const sec = order.includes(c.section) ? c.section : 'Other';
       if (!sections[sec]) sections[sec] = [];
       sections[sec].push(c);
     });
-
-    html += `<div class="deck-comp-sub">Top cards <span style="font-weight:400;opacity:0.6">(${totalDecks} deck${totalDecks!==1?'s':''}, top 8 finishers)</span></div>`;
-
+    topCardsHtml += `<div class="deck-comp-col-hdr">Top cards <span class="deck-comp-col-meta">${totalDecks} deck${totalDecks!==1?'s':''}</span></div>`;
     order.forEach(sec => {
       if (!sections[sec] || !sections[sec].length) return;
-      html += `<div class="comp-inline-section">${sec}</div><div class="comp-visual-grid">`;
+      topCardsHtml += `<div class="comp-inline-section">${sec}</div><div class="comp-visual-grid deck-comp-grid">`;
       sections[sec].forEach(c => {
         const pct = c.inclusion_pct;
         const pctCls = pct >= 75 ? 'arch-pct--hi' : pct >= 40 ? 'arch-pct--mid' : 'arch-pct--lo';
-        html += `<div class="comp-visual-card comp-arch-card" title="${c.card_name} · ${c.card_id} — ${pct}% of decks, avg ×${c.avg_copies}">
+        topCardsHtml += `<div class="comp-visual-card comp-arch-card" title="${c.card_name} · ${c.card_id} — ${pct}% of decks, avg ×${c.avg_copies}">
           <img src="${cardImg(c.card_id)}" loading="lazy" alt="${c.card_name}"
             onerror="this.parentElement.classList.add('comp-visual-card--err')">
           <span class="arch-pct ${pctCls}">${pct}%</span>
         </div>`;
       });
-      html += `</div>`;
+      topCardsHtml += `</div>`;
     });
+  } else {
+    topCardsHtml = '<div style="font-size:0.6rem;color:var(--gl-text-muted)">No card data.</div>';
   }
 
-  // ── Recent placements table ─────────────────────────────────
+  // ── Build decklist rows HTML (left column) ───────────────────
+  let listHtml = '';
   if (decklists.length) {
-    html += `<div class="deck-comp-sub" style="margin-top:14px">Recent results</div>`;
-    html += `<div class="deck-comp-table">`;
-    decklists.slice(0, 20).forEach(dl => {
+    listHtml += `<div class="deck-comp-col-hdr">Results <span class="deck-comp-col-meta">${decklists.length}</span></div>`;
+    decklists.slice(0, 30).forEach(dl => {
       const t = dl.tournaments || {};
       const rank = dl.placement_rank || 999;
       const medal = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : dl.placement || `#${rank}`;
       const dateStr = t.date ? new Date(t.date + 'T00:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : '';
-      const tName = (t.name || '').replace(/^Standings:\s*/i, '');
-      html += `<div class="deck-comp-row">
-        <span class="deck-comp-rank">${medal}</span>
-        <div class="deck-comp-info">
-          <span class="deck-comp-player">${dl.player || '—'}</span>
-          <span class="deck-comp-event">${tName}${dateStr ? ' · ' + dateStr : ''}</span>
+      const tName = (t.name || '').replace(/^Standings:\s*/i, '').replace(/^#\d+\s*/,'');
+      listHtml += `<div class="deck-comp-entry" id="dce-${dl.id}" onclick="_toggleDeckCompEntry(${dl.id})">
+        <div class="deck-comp-entry-row">
+          <span class="deck-comp-rank">${medal}</span>
+          <div class="deck-comp-info">
+            <span class="deck-comp-player">${dl.player || '—'}</span>
+            <span class="deck-comp-event">${tName}${dateStr ? ' · ' + dateStr : ''}</span>
+          </div>
+          <span class="deck-comp-chevron" id="dce-chev-${dl.id}">›</span>
         </div>
+        <div class="deck-comp-entry-cards" id="dce-cards-${dl.id}" style="display:none"></div>
+      </div>`;
+    });
+  } else {
+    listHtml = '<div style="font-size:0.6rem;color:var(--gl-text-muted)">No results.</div>';
+  }
+
+  wrap.innerHTML = `<div class="deck-comp-cols">
+    <div class="deck-comp-col-left">${listHtml}</div>
+    <div class="deck-comp-col-right">${topCardsHtml}</div>
+  </div>`;
+}
+
+async function _toggleDeckCompEntry(decklistId) {
+  const cardsEl = document.getElementById(`dce-cards-${decklistId}`);
+  const chevEl  = document.getElementById(`dce-chev-${decklistId}`);
+  if (!cardsEl) return;
+
+  const open = cardsEl.style.display !== 'none';
+  cardsEl.style.display = open ? 'none' : 'block';
+  if (chevEl) chevEl.textContent = open ? '›' : '▾';
+  if (open || cardsEl.dataset.loaded) return;
+
+  cardsEl.innerHTML = '<div style="font-size:0.6rem;color:var(--gl-text-muted);padding:4px">Loading…</div>';
+  cardsEl.dataset.loaded = '1';
+
+  if (_deckCompCardCache[decklistId]) {
+    _renderDeckCompEntryCards(cardsEl, _deckCompCardCache[decklistId]);
+    return;
+  }
+  try {
+    const d = await fetch(`/api/comp-decklist/${decklistId}`).then(r => r.json());
+    _deckCompCardCache[decklistId] = d.cards || [];
+    _renderDeckCompEntryCards(cardsEl, _deckCompCardCache[decklistId]);
+  } catch(e) {
+    cardsEl.innerHTML = '<div style="font-size:0.6rem;color:var(--gl-text-muted)">Failed to load.</div>';
+  }
+}
+
+function _renderDeckCompEntryCards(el, cards) {
+  const order = ['Leader','Character','Event','Stage','DON!!','Other'];
+  const sections = {};
+  cards.forEach(c => {
+    const sec = c.section || 'Other';
+    if (!sections[sec]) sections[sec] = [];
+    sections[sec].push(c);
+  });
+  let html = '';
+  order.forEach(sec => {
+    if (!sections[sec] || !sections[sec].length) return;
+    html += `<div class="comp-inline-section" style="font-size:0.52rem">${sec}</div>`;
+    html += `<div class="comp-visual-grid deck-comp-entry-grid">`;
+    sections[sec].forEach(c => {
+      html += `<div class="comp-visual-card" title="${c.card_name||c.card_id}">
+        <img src="${cardImg(c.card_id)}" loading="lazy" onerror="this.parentElement.classList.add('comp-visual-card--err')">
+        ${c.count > 1 ? `<span class="comp-visual-count">×${c.count}</span>` : ''}
       </div>`;
     });
     html += `</div>`;
-  }
-
-  wrap.innerHTML = html || '<div style="font-size:0.62rem;color:var(--gl-text-muted)">No data.</div>';
+  });
+  el.innerHTML = html || '<div style="font-size:0.6rem;color:var(--gl-text-muted)">No cards.</div>';
 }
 
 // ── CONSENSUS STATS ───────────────────────────────────────────

@@ -570,19 +570,29 @@ if (url.startsWith('/api/fetch-bandai')) {
     const params  = new URL('http://x' + req.url).searchParams;
     const limit   = Math.min(parseInt(params.get('limit')  || '200', 10), 500);
     const offset  = parseInt(params.get('offset') || '0', 10);
-    const leader  = params.get('leader')  || '';   // filter by leader_id
-    const color   = params.get('color')   || '';   // filter by color (future)
+    const leader  = params.get('leader')  || '';
     const maxRank = parseInt(params.get('maxRank') || '999', 10);
+    const days    = parseInt(params.get('days') || '0', 10);
 
     try {
-      // Fetch decklists joined with tournament
       let dlQuery = `select=id,tournament_id,player,placement,placement_rank,leader_id,leader_key,archetype,source,tournaments(id,name,date,url)`;
-      dlQuery += `&placement_rank=lte.${maxRank}`;
-      dlQuery += `&source=eq.limitless-auto`;
+      dlQuery += `&placement_rank=lte.${maxRank}&source=eq.limitless-auto`;
       if (leader) dlQuery += `&leader_id=eq.${encodeURIComponent(leader)}`;
-      dlQuery += `&order=tournaments(date).desc,placement_rank.asc`;
-      dlQuery += `&limit=${limit}&offset=${offset}`;
 
+      // Date filter: resolve tournament IDs within range first
+      if (days > 0) {
+        const since = new Date(Date.now() - days * 86400000).toISOString().slice(0, 10);
+        const recentT = await _sbGet('tournaments', `select=id&date=gte.${since}`);
+        const tIds = Array.isArray(recentT) ? recentT.map(t => t.id) : [];
+        if (!tIds.length) {
+          res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+          res.end(JSON.stringify({ ok: true, decklists: [] }));
+          return;
+        }
+        dlQuery += `&tournament_id=in.(${tIds.join(',')})`;
+      }
+
+      dlQuery += `&order=tournaments(date).desc,placement_rank.asc&limit=${limit}&offset=${offset}`;
       const decklists = await _sbGet('decklists', dlQuery);
       res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
       res.end(JSON.stringify({ ok: true, decklists: Array.isArray(decklists) ? decklists : [] }));
@@ -598,11 +608,23 @@ if (url.startsWith('/api/fetch-bandai')) {
     const params   = new URL('http://x' + req.url).searchParams;
     const leaderId = params.get('leader_id') || '';
     const maxRank  = parseInt(params.get('maxRank') || '16', 10);
+    const days     = parseInt(params.get('days') || '0', 10);
     if (!leaderId) { res.writeHead(400); res.end(JSON.stringify({ ok: false, error: 'leader_id required' })); return; }
     try {
-      // 1. Get all matching decklist IDs
-      const decklists = await _sbGet('decklists',
-        `select=id&source=eq.limitless-auto&placement_rank=lte.${maxRank}&leader_id=eq.${encodeURIComponent(leaderId)}`);
+      // 1. Get all matching decklist IDs (with optional date + rank filter)
+      let dlQuery = `select=id&source=eq.limitless-auto&placement_rank=lte.${maxRank}&leader_id=eq.${encodeURIComponent(leaderId)}`;
+      if (days > 0) {
+        const since = new Date(Date.now() - days * 86400000).toISOString().slice(0, 10);
+        const recentT = await _sbGet('tournaments', `select=id&date=gte.${since}`);
+        const tIds = Array.isArray(recentT) ? recentT.map(t => t.id) : [];
+        if (!tIds.length) {
+          res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+          res.end(JSON.stringify({ ok: true, totalDecks: 0, cards: [] }));
+          return;
+        }
+        dlQuery += `&tournament_id=in.(${tIds.join(',')})`;
+      }
+      const decklists = await _sbGet('decklists', dlQuery);
       if (!Array.isArray(decklists) || !decklists.length) {
         res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
         res.end(JSON.stringify({ ok: true, totalDecks: 0, cards: [] }));
