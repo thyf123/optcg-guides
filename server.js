@@ -974,15 +974,21 @@ async function _scraperFetchTournamentIds(maxPages) {
 
 // ── Extract tournament name/date from listing page ────────────
 function _parseTournamentMeta(html, tournamentId) {
-  // Try to find name
-  const nameM = html.match(/<h1[^>]*>([^<]+)<\/h1>/i) ||
-                html.match(/class="[^"]*title[^"]*"[^>]*>([^<]+)</i);
-  const name = nameM ? nameM[1].trim() : `Tournament ${tournamentId}`;
+  // Name: try <title> first (most reliable on standings page), then <h1>
+  const titleM = html.match(/<title>([^|<-]+?)(?:\s*[-|]\s*Limitless|\s*<\/title>)/i);
+  const h1M    = html.match(/<h1[^>]*>([^<]+)<\/h1>/i);
+  const name   = (titleM?.[1] || h1M?.[1] || '').trim() || `Tournament ${tournamentId}`;
 
-  // Try to find date (ISO or common formats)
-  const dateM = html.match(/(\d{4}-\d{2}-\d{2})/) ||
-                html.match(/(\w+ \d{1,2},?\s+\d{4})/);
-  const date = dateM ? dateM[1] : null;
+  // Date: prefer ISO YYYY-MM-DD, fall back to natural language → convert to ISO
+  const isoM  = html.match(/(\d{4}-\d{2}-\d{2})/);
+  let date = isoM ? isoM[1] : null;
+  if (!date) {
+    const natM = html.match(/(\w+ \d{1,2},?\s+\d{4})/);
+    if (natM) {
+      const d = new Date(natM[1]);
+      if (!isNaN(d)) date = d.toISOString().slice(0, 10); // → "YYYY-MM-DD"
+    }
+  }
 
   return { name, date };
 }
@@ -1030,7 +1036,7 @@ async function runDailyScrape({ maxPages } = {}) {
         }
 
         // ── 1. Upsert tournament row ─────────────────────────────
-        await _sbUpsert('tournaments', [{
+        const tRes = await _sbUpsert('tournaments', [{
           id:     tournamentId,
           name:   tName,
           date:   tDate,
@@ -1038,6 +1044,12 @@ async function runDailyScrape({ maxPages } = {}) {
           source: 'limitless',
           url:    `https://play.limitlesstcg.com/tournament/${tournamentId}/standings`
         }], 'id');
+        if (!tRes || tRes.status >= 300) {
+          console.error(`[scraper] Tournament upsert failed (${tournamentId}): status=${tRes?.status}`, JSON.stringify(tRes?.data).slice(0, 200));
+          importedIds.add(tournamentId);
+          await _saveScrapeState({ importedIds: [...importedIds], lastRun: new Date().toISOString(), totalSaved });
+          continue;
+        }
 
         // ── 2. Fetch each player's decklist + insert ─────────────
         let saved = 0;
@@ -1070,7 +1082,10 @@ async function runDailyScrape({ maxPages } = {}) {
             source:          'limitless-auto'
           }]);
 
-          if (!dlRes || dlRes.status >= 300) continue;
+          if (!dlRes || dlRes.status >= 300) {
+            console.error(`[scraper] Decklist insert failed (${player.username}): status=${dlRes?.status}`, JSON.stringify(dlRes?.data).slice(0,200));
+            continue;
+          }
           const decklistId = dlRes.data?.[0]?.id;
           if (!decklistId) continue;
 
