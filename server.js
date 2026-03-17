@@ -754,17 +754,19 @@ const LEADER_MAP = {
 
 // ── HTTP helpers ──────────────────────────────────────────────
 
-function _scraperGet(url) {
+function _scraperGet(url, timeoutMs = 12000) {
   return new Promise((resolve, reject) => {
     const parsedUrl = new URL(url);
     const opts = { hostname: parsedUrl.hostname, path: parsedUrl.pathname + parsedUrl.search,
       headers: { 'User-Agent': 'Mozilla/5.0 (compatible; OPTCG-Guide-Bot/1.0)', 'Accept': 'text/html', 'Accept-Encoding': 'identity' } };
-    https.get(opts, r => {
+    const req = https.get(opts, r => {
       if ((r.statusCode === 301 || r.statusCode === 302) && r.headers.location) {
-        return _scraperGet(new URL(r.headers.location, url).href).then(resolve).catch(reject);
+        return _scraperGet(new URL(r.headers.location, url).href, timeoutMs).then(resolve).catch(reject);
       }
       let b = ''; r.on('data', c => b += c); r.on('end', () => resolve(b));
-    }).on('error', reject);
+    });
+    req.setTimeout(timeoutMs, () => { req.destroy(); reject(new Error(`Timeout fetching ${url}`)); });
+    req.on('error', reject);
   });
 }
 
@@ -1015,9 +1017,15 @@ async function runDailyScrape({ maxPages } = {}) {
         // ── 2. Fetch each player's decklist + insert ─────────────
         let saved = 0;
         for (const player of players) {
-          const decklistUrl = `https://play.limitlesstcg.com/tournament/${tournamentId}/player/${player.username}/decklist`;
-          const deckHtml    = await _scraperGet(decklistUrl);
-          const cards       = _parseNewDecklistHtml(deckHtml);
+          let cards = [];
+          try {
+            const decklistUrl = `https://play.limitlesstcg.com/tournament/${tournamentId}/player/${player.username}/decklist`;
+            const deckHtml    = await _scraperGet(decklistUrl);
+            cards             = _parseNewDecklistHtml(deckHtml);
+          } catch(e) {
+            console.error(`[scraper] Decklist fetch error (${player.username}):`, e.message);
+            await new Promise(r => setTimeout(r, 300)); continue;
+          }
 
           if (!cards.length) { await new Promise(r => setTimeout(r, 300)); continue; }
 
