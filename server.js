@@ -723,7 +723,7 @@ function _scraperGet(url) {
   return new Promise((resolve, reject) => {
     const parsedUrl = new URL(url);
     const opts = { hostname: parsedUrl.hostname, path: parsedUrl.pathname + parsedUrl.search,
-      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; OPTCG-Guide-Bot/1.0)', 'Accept': 'text/html' } };
+      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; OPTCG-Guide-Bot/1.0)', 'Accept': 'text/html', 'Accept-Encoding': 'identity' } };
     https.get(opts, r => {
       if ((r.statusCode === 301 || r.statusCode === 302) && r.headers.location) {
         return _scraperGet(new URL(r.headers.location, url).href).then(resolve).catch(reject);
@@ -855,18 +855,16 @@ async function _scraperFetchStandingsPlayers(tournamentId, maxPlayers) {
   const players       = [];
   const seenUsernames = new Set();
 
-  // Each row:  <td>N</td> ... /player/USERNAME ... /metagame/CARD-ID ... /player/USERNAME/decklist
-  const rowRe = /<tr[\s\S]*?<\/tr>/gi;
+  // Rows have data-placing="N" attribute — use that for reliable placement extraction.
+  // Each row also contains /player/USERNAME and /metagame/CARD-ID links.
+  // Pattern: <tr ... data-placing="N" ...> ... /player/slug ... /metagame/CARD-ID ... </tr>
+  const rowRe = /<tr[^>]+data-placing="(\d+)"[^>]*>([\s\S]*?)<\/tr>/gi;
   let rowM;
   while ((rowM = rowRe.exec(html)) !== null && players.length < maxPlayers) {
-    const row = rowM[0];
+    const placement = parseInt(rowM[1]);
+    const row       = rowM[2];
 
-    // Placement: first <td> whose sole content is a number
-    const placeM = row.match(/<td[^>]*>\s*(\d+)\s*<\/td>/);
-    if (!placeM) continue;
-    const placement = parseInt(placeM[1]);
-
-    // Player username from /player/USERNAME link
+    // Player username from /player/USERNAME link (not the /decklist sub-path)
     const playerM = row.match(/href="\/tournament\/[\w-]+\/player\/([\w.%-]+?)(?:\/|")/);
     if (!playerM) continue;
     const username = playerM[1];
