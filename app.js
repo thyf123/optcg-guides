@@ -8262,20 +8262,19 @@ function renderDeck(d, matchup, deckKey) {
       ${essHtml}
       ${tipsHtml}
       <div class="custom-tips-section" id="custom-tips-wrap">${_ctHtml}</div>
-      <div id="mi-games-wrap">${_miniGamesHtml(deckKey)}</div>
     </div><hr class="mi-divider">`;
   }
 
   let html = `<div class="leader-wrap">
       <img class="leader-img" id="leader-card"
-        src="${cardImg(d.leader)}"
+        src="${compCardImg(d.leader) || cardImg(d.leader)}"
         onload="this.style.opacity='1'"
-        onerror="console.error('IMG FAIL (leader):', this.src); this.onerror=null;"
+        onerror="this.onerror=null; this.src='${cardImg(d.leader)}';"
         onclick="openModal(this.src,'${d.leader} - ${d.leaderName}')"
         alt="${d.leader}">
       <div class="linfo">
-        <div class="lid">${d.leader} · ${colorPips} · ${d.leaderStats}</div>
-        <div class="leff">${d.leaderEffect}</div>
+        <div class="lid">${d.leader}${colorPips ? ' · ' + colorPips : ''}${d.leaderStats ? ' · ' + d.leaderStats : ''}</div>
+        ${d.leaderEffect ? `<div class="leff">${d.leaderEffect}</div>` : ''}
       </div>
     </div>
     ${matchupInfoHtml}`;
@@ -8415,6 +8414,8 @@ function renderDeck(d, matchup, deckKey) {
     fab.style.display = '';
     fab.onclick = (e) => openLogModal(deckKey, _mNameTop, e);
   }
+  const _lk = currentLeaderKey;
+  const existingNote = allNotes[_nk(_lk, deckKey)] || '';
   const _mName = (matchup ? matchup.name : deckKey).replace(/'/g, '&#39;');
   // ── Top Cards section (collapsible, lazy-loaded) ──
   html += `
@@ -8467,20 +8468,37 @@ function renderDeck(d, matchup, deckKey) {
     </div>
   </div>`;
 
-  // ── My Record section ──
+  // ── My Notes + My Record (merged section) ──
   html += `
   <div class="my-section">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+    <div class="my-sec-hdr" onclick="_toggleSection('my-notes-body','mn-chev',event)" style="margin-bottom:6px">
+      <div class="my-section-title" style="margin-bottom:0">📝 My Notes</div>
+      <span class="sec-toggle-chev" id="mn-chev">▾</span>
+    </div>
+    <div id="my-notes-body">
+      <textarea id="my-notes-ta" class="my-notes-area" placeholder="Your observations, what to remember next time…"></textarea>
+      <div class="my-note-actions">
+        <button class="my-note-save" onclick="saveNoteDeck('${_lk}', '${deckKey}')">Save</button>
+        <button class="my-note-clear" onclick="clearNote('${_lk}', '${deckKey}')">Clear</button>
+        <span class="my-note-saved" id="note-saved-flash">Saved ✓</span>
+      </div>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin:14px 0 4px">
       <div class="my-section-title" style="margin-bottom:0">📊 My Record</div>
       <div style="display:flex;gap:6px">
         <button class="my-note-clear" id="log-edit-btn" onclick="toggleLogEditMode('${deckKey}')">Edit</button>
         <button class="my-log-btn" onclick="openLogModal('${deckKey}','${_mName}',event)">+ Log Game</button>
       </div>
     </div>
+    <div id="mi-games-wrap" style="margin-bottom:6px"></div>
     <div id="my-hist-inner"></div>
   </div>`;
   document.getElementById('deck-content').innerHTML = html;
+  // set textarea value after innerHTML (avoids HTML-encoding issues)
+  const ta = document.getElementById('my-notes-ta');
+  if (ta) { ta.value = existingNote; _setupAtMention(ta, deckKey, matchup); }
   _refreshMySection(deckKey);
+  _refreshMiniGames(deckKey);
   // Lazy-load tournament results for this leader
   _deckCompLeaderId = d.leader;
   _deckCompCardCache = {};
