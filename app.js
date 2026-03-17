@@ -4161,7 +4161,19 @@ function deleteCustomLeader(key) {
 }
 
 function _bootCustomLeaders() {
-  Object.keys(allCustomLeaders).forEach(k => _injectCustomLeader(k, allCustomLeaders[k]));
+  let changed = false;
+  Object.keys(allCustomLeaders).forEach(k => {
+    const cl = allCustomLeaders[k];
+    // Auto-remove custom leaders whose cardId is already covered by a hardcoded leader
+    const duplicate = Object.entries(LEADERS).find(([lk, l]) => l.cardId === cl.cardId && lk !== k);
+    if (duplicate) {
+      delete allCustomLeaders[k];
+      changed = true;
+      return;
+    }
+    _injectCustomLeader(k, allCustomLeaders[k]);
+  });
+  if (changed) { _saveCustomLeaders(); syncToSupabase(); }
 }
 // ── END ADD LEADER ─────────────────────────────────────────────
 
