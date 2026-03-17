@@ -6238,11 +6238,25 @@ function _renderCompDeckCards(entryId, cards) {
     html += `<div class="comp-inline-section">${sec} <span style="font-weight:400;opacity:0.6">(${total})</span></div>`;
     html += `<div class="comp-inline-cards">`;
     sections[sec].forEach(c => {
-      html += `<div class="comp-inline-card"><span class="comp-inline-count">${c.count}×</span><span>${c.card_name || c.card_id}</span></div>`;
+      const cid = c.card_id || '';
+      const uid = entryId + '_' + cid.replace(/[^a-zA-Z0-9]/g, '_');
+      const imgSrc = cardImg(cid);
+      html += `<div class="comp-inline-card" onclick="_toggleCompCardImg('${uid}')" style="cursor:pointer">
+        <span class="comp-inline-count">${c.count}×</span>
+        <span class="comp-card-name">${c.card_name || cid}</span>
+        <span class="comp-card-id">${cid}</span>
+        <img id="comp-cimg-${uid}" src="${imgSrc}" class="comp-card-preview" style="display:none" onerror="this.style.display='none'">
+      </div>`;
     });
     html += `</div>`;
   });
   wrap.innerHTML = html || '<div style="font-size:0.62rem;color:var(--gl-text-muted)">No cards found</div>';
+}
+
+function _toggleCompCardImg(uid) {
+  const img = document.getElementById('comp-cimg-' + uid);
+  if (!img) return;
+  img.style.display = img.style.display === 'none' ? 'block' : 'none';
 }
 
 function _gameXwr(game) {

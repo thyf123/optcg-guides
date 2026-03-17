@@ -1828,9 +1828,17 @@ th.sort-active { color: var(--gl-gold-h); }
   display: grid; grid-template-columns: repeat(2, 1fr); gap: 2px 8px;
 }
 .comp-inline-card {
-  font-size: 0.63rem; color: var(--gl-text); display: flex; gap: 4px; align-items: baseline;
+  font-size: 0.63rem; color: var(--gl-text); display: flex; flex-wrap: wrap; gap: 4px; align-items: baseline;
+  padding: 2px 0;
 }
+.comp-inline-card:hover { background: rgba(255,255,255,0.04); border-radius: 3px; }
 .comp-inline-count { color: var(--gl-gold); font-weight: 700; min-width: 14px; }
+.comp-card-name { flex: 1; }
+.comp-card-id { font-size: 0.55rem; color: var(--gl-text-muted); opacity: 0.7; font-family: monospace; }
+.comp-card-preview {
+  display: block; width: 100%; max-width: 200px; border-radius: 6px;
+  margin-top: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+}
 .comp-inline-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; }
 .comp-open-btn { font-size: 0.6rem; color: var(--gl-gold); cursor: pointer; text-decoration: underline; }
 /* Group header (tournament name) */
