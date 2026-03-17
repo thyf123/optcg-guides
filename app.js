@@ -5161,11 +5161,14 @@ async function syncFromSupabase() {
         const gdRows = await gdRes.json();
         const ldr = gdRows.find(r => r.id === 'leaders-data');
         if (ldr && ldr.payload && typeof ldr.payload === 'object' && !Array.isArray(ldr.payload)) {
-          LEADERS = ldr.payload;
+          // Merge: hardcoded LEADERS is the base (preserves new entries added in code),
+          // Supabase overrides specific entries that have been admin-published (e.g. colorMap, matchups).
+          LEADERS = { ...LEADERS, ...ldr.payload };
         }
         const dlr = gdRows.find(r => r.id === 'decklists-data');
         if (dlr && dlr.payload && typeof dlr.payload === 'object' && !Array.isArray(dlr.payload)) {
-          DECKLISTS = dlr.payload;
+          // Same merge strategy for DECKLISTS
+          DECKLISTS = { ...DECKLISTS, ...dlr.payload };
         }
       }
     } catch(e) { /* non-fatal: keep hardcoded defaults */ }
