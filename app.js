@@ -5431,7 +5431,7 @@ function showDeck(deckKey, matchupIdx) {
     resolvedData = {
       leader: ldr.cardId || '',
       leaderName: ldr.name || deckKey,
-      leaderColors: ldr.color || '?',
+      leaderColors: '',
       leaderStats: '',
       leaderEffect: '',
     };
@@ -8231,7 +8231,7 @@ function renderDeck(d, matchup, deckKey) {
   const activeVI = _activeVariantIdx[deckKey] ?? 0;
 
   // color pips for leader
-  const colorPips = d.leaderColors.split('/').map(c=>{
+  const colorPips = (d.leaderColors || '').split('/').filter(Boolean).map(c=>{
     c = c.trim().toLowerCase();
     const cls = c==='red'?'pr':c==='green'?'pg':c==='purple'?'pp':c==='yellow'?'py':'pr';
     return `<span class="pip ${cls}"></span>${c.charAt(0).toUpperCase()+c.slice(1)}`;
@@ -8415,62 +8415,62 @@ function renderDeck(d, matchup, deckKey) {
     fab.style.display = '';
     fab.onclick = (e) => openLogModal(deckKey, _mNameTop, e);
   }
-  // append my-section
-  // Snapshot leader key at render time so Save/Clear always write to the correct
-  // leader+opponent pair regardless of any subsequent global state changes.
-  const _lk = currentLeaderKey;
-  const existingNote = allNotes[_nk(_lk, deckKey)] || '';
   const _mName = (matchup ? matchup.name : deckKey).replace(/'/g, '&#39;');
-  // ── Tournament results section (lazy-loaded after render) ──
+  // ── Top Cards section (collapsible, lazy-loaded) ──
   html += `
   <div class="my-section" id="deck-top-cards-section">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+    <div class="my-sec-hdr" onclick="_toggleSection('deck-top-cards-body','tcc-chev',event)">
       <div class="my-section-title" style="margin-bottom:0">🃏 Top Cards</div>
-      <div class="deck-comp-fgroup">
-        <button class="deck-comp-fbtn${_deckCompTopCardDays===7?' active':''}"  onclick="_setDeckTopCardFilter(7,  this)">1w</button>
-        <button class="deck-comp-fbtn${_deckCompTopCardDays===30?' active':''}" onclick="_setDeckTopCardFilter(30, this)">1m</button>
-        <button class="deck-comp-fbtn${_deckCompTopCardDays===0?' active':''}"  onclick="_setDeckTopCardFilter(0,  this)">All</button>
+      <div style="display:flex;align-items:center;gap:8px">
+        <div class="deck-comp-fgroup" onclick="event.stopPropagation()">
+          <button class="deck-comp-fbtn${_deckCompTopCardDays===7?' active':''}"  onclick="_setDeckTopCardFilter(7,  this)">1w</button>
+          <button class="deck-comp-fbtn${_deckCompTopCardDays===30?' active':''}" onclick="_setDeckTopCardFilter(30, this)">1m</button>
+          <button class="deck-comp-fbtn${_deckCompTopCardDays===0?' active':''}"  onclick="_setDeckTopCardFilter(0,  this)">All</button>
+        </div>
+        <span class="sec-toggle-chev" id="tcc-chev">▾</span>
       </div>
     </div>
-    <div id="deck-top-cards-wrap"><div class="deck-comp-loading">Loading…</div></div>
+    <div id="deck-top-cards-body">
+      <div id="deck-top-cards-wrap"><div class="deck-comp-loading">Loading…</div></div>
+    </div>
   </div>`;
 
+  // ── Tournament Results section (collapsible, lazy-loaded) ──
   html += `
   <div class="my-section" id="deck-comp-section">
-    <div class="my-section-title">🏆 Tournament Results</div>
-    <div class="deck-comp-filters">
-      <div class="deck-comp-fgrp-labeled">
-        <span class="deck-comp-flabel">Time</span>
-        <div class="deck-comp-fgroup">
-          <button class="deck-comp-fbtn${_deckCompDays===7?' active':''}"  onclick="_setDeckCompFilter(7,  'days', this)">1w</button>
-          <button class="deck-comp-fbtn${_deckCompDays===30?' active':''}" onclick="_setDeckCompFilter(30, 'days', this)">1m</button>
-          <button class="deck-comp-fbtn${_deckCompDays===0?' active':''}"  onclick="_setDeckCompFilter(0,  'days', this)">All</button>
+    <div class="my-sec-hdr" onclick="_toggleSection('deck-comp-body','dcr-chev',event)">
+      <div class="my-section-title" style="margin-bottom:0">🏆 Tournament Results</div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <div class="deck-comp-filters" onclick="event.stopPropagation()" style="margin-bottom:0">
+          <div class="deck-comp-fgrp-labeled">
+            <span class="deck-comp-flabel">Time</span>
+            <div class="deck-comp-fgroup">
+              <button class="deck-comp-fbtn${_deckCompDays===7?' active':''}"  onclick="_setDeckCompFilter(7,  'days', this)">1w</button>
+              <button class="deck-comp-fbtn${_deckCompDays===30?' active':''}" onclick="_setDeckCompFilter(30, 'days', this)">1m</button>
+              <button class="deck-comp-fbtn${_deckCompDays===0?' active':''}"  onclick="_setDeckCompFilter(0,  'days', this)">All</button>
+            </div>
+          </div>
+          <div class="deck-comp-fgrp-labeled">
+            <span class="deck-comp-flabel">Rank</span>
+            <div class="deck-comp-fgroup">
+              <button class="deck-comp-fbtn${_deckCompMaxRank===8?' active':''}"  onclick="_setDeckCompFilter(8,   'rank', this)">Top 8</button>
+              <button class="deck-comp-fbtn${_deckCompMaxRank===16?' active':''}" onclick="_setDeckCompFilter(16,  'rank', this)">Top 16</button>
+              <button class="deck-comp-fbtn${_deckCompMaxRank===0?' active':''}"  onclick="_setDeckCompFilter(0,   'rank', this)">All</button>
+            </div>
+          </div>
         </div>
-      </div>
-      <div class="deck-comp-fgrp-labeled">
-        <span class="deck-comp-flabel">Rank</span>
-        <div class="deck-comp-fgroup">
-          <button class="deck-comp-fbtn${_deckCompMaxRank===8?' active':''}"  onclick="_setDeckCompFilter(8,   'rank', this)">Top 8</button>
-          <button class="deck-comp-fbtn${_deckCompMaxRank===16?' active':''}" onclick="_setDeckCompFilter(16,  'rank', this)">Top 16</button>
-          <button class="deck-comp-fbtn${_deckCompMaxRank===0?' active':''}"  onclick="_setDeckCompFilter(0,   'rank', this)">All</button>
-        </div>
+        <span class="sec-toggle-chev" id="dcr-chev">▾</span>
       </div>
     </div>
-    <div id="deck-comp-wrap"><div class="deck-comp-loading">Loading…</div></div>
+    <div id="deck-comp-body">
+      <div id="deck-comp-wrap"><div class="deck-comp-loading">Loading…</div></div>
+    </div>
   </div>`;
 
+  // ── My Record section ──
   html += `
   <div class="my-section">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-      <div class="my-section-title" style="margin-bottom:0">📝 My Notes</div>
-    </div>
-    <textarea id="my-notes-ta" class="my-notes-area" placeholder="Your observations, what to remember next time…"></textarea>
-    <div class="my-note-actions">
-      <button class="my-note-save" onclick="saveNoteDeck('${_lk}', '${deckKey}')">Save</button>
-      <button class="my-note-clear" onclick="clearNote('${_lk}', '${deckKey}')">Clear</button>
-      <span class="my-note-saved" id="note-saved-flash">Saved ✓</span>
-    </div>
-    <div style="display:flex;justify-content:space-between;align-items:center;margin:14px 0 6px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
       <div class="my-section-title" style="margin-bottom:0">📊 My Record</div>
       <div style="display:flex;gap:6px">
         <button class="my-note-clear" id="log-edit-btn" onclick="toggleLogEditMode('${deckKey}')">Edit</button>
@@ -8480,10 +8480,6 @@ function renderDeck(d, matchup, deckKey) {
     <div id="my-hist-inner"></div>
   </div>`;
   document.getElementById('deck-content').innerHTML = html;
-  // set textarea value after innerHTML (avoids HTML-encoding issues)
-  const ta = document.getElementById('my-notes-ta');
-  if (ta) { ta.value = existingNote; _setupAtMention(ta, deckKey, matchup); }
-  // render history
   _refreshMySection(deckKey);
   // Lazy-load tournament results for this leader
   _deckCompLeaderId = d.leader;
@@ -8492,6 +8488,17 @@ function renderDeck(d, matchup, deckKey) {
   _loadDeckCompSection();
   _loadDeckTopCards();
 }
+// ── SECTION TOGGLE ────────────────────────────────────────────
+function _toggleSection(bodyId, chevId, event) {
+  if (event) event.stopPropagation();
+  const body = document.getElementById(bodyId);
+  const chev = document.getElementById(chevId);
+  if (!body) return;
+  const isOpen = body.style.display !== 'none';
+  body.style.display = isOpen ? 'none' : '';
+  if (chev) chev.textContent = isOpen ? '›' : '▾';
+}
+
 // ── TOURNAMENT RESULTS ON DECK PAGE ───────────────────────────
 function _setDeckCompFilter(val, type, btn) {
   if (type === 'days') {
@@ -8642,7 +8649,8 @@ async function _toggleDeckCompEntry(decklistId) {
 }
 
 function _renderDeckCompEntryCards(el, cards) {
-  const order = ['Leader','Character','Event','Stage','DON!!','Other'];
+  // Leader card omitted — already shown at top of page
+  const order = ['Character','Event','Stage','DON!!','Other'];
   const sections = {};
   cards.forEach(c => {
     const sec = c.section || 'Other';

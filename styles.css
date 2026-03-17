@@ -1118,6 +1118,17 @@ th.sort-active { color: var(--gl-gold-h); }
   font-size: 0.65rem; color: var(--gl-gold); font-weight: 700;
   text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: var(--sp-2);
 }
+/* ── Collapsible section header ──────────────────────────── */
+.my-sec-hdr {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 8px; cursor: pointer; user-select: none;
+}
+.my-sec-hdr:hover .my-section-title { opacity: 0.85; }
+.sec-toggle-chev {
+  font-size: 0.75rem; color: var(--gl-text-muted);
+  transition: transform 0.15s; flex-shrink: 0;
+}
+
 /* ── Deck page tournament results section ─────────────────── */
 .deck-comp-loading { font-size: 0.62rem; color: var(--gl-text-muted); padding: 6px 0; }
 
