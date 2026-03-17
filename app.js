@@ -497,14 +497,6 @@ let LEADERS = {
     ],
     colorMap: null
   },
-  boa: {
-    cardId: "OP14-041",
-    name: "Boa Hancock",
-    title: "OP14-041 Boa Hancock",
-    sub: "Matchup data coming soon",
-    matchups: [],
-    colorMap: null
-  },
   op7bonney: {
     cardId: "OP07-019",
     name: "Jewelry Bonney",
