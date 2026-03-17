@@ -5699,7 +5699,7 @@ function rebuildMatchupGrid() {
       <button class="mg-log-btn" onclick="event.stopPropagation();openLogModal('${m.deck||''}','',event)">+ Log</button>`;
 
     card.addEventListener('click', () => {
-      if (m.deck) showMatchupHistory(currentLeaderKey, m.deck, displayName);
+      if (m.deck) showDeck(m.deck, i);
     });
     gc.appendChild(card);
   });
