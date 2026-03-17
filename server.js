@@ -644,18 +644,34 @@ if (url.startsWith('/api/fetch-bandai')) {
     return;
   }
 
-  // ── Debug: test standings parser on one tournament (temp, no auth) ──
+  // ── Debug: test tournament listing + standings parser (temp, no auth) ──
   if (url.startsWith('/api/debug-standings')) {
     const tid = new URL('http://x' + req.url).searchParams.get('id') || '';
     if (!tid) { res.writeHead(400); res.end('?id= required'); return; }
     try {
       const standingsUrl = `https://play.limitlesstcg.com/tournament/${tid}/standings`;
       const html = await _scraperGet(standingsUrl);
-      const htmlSnippet = html.slice(0, 500);
-      const hasDataPlacing = html.includes('data-placing=');
       const { players, meta } = await _scraperFetchStandingsPlayers(tid, 5);
       res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
-      res.end(JSON.stringify({ ok: true, htmlLen: html.length, hasDataPlacing, htmlSnippet, meta, players }));
+      res.end(JSON.stringify({ ok: true, htmlLen: html.length, hasDataPlacing: html.includes('data-placing='), meta, players }));
+    } catch(e) {
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: false, error: e.message }));
+    }
+    return;
+  }
+
+  // ── Debug: test tournament listing page (temp, no auth) ──
+  if (url.startsWith('/api/debug-listing')) {
+    try {
+      const listUrl = 'https://play.limitlesstcg.com/tournaments/completed?game=OP&page=1';
+      const html = await _scraperGet(listUrl);
+      const re = /href="\/tournament\/([\w-]+)\/standings"/gi;
+      const ids = [];
+      let m;
+      while ((m = re.exec(html)) !== null && ids.length < 10) ids.push(m[1]);
+      res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+      res.end(JSON.stringify({ ok: true, htmlLen: html.length, htmlSnippet: html.slice(0, 400), tournamentIds: ids }));
     } catch(e) {
       res.writeHead(500, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ ok: false, error: e.message }));
