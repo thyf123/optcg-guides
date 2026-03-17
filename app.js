@@ -240,7 +240,7 @@ function _onAuthSuccess(user) {
     }
     if (document.getElementById('screen-matchup').classList.contains('active')) {
       _refreshYouCells();
-      rebuildMatchupTable();
+      if (currentMode === 'grid') rebuildMatchupGrid(); else rebuildMatchupTable();
     }
   });
 }
@@ -1871,6 +1871,695 @@ let LEADERS = {
     { name:"ST29 Luffy", warn:false, go:"?", wr1:null, wr2:null, style:"—", deck:"st29luffy", essential:[], tips:[] },
     { name:"P-117 Nami", warn:false, go:"?", wr1:null, wr2:null, style:"—", deck:"p117nami", essential:[], tips:[] }
     ],
+    colorMap: null
+  },
+
+  op01zoro: {
+    cardId: "OP01-001",
+    name: "Roronoa Zoro",
+    title: "OP01-001 Roronoa Zoro",
+    sub: "Matchup data coming soon",
+    matchups: [],
+    colorMap: null
+  },
+  op01luffy: {
+    cardId: "OP01-003",
+    name: "Monkey D. Luffy",
+    title: "OP01-003 Monkey D. Luffy",
+    sub: "Matchup data coming soon",
+    matchups: [],
+    colorMap: null
+  },
+  op01oden: {
+    cardId: "OP01-031",
+    name: "Kozuki Oden",
+    title: "OP01-031 Kozuki Oden",
+    sub: "Matchup data coming soon",
+    matchups: [],
+    colorMap: null
+  },
+  op01doffy: {
+    cardId: "OP01-060",
+    name: "Donquixote Doflamingo",
+    title: "OP01-060 Donquixote Doflamingo",
+    sub: "Matchup data coming soon",
+    matchups: [],
+    colorMap: null
+  },
+  op01kaido: {
+    cardId: "OP01-061",
+    name: "Kaido",
+    title: "OP01-061 Kaido",
+    sub: "Matchup data coming soon",
+    matchups: [],
+    colorMap: null
+  },
+  op01crocodile: {
+    cardId: "OP01-062",
+    name: "Crocodile",
+    title: "OP01-062 Crocodile",
+    sub: "Matchup data coming soon",
+    matchups: [],
+    colorMap: null
+  },
+  op01king: {
+    cardId: "OP01-091",
+    name: "King",
+    title: "OP01-091 King",
+    sub: "Matchup data coming soon",
+    matchups: [],
+    colorMap: null
+  },
+  op02whitebeard: {
+    cardId: "OP02-001",
+    name: "Edward Newgate",
+    title: "OP02-001 Edward Newgate",
+    sub: "Matchup data coming soon",
+    matchups: [],
+    colorMap: null
+  },
+  op02garp: {
+    cardId: "OP02-002",
+    name: "Monkey D. Garp",
+    title: "OP02-002 Monkey D. Garp",
+    sub: "Matchup data coming soon",
+    matchups: [],
+    colorMap: null
+  },
+  op02kinemon: {
+    cardId: "OP02-025",
+    name: "Kin'emon",
+    title: "OP02-025 Kin'emon",
+    sub: "Matchup data coming soon",
+    matchups: [],
+    colorMap: null
+  },
+  op02sanji: {
+    cardId: "OP02-026",
+    name: "Sanji",
+    title: "OP02-026 Sanji",
+    sub: "Matchup data coming soon",
+    matchups: [],
+    colorMap: null
+  },
+  op02ivankov: {
+    cardId: "OP02-049",
+    name: "Emporio Ivankov",
+    title: "OP02-049 Emporio Ivankov",
+    sub: "Matchup data coming soon",
+    matchups: [],
+    colorMap: null
+  },
+  op02magellan: {
+    cardId: "OP02-071",
+    name: "Magellan",
+    title: "OP02-071 Magellan",
+    sub: "Matchup data coming soon",
+    matchups: [],
+    colorMap: null
+  },
+  op02zephyr: {
+    cardId: "OP02-072",
+    name: "Zephyr",
+    title: "OP02-072 Zephyr",
+    sub: "Matchup data coming soon",
+    matchups: [],
+    colorMap: null
+  },
+  op02smoker: {
+    cardId: "OP02-093",
+    name: "Smoker",
+    title: "OP02-093 Smoker",
+    sub: "Matchup data coming soon",
+    matchups: [],
+    colorMap: null
+  },
+  op03ace: {
+    cardId: "OP03-001",
+    name: "Portgas D. Ace",
+    title: "OP03-001 Portgas D. Ace",
+    sub: "Matchup data coming soon",
+    matchups: [],
+    colorMap: null
+  },
+  op03kuro: {
+    cardId: "OP03-021",
+    name: "Kuro",
+    title: "OP03-021 Kuro",
+    sub: "Matchup data coming soon",
+    matchups: [],
+    colorMap: null
+  },
+  op03arlong: {
+    cardId: "OP03-022",
+    name: "Arlong",
+    title: "OP03-022 Arlong",
+    sub: "Matchup data coming soon",
+    matchups: [],
+    colorMap: null
+  },
+  op03nami: {
+    cardId: "OP03-040",
+    name: "Nami",
+    title: "OP03-040 Nami",
+    sub: "Matchup data coming soon",
+    matchups: [],
+    colorMap: null
+  },
+  op03iceburg: {
+    cardId: "OP03-058",
+    name: "Iceburg",
+    title: "OP03-058 Iceburg",
+    sub: "Matchup data coming soon",
+    matchups: [],
+    colorMap: null
+  },
+  op03lucci: {
+    cardId: "OP03-076",
+    name: "Rob Lucci",
+    title: "OP03-076 Rob Lucci",
+    sub: "Matchup data coming soon",
+    matchups: [],
+    colorMap: null
+  },
+  op03linlin: {
+    cardId: "OP03-077",
+    name: "Charlotte Linlin",
+    title: "OP03-077 Charlotte Linlin",
+    sub: "Matchup data coming soon",
+    matchups: [],
+    colorMap: null
+  },
+  op03katakuri: {
+    cardId: "OP03-099",
+    name: "Charlotte Katakuri",
+    title: "OP03-099 Charlotte Katakuri",
+    sub: "Matchup data coming soon",
+    matchups: [],
+    colorMap: null
+  },
+  op04vivi: {
+    cardId: "OP04-001",
+    name: "Nefertari Vivi",
+    title: "OP04-001 Nefertari Vivi",
+    sub: "Matchup data coming soon",
+    matchups: [],
+    colorMap: null
+  },
+  op04doffy: {
+    cardId: "OP04-019",
+    name: "Donquixote Doflamingo",
+    title: "OP04-019 Donquixote Doflamingo",
+    sub: "Matchup data coming soon",
+    matchups: [],
+    colorMap: null
+  },
+  op04issho: {
+    cardId: "OP04-020",
+    name: "Issho",
+    title: "OP04-020 Issho",
+    sub: "Matchup data coming soon",
+    matchups: [],
+    colorMap: null
+  },
+  op04rebecca: {
+    cardId: "OP04-039",
+    name: "Rebecca",
+    title: "OP04-039 Rebecca",
+    sub: "Matchup data coming soon",
+    matchups: [],
+    colorMap: null
+  },
+  op04queen: {
+    cardId: "OP04-040",
+    name: "Queen",
+    title: "OP04-040 Queen",
+    sub: "Matchup data coming soon",
+    matchups: [],
+    colorMap: null
+  },
+  op04crocodile: {
+    cardId: "OP04-058",
+    name: "Crocodile",
+    title: "OP04-058 Crocodile",
+    sub: "Matchup data coming soon",
+    matchups: [],
+    colorMap: null
+  },
+  op05sabo: {
+    cardId: "OP05-001",
+    name: "Sabo",
+    title: "OP05-001 Sabo",
+    sub: "Matchup data coming soon",
+    matchups: [],
+    colorMap: null
+  },
+  op05belobetty: {
+    cardId: "OP05-002",
+    name: "Belo Betty",
+    title: "OP05-002 Belo Betty",
+    sub: "Matchup data coming soon",
+    matchups: [],
+    colorMap: null
+  },
+  op05rosinante: {
+    cardId: "OP05-022",
+    name: "Donquixote Rosinante",
+    title: "OP05-022 Donquixote Rosinante",
+    sub: "Matchup data coming soon",
+    matchups: [],
+    colorMap: null
+  },
+  op05sakazuki: {
+    cardId: "OP05-041",
+    name: "Sakazuki",
+    title: "OP05-041 Sakazuki",
+    sub: "Matchup data coming soon",
+    matchups: [],
+    colorMap: null
+  },
+  op05luffy: {
+    cardId: "OP05-060",
+    name: "Monkey D. Luffy",
+    title: "OP05-060 Monkey D. Luffy",
+    sub: "Matchup data coming soon",
+    matchups: [],
+    colorMap: null
+  },
+  op05enel: {
+    cardId: "OP05-098",
+    name: "Enel",
+    title: "OP05-098 Enel",
+    sub: "Matchup data coming soon",
+    matchups: [],
+    colorMap: null
+  },
+  op06uta: {
+    cardId: "OP06-001",
+    name: "Uta",
+    title: "OP06-001 Uta",
+    sub: "Matchup data coming soon",
+    matchups: [],
+    colorMap: null
+  },
+  op06hodyjones: {
+    cardId: "OP06-020",
+    name: "Hody Jones",
+    title: "OP06-020 Hody Jones",
+    sub: "Matchup data coming soon",
+    matchups: [],
+    colorMap: null
+  },
+  op06perona: {
+    cardId: "OP06-021",
+    name: "Perona",
+    title: "OP06-021 Perona",
+    sub: "Matchup data coming soon",
+    matchups: [],
+    colorMap: null
+  },
+  op06yamato: {
+    cardId: "OP06-022",
+    name: "Yamato",
+    title: "OP06-022 Yamato",
+    sub: "Matchup data coming soon",
+    matchups: [],
+    colorMap: null
+  },
+  op06reiju: {
+    cardId: "OP06-042",
+    name: "Vinsmoke Reiju",
+    title: "OP06-042 Vinsmoke Reiju",
+    sub: "Matchup data coming soon",
+    matchups: [],
+    colorMap: null
+  },
+  op06moria: {
+    cardId: "OP06-080",
+    name: "Gecko Moria",
+    title: "OP06-080 Gecko Moria",
+    sub: "Matchup data coming soon",
+    matchups: [],
+    colorMap: null
+  },
+  op07dragon: {
+    cardId: "OP07-001",
+    name: "Monkey D. Dragon",
+    title: "OP07-001 Monkey D. Dragon",
+    sub: "Matchup data coming soon",
+    matchups: [],
+    colorMap: null
+  },
+  op07boa: {
+    cardId: "OP07-038",
+    name: "Boa Hancock",
+    title: "OP07-038 Boa Hancock",
+    sub: "Matchup data coming soon",
+    matchups: [],
+    colorMap: null
+  },
+  op07foxy: {
+    cardId: "OP07-059",
+    name: "Foxy",
+    title: "OP07-059 Foxy",
+    sub: "Matchup data coming soon",
+    matchups: [],
+    colorMap: null
+  },
+  op07lucci: {
+    cardId: "OP07-079",
+    name: "Rob Lucci",
+    title: "OP07-079 Rob Lucci",
+    sub: "Matchup data coming soon",
+    matchups: [],
+    colorMap: null
+  },
+  op07vegapunk: {
+    cardId: "OP07-097",
+    name: "Vegapunk",
+    title: "OP07-097 Vegapunk",
+    sub: "Matchup data coming soon",
+    matchups: [],
+    colorMap: null
+  },
+  op08chopper: {
+    cardId: "OP08-001",
+    name: "Tony Tony Chopper",
+    title: "OP08-001 Tony Tony Chopper",
+    sub: "Matchup data coming soon",
+    matchups: [],
+    colorMap: null
+  },
+  op08marco: {
+    cardId: "OP08-002",
+    name: "Marco",
+    title: "OP08-002 Marco",
+    sub: "Matchup data coming soon",
+    matchups: [],
+    colorMap: null
+  },
+  op08king: {
+    cardId: "OP08-057",
+    name: "King",
+    title: "OP08-057 King",
+    sub: "Matchup data coming soon",
+    matchups: [],
+    colorMap: null
+  },
+  op08kalgara: {
+    cardId: "OP08-098",
+    name: "Kalgara",
+    title: "OP08-098 Kalgara",
+    sub: "Matchup data coming soon",
+    matchups: [],
+    colorMap: null
+  },
+  op09buggy: {
+    cardId: "OP09-042",
+    name: "Buggy",
+    title: "OP09-042 Buggy",
+    sub: "Matchup data coming soon",
+    matchups: [],
+    colorMap: null
+  },
+  op09luffy: {
+    cardId: "OP09-061",
+    name: "Monkey D. Luffy",
+    title: "OP09-061 Monkey D. Luffy",
+    sub: "Matchup data coming soon",
+    matchups: [],
+    colorMap: null
+  },
+  op10smoker: {
+    cardId: "OP10-001",
+    name: "Smoker",
+    title: "OP10-001 Smoker",
+    sub: "Matchup data coming soon",
+    matchups: [],
+    colorMap: null
+  },
+  op10caesar: {
+    cardId: "OP10-002",
+    name: "Caesar Clown",
+    title: "OP10-002 Caesar Clown",
+    sub: "Matchup data coming soon",
+    matchups: [],
+    colorMap: null
+  },
+  op10sugar: {
+    cardId: "OP10-003",
+    name: "Sugar",
+    title: "OP10-003 Sugar",
+    sub: "Matchup data coming soon",
+    matchups: [],
+    colorMap: null
+  },
+  op10law: {
+    cardId: "OP10-022",
+    name: "Trafalgar Law",
+    title: "OP10-022 Trafalgar Law",
+    sub: "Matchup data coming soon",
+    matchups: [],
+    colorMap: null
+  },
+  op10usopp: {
+    cardId: "OP10-042",
+    name: "Usopp",
+    title: "OP10-042 Usopp",
+    sub: "Matchup data coming soon",
+    matchups: [],
+    colorMap: null
+  },
+  op10kid: {
+    cardId: "OP10-099",
+    name: "Eustass \"Captain\" Kid",
+    title: "OP10-099 Eustass \"Captain\" Kid",
+    sub: "Matchup data coming soon",
+    matchups: [],
+    colorMap: null
+  },
+  op11jinbe: {
+    cardId: "OP11-021",
+    name: "Jinbe",
+    title: "OP11-021 Jinbe",
+    sub: "Matchup data coming soon",
+    matchups: [],
+    colorMap: null
+  },
+  op11katakuri: {
+    cardId: "OP11-062",
+    name: "Charlotte Katakuri",
+    title: "OP11-062 Charlotte Katakuri",
+    sub: "Matchup data coming soon",
+    matchups: [],
+    colorMap: null
+  },
+  op12zoro: {
+    cardId: "OP12-020",
+    name: "Roronoa Zoro",
+    title: "OP12-020 Roronoa Zoro",
+    sub: "Matchup data coming soon",
+    matchups: [],
+    colorMap: null
+  },
+  op12koala: {
+    cardId: "OP12-081",
+    name: "Koala",
+    title: "OP12-081 Koala",
+    sub: "Matchup data coming soon",
+    matchups: [],
+    colorMap: null
+  },
+  op14law: {
+    cardId: "OP14-001",
+    name: "Trafalgar Law",
+    title: "OP14-001 Trafalgar Law",
+    sub: "Matchup data coming soon",
+    matchups: [],
+    colorMap: null
+  },
+  eb01oden: {
+    cardId: "EB01-001",
+    name: "Kozuki Oden",
+    title: "EB01-001 Kozuki Oden",
+    sub: "Matchup data coming soon",
+    matchups: [],
+    colorMap: null
+  },
+  eb01hannyabal: {
+    cardId: "EB01-021",
+    name: "Hannyabal",
+    title: "EB01-021 Hannyabal",
+    sub: "Matchup data coming soon",
+    matchups: [],
+    colorMap: null
+  },
+  eb01kyros: {
+    cardId: "EB01-040",
+    name: "Kyros",
+    title: "EB01-040 Kyros",
+    sub: "Matchup data coming soon",
+    matchups: [],
+    colorMap: null
+  },
+  st01luffy: {
+    cardId: "ST01-001",
+    name: "Monkey D. Luffy",
+    title: "ST01-001 Monkey D. Luffy",
+    sub: "Matchup data coming soon",
+    matchups: [],
+    colorMap: null
+  },
+  st02kid: {
+    cardId: "ST02-001",
+    name: "Eustass \"Captain\" Kid",
+    title: "ST02-001 Eustass \"Captain\" Kid",
+    sub: "Matchup data coming soon",
+    matchups: [],
+    colorMap: null
+  },
+  st03crocodile: {
+    cardId: "ST03-001",
+    name: "Crocodile",
+    title: "ST03-001 Crocodile",
+    sub: "Matchup data coming soon",
+    matchups: [],
+    colorMap: null
+  },
+  st04kaido: {
+    cardId: "ST04-001",
+    name: "Kaido",
+    title: "ST04-001 Kaido",
+    sub: "Matchup data coming soon",
+    matchups: [],
+    colorMap: null
+  },
+  st05shanks: {
+    cardId: "ST05-001",
+    name: "Shanks",
+    title: "ST05-001 Shanks",
+    sub: "Matchup data coming soon",
+    matchups: [],
+    colorMap: null
+  },
+  st06sakazuki: {
+    cardId: "ST06-001",
+    name: "Sakazuki",
+    title: "ST06-001 Sakazuki",
+    sub: "Matchup data coming soon",
+    matchups: [],
+    colorMap: null
+  },
+  st07linlin: {
+    cardId: "ST07-001",
+    name: "Charlotte Linlin",
+    title: "ST07-001 Charlotte Linlin",
+    sub: "Matchup data coming soon",
+    matchups: [],
+    colorMap: null
+  },
+  st08luffy: {
+    cardId: "ST08-001",
+    name: "Monkey D. Luffy",
+    title: "ST08-001 Monkey D. Luffy",
+    sub: "Matchup data coming soon",
+    matchups: [],
+    colorMap: null
+  },
+  st09yamato: {
+    cardId: "ST09-001",
+    name: "Yamato",
+    title: "ST09-001 Yamato",
+    sub: "Matchup data coming soon",
+    matchups: [],
+    colorMap: null
+  },
+  st10law: {
+    cardId: "ST10-001",
+    name: "Trafalgar Law",
+    title: "ST10-001 Trafalgar Law",
+    sub: "Matchup data coming soon",
+    matchups: [],
+    colorMap: null
+  },
+  st10luffy: {
+    cardId: "ST10-002",
+    name: "Monkey D. Luffy",
+    title: "ST10-002 Monkey D. Luffy",
+    sub: "Matchup data coming soon",
+    matchups: [],
+    colorMap: null
+  },
+  st10kid: {
+    cardId: "ST10-003",
+    name: "Eustass \"Captain\" Kid",
+    title: "ST10-003 Eustass \"Captain\" Kid",
+    sub: "Matchup data coming soon",
+    matchups: [],
+    colorMap: null
+  },
+  st11uta: {
+    cardId: "ST11-001",
+    name: "Uta",
+    title: "ST11-001 Uta",
+    sub: "Matchup data coming soon",
+    matchups: [],
+    colorMap: null
+  },
+  st12zorosanji: {
+    cardId: "ST12-001",
+    name: "Roronoa Zoro & Sanji",
+    title: "ST12-001 Roronoa Zoro & Sanji",
+    sub: "Matchup data coming soon",
+    matchups: [],
+    colorMap: null
+  },
+  st13sabo: {
+    cardId: "ST13-001",
+    name: "Sabo",
+    title: "ST13-001 Sabo",
+    sub: "Matchup data coming soon",
+    matchups: [],
+    colorMap: null
+  },
+  st13ace: {
+    cardId: "ST13-002",
+    name: "Portgas D. Ace",
+    title: "ST13-002 Portgas D. Ace",
+    sub: "Matchup data coming soon",
+    matchups: [],
+    colorMap: null
+  },
+  st14luffy: {
+    cardId: "ST14-001",
+    name: "Monkey D. Luffy",
+    title: "ST14-001 Monkey D. Luffy",
+    sub: "Matchup data coming soon",
+    matchups: [],
+    colorMap: null
+  },
+  st21luffy: {
+    cardId: "ST21-001",
+    name: "Monkey D. Luffy",
+    title: "ST21-001 Monkey D. Luffy",
+    sub: "Matchup data coming soon",
+    matchups: [],
+    colorMap: null
+  },
+  st22acenewgate: {
+    cardId: "ST22-001",
+    name: "Ace & Newgate",
+    title: "ST22-001 Ace & Newgate",
+    sub: "Matchup data coming soon",
+    matchups: [],
+    colorMap: null
+  },
+  prb01sanji: {
+    cardId: "PRB01-001",
+    name: "Sanji",
+    title: "PRB01-001 Sanji",
+    sub: "Matchup data coming soon",
+    matchups: [],
     colorMap: null
   }
 
@@ -3952,7 +4641,7 @@ function _refreshMiniGames(deckKey) {
 // ── SET ORDER HELPERS ─────────────────────────────────────────
 // Extract set prefix from a matchup name like "OP14 Mihawk" → "OP14"
 function _deckSetLabel(name) {
-  const m = String(name).match(/^(OP\d+|EB\d+|ST\d+|P\d+)/i);
+  const m = String(name).match(/^(OP\d+|EB\d+|ST\d+|PRB\d+|P-?\d+)/i);
   return m ? m[1].toUpperCase() : '??';
 }
 // Return a numeric sort key: OP=1xxx, EB=2xxx, ST=3xxx, P/other=9xxx
@@ -3962,6 +4651,7 @@ function _deckSetOrder(name) {
   if (s.startsWith('OP')) return 1000 + n;
   if (s.startsWith('EB')) return 2000 + n;
   if (s.startsWith('ST')) return 3000 + n;
+  if (s.startsWith('PRB')) return 4000 + n;
   return 9000 + n;
 }
 
@@ -3979,7 +4669,7 @@ function sortTable(col) {
     if (el) el.textContent = _tableSort.col === c ? (_tableSort.dir === -1 ? ' ▼' : ' ▲') : '';
   });
   document.querySelectorAll('th.sortable').forEach(th => th.classList.toggle('sort-active', th.dataset.col === _tableSort.col));
-  rebuildMatchupTable();
+  if (currentMode === 'grid') rebuildMatchupGrid(); else rebuildMatchupTable();
 }
 
 function toggleSetSort() {
@@ -3992,7 +4682,7 @@ function toggleSetSort() {
   });
   document.querySelectorAll('th.sortable').forEach(th => th.classList.remove('sort-active'));
   _updateSetSortBtn();
-  rebuildMatchupTable();
+  if (currentMode === 'grid') rebuildMatchupGrid(); else rebuildMatchupTable();
   applyFilters();
 }
 function _updateSetSortBtn() {
@@ -4010,6 +4700,15 @@ function _sortedMatchups() {
       const diff = _deckSetOrder(a.m.name) - _deckSetOrder(b.m.name);
       if (diff !== 0) return -_setSort * diff;   // newest first = higher order first → negate when _setSort=1
       return a.m.name.localeCompare(b.m.name);   // tiebreak: alphabetical within same set
+    });
+  }
+  // Grid default: sort by most games played (personal record), then alphabetically
+  if (currentMode === 'grid' && !_tableSort.col) {
+    return ms.sort((a, b) => {
+      const ra = personalRecord(currentLeaderKey, a.m.deck || '');
+      const rb = personalRecord(currentLeaderKey, b.m.deck || '');
+      if (rb.total !== ra.total) return rb.total - ra.total;
+      return a.m.name.localeCompare(b.m.name);
     });
   }
   if (!_tableSort.col) return ms;
@@ -4063,6 +4762,7 @@ function _youCellHtml(i, deckKey, metaWr) {
   return `<td id="you-${i}" style="text-align:center;padding:5px 6px">${_youCellInner(deckKey, i, metaWr)}</td>`;
 }
 function _refreshYouCells() {
+  if (currentMode === 'grid') { rebuildMatchupGrid(); return; }
   getLM().forEach((m, i) => {
     const cell = document.getElementById('you-' + i);
     if (!cell) return;
@@ -4793,7 +5493,7 @@ const ROSINANTE_COLORS = {
 };
 const BOA_COLORS = {};
 LEADERS.rosinante.colorMap = ROSINANTE_COLORS;
-LEADERS.boa.colorMap = BOA_COLORS;
+if (LEADERS.op14boa) LEADERS.op14boa.colorMap = BOA_COLORS;
 
 let currentLeaderKey = 'rosinante';
 try {
@@ -4809,7 +5509,8 @@ function getLM() {
   const auto = Object.keys(LEADERS)
     .filter(k => !covered.has(k))
     .map(k => ({
-      name: LEADERS[k].name, deck: k, warn: false,
+      // Use title (e.g. "OP01-003 Monkey D. Luffy") so set-badge extraction works
+      name: LEADERS[k].title || LEADERS[k].name, deck: k, warn: false,
       go: '?', wr1: null, wr2: null, style: '—',
       essential: [], tips: []
     }));
@@ -4817,7 +5518,7 @@ function getLM() {
 }
 function getLCM() { return LEADERS[currentLeaderKey].colorMap || ROSINANTE_COLORS; }
 
-let currentMode = 'table';
+let currentMode = 'grid';   // default: grid view
 let currentColor = 'all';
 
 const COLOR_HEX = {red:'#e05858',green:'#50c070',blue:'#5090e0',purple:'#9060d0',yellow:'#d0b030',black:'#888'};
@@ -4856,6 +5557,11 @@ function matchVisible(m) {
 }
 
 function applyFilters() {
+  if (currentMode === 'grid') {
+    // Grid: full rebuild (it's fast enough and handles sort correctly)
+    rebuildMatchupGrid();
+    return;
+  }
   let anyVisible = false;
   getLM().forEach((m, i) => {
     let visible = matchVisible(m);
@@ -4879,6 +5585,88 @@ function applyFilters() {
 }
 
 function buildQrefCards() { /* quick ref removed */ }
+
+// ── VIEW MODE TOGGLE (grid / table) ──────────────────────────
+function toggleViewMode() {
+  currentMode = currentMode === 'grid' ? 'table' : 'grid';
+  const btn = document.getElementById('view-toggle-btn');
+  const gc  = document.getElementById('grid-container');
+  const tc  = document.getElementById('table-container');
+  if (currentMode === 'grid') {
+    if (btn) { btn.textContent = '⊞ Grid'; btn.classList.add('active'); }
+    if (gc) gc.style.display = '';
+    if (tc) tc.style.display = 'none';
+    rebuildMatchupGrid();
+  } else {
+    if (btn) { btn.textContent = '☰ Table'; btn.classList.remove('active'); }
+    if (gc) gc.style.display = 'none';
+    if (tc) tc.style.display = '';
+    rebuildMatchupTable();
+  }
+}
+
+// ── GRID BUILDER ─────────────────────────────────────────────
+function rebuildMatchupGrid() {
+  const gc = document.getElementById('grid-container');
+  if (!gc) return;
+  gc.innerHTML = '';
+  _sortedMatchups().forEach(({ m, i }) => {
+    if (!matchVisible(m)) return;
+    if (_loggedOnly) {
+      const rec = personalRecord(currentLeaderKey, m.deck || '');
+      if (rec.total === 0) return;
+    }
+
+    const rec      = personalRecord(currentLeaderKey, m.deck || '');
+    const hasData  = rec.total > 0;
+    const wr       = hasData ? Math.round(rec.w / rec.total * 100) : null;
+    const wrCls    = wr === null ? '' : wr >= 55 ? 'mg-wr-pos' : wr >= 45 ? 'mg-wr-neu' : 'mg-wr-neg';
+    const setLbl   = _deckSetLabel(m.name);
+
+    // Leader card image — use the LEADERS entry to get the cardId
+    const leaderEntry = m.deck ? LEADERS[m.deck] : null;
+    const imgSrc   = leaderEntry ? cardImg(leaderEntry.cardId) : '';
+
+    // Spark: last 5 games
+    const games  = hasData ? _gamesFor(currentLeaderKey, m.deck || '').slice(-5).reverse() : [];
+    const sparks = Array.from({ length: 5 }, (_, k) => {
+      if (k >= games.length) return `<span class="mg-dot mg-dot-empty"></span>`;
+      return `<span class="mg-dot ${games[k].result === 'W' ? 'mg-dot-w' : 'mg-dot-l'}"></span>`;
+    }).join('');
+
+    // Display name: strip card-id prefix if present (e.g. "OP01-003 Monkey D. Luffy" → "Monkey D. Luffy")
+    const displayName = m.name.replace(/^[A-Z0-9]+-\d+\s+/, '');
+
+    const card = document.createElement('div');
+    card.className = 'mg-card' + (hasData ? ' mg-has-data' : '');
+    card.dataset.idx = i;
+    card.innerHTML = `
+      <div class="mg-img-wrap">
+        ${imgSrc
+          ? `<img class="mg-img" src="${imgSrc}" loading="lazy" onerror="this.parentNode.innerHTML='<div class=mg-img-placeholder>⚔</div>'">`
+          : `<div class="mg-img-placeholder">⚔</div>`}
+        <span class="mg-set-pill">${setLbl}</span>
+        ${m.warn ? `<span class="mg-warn-pill">⚠</span>` : ''}
+      </div>
+      <div class="mg-name" title="${displayName}">${displayName}</div>
+      ${hasData
+        ? `<div class="mg-stats">
+             <span class="mg-rec">${rec.w}W·${rec.l}L</span>
+             <span class="mg-wr ${wrCls}">${wr}%</span>
+           </div>
+           <div class="mg-spark">${sparks}</div>`
+        : `<div class="mg-no-data">No games yet</div>`}
+      <button class="mg-log-btn" onclick="event.stopPropagation();openLogModal('${m.deck||''}','',event)">+ Log</button>`;
+
+    card.addEventListener('click', () => {
+      if (m.deck) showMatchupHistory(currentLeaderKey, m.deck, displayName);
+    });
+    gc.appendChild(card);
+  });
+
+  const noRes = document.getElementById('no-results');
+  if (noRes) noRes.style.display = gc.children.length === 0 ? 'block' : 'none';
+}
 
 function rebuildMatchupTable() {
   tbody.innerHTML = '';
@@ -5107,7 +5895,7 @@ function openNewDeckFromRef(deckKey, leaderCardId) {
     const subEl   = document.getElementById('matchup-sub');
     if (titleEl) titleEl.textContent = L.title;
     if (subEl)   subEl.textContent   = L.sub;
-    rebuildMatchupTable();
+    if (currentMode === 'grid') rebuildMatchupGrid(); else rebuildMatchupTable();
     // Prime the My Deck bar for when they arrive at matchup
     const mdbBar = document.getElementById('my-deck-bar');
     const mdbImg = document.getElementById('mdb-img');
@@ -6120,7 +6908,7 @@ function selectLeader(key) {
   const L = LEADERS[key];
   document.getElementById('matchup-title').textContent = L.title;
   document.getElementById('matchup-sub').textContent = L.sub;
-  currentMode = 'table';
+  currentMode = 'grid';   // default grid view
   currentColor = 'all';
   _loggedOnly = false;
 
@@ -6146,14 +6934,21 @@ function selectLeader(key) {
     }
   }
 
-  document.getElementById('table-container').classList.remove('hidden');
+  // Show grid by default; hide table
+  const tc2 = document.getElementById('table-container');
+  const gc2 = document.getElementById('grid-container');
+  if (tc2) tc2.style.display = 'none';
+  if (gc2) gc2.style.display = '';
+  const vtBtn = document.getElementById('view-toggle-btn');
+  if (vtBtn) { vtBtn.textContent = '⊞ Grid'; vtBtn.classList.add('active'); }
   document.querySelectorAll('.fbtn').forEach(b => b.classList.remove('active'));
   document.querySelector('.fbtn-all').classList.add('active');
+  if (vtBtn) vtBtn.classList.add('active');
   const loggedBtn = document.getElementById('logged-only-btn');
   if (loggedBtn) loggedBtn.classList.remove('active');
   const si = document.getElementById('search-input');
   if (si) si.value = '';
-  rebuildMatchupTable();
+  rebuildMatchupGrid();
   document.querySelectorAll('.screen').forEach(s => { s.classList.remove('active'); s.style.display = ''; });
   document.getElementById('screen-matchup').classList.add('active');
   _bnavSetActive('bnav-matchup');

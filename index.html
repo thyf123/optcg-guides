@@ -195,12 +195,16 @@
       <button class="fbtn fbtn-warn" data-color="warn" onclick="setColor(this)">⚠ Hard</button>
       <button class="fbtn fbtn-logged" id="logged-only-btn" onclick="toggleLoggedOnly()">📊 Logged</button>
       <button class="fbtn" id="set-sort-btn" onclick="toggleSetSort()">↕ Set</button>
+      <button class="fbtn fbtn-view active" id="view-toggle-btn" onclick="toggleViewMode()">⊞ Grid</button>
     </div>
   </div>
 
 
+  <!-- Grid view -->
+  <div id="grid-container"></div>
+
   <!-- Table view -->
-  <div id="table-container">
+  <div id="table-container" style="display:none">
     <table>
       <thead>
         <tr>

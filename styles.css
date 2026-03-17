@@ -1947,3 +1947,177 @@ th.sort-active { color: var(--gl-gold-h); }
    DEBUG
    ════════════════════════════════════════════ */
 #dbg { display: none; }
+
+/* ════════════════════════════════════════════
+   MATCHUP GRID VIEW
+   ════════════════════════════════════════════ */
+#grid-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: var(--sp-3);
+  padding: var(--sp-3) var(--sp-4) var(--sp-6);
+}
+
+.mg-card {
+  background: var(--gl-surface-2);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: var(--sp-3) var(--sp-2) var(--sp-2);
+  cursor: pointer;
+  transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s;
+  position: relative;
+  overflow: hidden;
+}
+.mg-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(255,255,255,0.14);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.35);
+}
+.mg-card.mg-has-data {
+  border-color: rgba(100,160,255,0.18);
+}
+
+/* Card image */
+.mg-img-wrap {
+  width: 100%;
+  aspect-ratio: 1 / 1.4;
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--gl-surface-3);
+  margin-bottom: var(--sp-2);
+  position: relative;
+}
+.mg-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top center;
+  display: block;
+}
+.mg-img-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  opacity: 0.3;
+}
+
+/* Set badge overlay on image */
+.mg-set-pill {
+  position: absolute;
+  top: 5px;
+  left: 5px;
+  background: rgba(0,0,0,0.7);
+  color: var(--gl-text-faint);
+  font-size: 0.6rem;
+  font-weight: 700;
+  padding: 2px 5px;
+  border-radius: 4px;
+  letter-spacing: 0.04em;
+  pointer-events: none;
+}
+
+/* Warn badge */
+.mg-warn-pill {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  font-size: 0.7rem;
+  pointer-events: none;
+}
+
+/* Name */
+.mg-name {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--gl-text);
+  text-align: center;
+  line-height: 1.2;
+  margin-bottom: 3px;
+  width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Stats row: W/L and WR% */
+.mg-stats {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-bottom: 4px;
+}
+.mg-rec {
+  font-size: 0.65rem;
+  color: var(--gl-text-muted);
+}
+.mg-wr {
+  font-size: 0.72rem;
+  font-weight: 700;
+  border-radius: 4px;
+  padding: 1px 5px;
+}
+.mg-wr-pos { color: var(--gl-success); background: var(--gl-success-dim); }
+.mg-wr-neu { color: var(--gl-text-muted); background: var(--gl-surface-3); }
+.mg-wr-neg { color: var(--gl-warn); background: var(--gl-warn-dim); }
+
+/* Spark dots */
+.mg-spark {
+  display: flex;
+  gap: 3px;
+  margin-bottom: 5px;
+}
+.mg-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+}
+.mg-dot-w { background: var(--gl-success); }
+.mg-dot-l { background: var(--gl-warn); }
+.mg-dot-empty { background: var(--gl-surface-3); border: 1px solid rgba(255,255,255,0.1); }
+
+/* Log button at bottom of card */
+.mg-log-btn {
+  font-size: 0.62rem;
+  color: var(--gl-accent);
+  background: rgba(80,160,255,0.1);
+  border: none;
+  border-radius: 5px;
+  padding: 3px 8px;
+  cursor: pointer;
+  width: 100%;
+  margin-top: 2px;
+}
+.mg-log-btn:hover { background: rgba(80,160,255,0.2); }
+
+/* No-games state */
+.mg-no-data {
+  font-size: 0.62rem;
+  color: var(--gl-text-faint);
+  text-align: center;
+  padding: 2px 0 3px;
+}
+
+/* View toggle button styling */
+.fbtn-view { background: var(--gl-surface-3); color: var(--gl-text); }
+.fbtn-view.active { background: rgba(80,160,255,0.15); color: #6ab4ff; opacity: 1; }
+
+/* ── Grid responsive ── */
+@media (max-width: 480px) {
+  #grid-container {
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--sp-2);
+    padding: var(--sp-2) var(--sp-3) var(--sp-5);
+  }
+  .mg-name { font-size: 0.65rem; }
+}
+@media (min-width: 900px) {
+  #grid-container {
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  }
+}
