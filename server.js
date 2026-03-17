@@ -1,4 +1,4 @@
-// v2026-03-17d — remove temporary debug endpoints
+// v2026-03-17f — two-column results+detail, Top Cards section, stub for missing DECKLISTS entries
 const http   = require('http');
 const https  = require('https');
 const fs     = require('fs');
@@ -571,12 +571,13 @@ if (url.startsWith('/api/fetch-bandai')) {
     const limit   = Math.min(parseInt(params.get('limit')  || '200', 10), 500);
     const offset  = parseInt(params.get('offset') || '0', 10);
     const leader  = params.get('leader')  || '';
-    const maxRank = parseInt(params.get('maxRank') || '999', 10);
+    const maxRank = parseInt(params.get('maxRank') || '0', 10);
     const days    = parseInt(params.get('days') || '0', 10);
 
     try {
       let dlQuery = `select=id,tournament_id,player,placement,placement_rank,leader_id,leader_key,archetype,source,tournaments(id,name,date,url)`;
-      dlQuery += `&placement_rank=lte.${maxRank}&source=eq.limitless-auto`;
+      dlQuery += `&source=eq.limitless-auto`;
+      if (maxRank > 0) dlQuery += `&placement_rank=lte.${maxRank}`;
       if (leader) dlQuery += `&leader_id=eq.${encodeURIComponent(leader)}`;
 
       // Date filter: resolve tournament IDs within range first
@@ -607,12 +608,13 @@ if (url.startsWith('/api/fetch-bandai')) {
   if (url.startsWith('/api/comp-archetype')) {
     const params   = new URL('http://x' + req.url).searchParams;
     const leaderId = params.get('leader_id') || '';
-    const maxRank  = parseInt(params.get('maxRank') || '16', 10);
+    const maxRank  = parseInt(params.get('maxRank') || '0', 10);
     const days     = parseInt(params.get('days') || '0', 10);
     if (!leaderId) { res.writeHead(400); res.end(JSON.stringify({ ok: false, error: 'leader_id required' })); return; }
     try {
       // 1. Get all matching decklist IDs (with optional date + rank filter)
-      let dlQuery = `select=id&source=eq.limitless-auto&placement_rank=lte.${maxRank}&leader_id=eq.${encodeURIComponent(leaderId)}`;
+      let dlQuery = `select=id&source=eq.limitless-auto&leader_id=eq.${encodeURIComponent(leaderId)}`;
+      if (maxRank > 0) dlQuery += `&placement_rank=lte.${maxRank}`;
       if (days > 0) {
         const since = new Date(Date.now() - days * 86400000).toISOString().slice(0, 10);
         const recentT = await _sbGet('tournaments', `select=id&date=gte.${since}`);

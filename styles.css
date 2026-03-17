@@ -1147,21 +1147,32 @@ th.sort-active { color: var(--gl-gold-h); }
 .deck-comp-grid { gap: 3px; }
 .deck-comp-grid .comp-visual-card { width: 56px; }
 
+/* Filter bar: labeled groups */
+.deck-comp-fgrp-labeled { display: flex; flex-direction: column; gap: 3px; }
+.deck-comp-flabel { font-size: 0.5rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.08em; color: var(--gl-text-muted); opacity: 0.6; padding-left: 1px; }
+
 /* Left column: decklist entry rows */
-.deck-comp-entry { border-radius: 5px; overflow: hidden; margin-bottom: 4px; background: var(--gl-surface2); }
+.deck-comp-entry { border-radius: 5px; overflow: hidden; margin-bottom: 4px; background: var(--gl-surface2); cursor: pointer; transition: background 0.1s; }
+.deck-comp-entry:hover { background: var(--gl-surface3, rgba(255,255,255,0.06)); }
+.deck-comp-entry.selected { outline: 1px solid var(--gl-gold); background: rgba(201,168,76,0.08); }
 .deck-comp-entry-row {
   display: flex; align-items: center; gap: 6px;
-  padding: 5px 6px; cursor: pointer;
+  padding: 5px 6px;
 }
-.deck-comp-entry-row:active { background: rgba(255,255,255,0.06); }
 .deck-comp-rank   { font-size: 0.72rem; min-width: 22px; text-align: center; flex-shrink: 0; }
 .deck-comp-info   { display: flex; flex-direction: column; gap: 1px; min-width: 0; flex: 1; }
 .deck-comp-player { font-size: 0.62rem; font-weight: 700; color: var(--gl-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .deck-comp-event  { font-size: 0.54rem; color: var(--gl-text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .deck-comp-chevron { font-size: 0.8rem; color: var(--gl-text-muted); flex-shrink: 0; }
 
-/* Expanded deck cards inside left-column entry */
-.deck-comp-entry-cards { padding: 4px 6px 6px; border-top: 1px solid var(--gl-divider); }
+/* Right column: deck detail panel */
+.deck-comp-detail-empty {
+  font-size: 0.58rem; color: var(--gl-text-muted); padding: 20px 8px;
+  text-align: center; opacity: 0.5;
+}
+
+/* Expanded deck cards inside right-panel (reuse entry-grid sizing) */
 .deck-comp-entry-grid { gap: 3px; }
 .deck-comp-entry-grid .comp-visual-card { width: 50px; }
 .my-notes-area {
