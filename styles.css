@@ -1824,23 +1824,95 @@ th.sort-active { color: var(--gl-gold-h); }
 .comp-inline { display: none; padding: 0 12px 12px; border-top: 1px solid var(--gl-divider); }
 .comp-inline.open { display: block; }
 .comp-inline-section { font-size: 0.6rem; font-weight: 700; color: var(--gl-text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin: 8px 0 4px; }
+/* ── View toggle bar ──────────────────────────────────────── */
+.comp-view-bar { display: flex; justify-content: space-between; align-items: center; padding: 8px 0 4px; }
+.comp-view-total { font-size: 0.58rem; color: var(--gl-text-muted); }
+.comp-view-tabs { display: flex; gap: 4px; }
+.comp-view-btn {
+  font-size: 0.58rem; padding: 3px 9px; border-radius: 4px;
+  border: 1px solid var(--gl-divider); background: transparent;
+  color: var(--gl-text-muted); cursor: pointer; transition: background 0.15s;
+}
+.comp-view-btn.active { background: var(--gl-gold); color: #000; border-color: var(--gl-gold); font-weight: 700; }
+
+/* ── Visual card grid ─────────────────────────────────────── */
+.comp-visual-grid { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 10px; }
+.comp-visual-card {
+  position: relative; width: 70px; flex-shrink: 0; border-radius: 5px; overflow: hidden;
+  background: var(--gl-surface2);
+}
+.comp-visual-card img { width: 100%; display: block; border-radius: 5px; }
+.comp-visual-card--err { display: none; }
+.comp-visual-count {
+  position: absolute; bottom: 4px; right: 4px;
+  background: rgba(0,0,0,0.82); color: var(--gl-gold);
+  font-size: 0.6rem; font-weight: 700; padding: 1px 5px; border-radius: 3px; line-height: 1.4;
+}
+
+/* ── List view (text fallback) ────────────────────────────── */
 .comp-inline-cards {
   display: grid; grid-template-columns: repeat(2, 1fr); gap: 2px 8px;
 }
 .comp-inline-card {
-  font-size: 0.63rem; color: var(--gl-text); display: flex; flex-wrap: wrap; gap: 4px; align-items: baseline;
+  font-size: 0.63rem; color: var(--gl-text); display: flex; gap: 4px; align-items: baseline;
   padding: 2px 0;
 }
 .comp-inline-card:hover { background: rgba(255,255,255,0.04); border-radius: 3px; }
 .comp-inline-count { color: var(--gl-gold); font-weight: 700; min-width: 14px; }
 .comp-card-name { flex: 1; }
 .comp-card-id { font-size: 0.55rem; color: var(--gl-text-muted); opacity: 0.7; font-family: monospace; }
-.comp-card-preview {
-  display: block; width: 100%; max-width: 200px; border-radius: 6px;
-  margin-top: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.5);
-}
 .comp-inline-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; }
 .comp-open-btn { font-size: 0.6rem; color: var(--gl-gold); cursor: pointer; text-decoration: underline; }
+
+/* ── Main view tabs (Recent Results / Archetypes) ─────────── */
+.comp-main-tabs { display: flex; border-bottom: 1px solid var(--gl-divider); margin: 0 0 2px; }
+.comp-main-tab {
+  flex: 1; font-size: 0.72rem; font-weight: 600; padding: 10px 0;
+  background: transparent; border: none; color: var(--gl-text-muted); cursor: pointer;
+  border-bottom: 2px solid transparent; transition: color 0.15s;
+}
+.comp-main-tab.active { color: var(--gl-gold); border-bottom-color: var(--gl-gold); }
+
+/* ── Archetype grid (leader tiles) ───────────────────────── */
+.comp-arch-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 12px 16px;
+}
+.comp-arch-tile {
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  cursor: pointer; padding: 8px 4px; border-radius: 8px; background: var(--gl-surface2);
+  transition: background 0.15s;
+}
+.comp-arch-tile:active { background: var(--gl-surface3); }
+.comp-arch-img { width: 100%; max-width: 90px; border-radius: 5px; }
+.comp-arch-name { font-size: 0.6rem; font-weight: 700; text-align: center; color: var(--gl-text); line-height: 1.2; }
+.comp-arch-count { font-size: 0.55rem; color: var(--gl-text-muted); }
+
+/* ── Archetype detail header ─────────────────────────────── */
+.comp-arch-detail-hdr {
+  display: flex; align-items: center; gap: 10px; padding: 10px 16px;
+  border-bottom: 1px solid var(--gl-divider);
+}
+.comp-arch-back {
+  font-size: 0.8rem; font-weight: 700; background: transparent; border: none;
+  color: var(--gl-gold); cursor: pointer; padding: 0 4px;
+}
+.comp-arch-hdr-img { width: 44px; border-radius: 4px; }
+.comp-arch-hdr-name { font-size: 0.78rem; font-weight: 700; color: var(--gl-text); }
+.comp-arch-meta {
+  font-size: 0.6rem; color: var(--gl-text-muted); padding: 8px 16px 0;
+}
+#comp-arch-cards-wrap { padding: 0 16px 16px; }
+
+/* ── Archetype card inclusion % badge ────────────────────── */
+.comp-arch-card { cursor: default; }
+.arch-pct {
+  position: absolute; bottom: 4px; left: 0; right: 0; text-align: center;
+  font-size: 0.58rem; font-weight: 700; padding: 2px 0;
+  background: rgba(0,0,0,0.78); line-height: 1.3; border-radius: 0 0 4px 4px;
+}
+.arch-pct--hi  { color: #4ade80; }
+.arch-pct--mid { color: var(--gl-gold); }
+.arch-pct--lo  { color: var(--gl-text-muted); }
 /* Group header (tournament name) */
 .comp-group-hdr-flat {
   display: flex; justify-content: space-between; align-items: baseline;

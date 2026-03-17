@@ -2093,16 +2093,32 @@ th.sort-active { color: var(--gl-gold-h); }
 <div class="screen" id="screen-competitions">
   <div class="comp-page-title">🏆 Competitions</div>
   <div id="comp-sync-status" style="font-size:0.6rem;color:var(--gl-text-muted);padding:0 16px 2px;min-height:14px"></div>
-  <div class="comp-filter-bar" id="comp-filter-bar">
-    <button class="comp-filter-btn active" onclick="setCompFilter('all',this)">All</button>
-    <button class="comp-filter-btn" onclick="setCompFilter('Red',this)">🔴 Red</button>
-    <button class="comp-filter-btn" onclick="setCompFilter('Blue',this)">🔵 Blue</button>
-    <button class="comp-filter-btn" onclick="setCompFilter('Green',this)">🟢 Green</button>
-    <button class="comp-filter-btn" onclick="setCompFilter('Yellow',this)">🟡 Yellow</button>
-    <button class="comp-filter-btn" onclick="setCompFilter('Purple',this)">🟣 Purple</button>
-    <button class="comp-filter-btn" onclick="setCompFilter('Black',this)">⚫ Black</button>
+
+  <!-- Main view tabs -->
+  <div class="comp-main-tabs">
+    <button class="comp-main-tab active" id="comp-tab-results" onclick="setCompMainTab('results',this)">Recent Results</button>
+    <button class="comp-main-tab" id="comp-tab-archetypes" onclick="setCompMainTab('archetypes',this)">Archetypes</button>
   </div>
-  <div class="comp-list" id="comp-content"></div>
+
+  <!-- Results tab: color filter + list -->
+  <div id="comp-results-pane">
+    <div class="comp-filter-bar" id="comp-filter-bar">
+      <button class="comp-filter-btn active" onclick="setCompFilter('all',this)">All</button>
+      <button class="comp-filter-btn" onclick="setCompFilter('Red',this)">🔴 Red</button>
+      <button class="comp-filter-btn" onclick="setCompFilter('Blue',this)">🔵 Blue</button>
+      <button class="comp-filter-btn" onclick="setCompFilter('Green',this)">🟢 Green</button>
+      <button class="comp-filter-btn" onclick="setCompFilter('Yellow',this)">🟡 Yellow</button>
+      <button class="comp-filter-btn" onclick="setCompFilter('Purple',this)">🟣 Purple</button>
+      <button class="comp-filter-btn" onclick="setCompFilter('Black',this)">⚫ Black</button>
+    </div>
+    <div class="comp-list" id="comp-content"></div>
+  </div>
+
+  <!-- Archetypes tab -->
+  <div id="comp-archetypes-pane" style="display:none">
+    <div id="comp-arch-list"></div>
+    <div id="comp-arch-detail" style="display:none"></div>
+  </div>
 </div>
 
 <!-- ════ BOTTOM NAV (mobile) ════ -->

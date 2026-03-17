@@ -6059,9 +6059,11 @@ function goBackFromStats() {
 // ── COMPETITIONS PAGE ─────────────────────────────────────────
 // ── Competitions page state ────────────────────────────────────
 let _compFilter     = 'all';
-let _compDecklists  = [];   // cached from last fetch
-let _compLoading    = false;
+let _compDecklists     = [];   // cached from last fetch
+let _compLoading       = false;
 let _compExpandedCards = {}; // decklistId → cards array once loaded
+let _compMainTab       = 'results';
+let _compArchCache     = {}; // leaderId → archetype top cards response
 
 function showCompetitions() {
   document.querySelectorAll('.screen').forEach(s => { s.classList.remove('active'); s.style.display = ''; });
@@ -6079,6 +6081,15 @@ function showCompetitions() {
     const agoStr = ago < 1 ? 'just now' : ago === 1 ? '1 hour ago' : ago < 24 ? `${ago}h ago` : `${Math.round(ago/24)}d ago`;
     statusEl.textContent = `🤖 Last synced ${agoStr} · ${d.totalSaved || 0} decks total`;
   }).catch(() => {});
+}
+
+function setCompMainTab(tab, btn) {
+  _compMainTab = tab;
+  document.querySelectorAll('.comp-main-tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('comp-results-pane').style.display   = tab === 'results'    ? '' : 'none';
+  document.getElementById('comp-archetypes-pane').style.display = tab === 'archetypes' ? '' : 'none';
+  if (tab === 'archetypes') _renderArchetypeList();
 }
 
 function setCompFilter(color, btn) {
@@ -6223,7 +6234,15 @@ function _loadCompDeckCards(entryId, decklistId) {
 function _renderCompDeckCards(entryId, cards) {
   const wrap = document.getElementById('comp-cards-' + entryId);
   if (!wrap || !cards.length) return;
-  // Group by section
+  wrap._cards = cards;
+  _renderCompView(entryId, cards, 'visual');
+}
+
+function _renderCompView(entryId, cards, view) {
+  const wrap = document.getElementById('comp-cards-' + entryId);
+  if (!wrap) return;
+  wrap._view = view;
+
   const sections = {};
   cards.forEach(c => {
     const sec = c.section || 'Other';
@@ -6231,32 +6250,165 @@ function _renderCompDeckCards(entryId, cards) {
     sections[sec].push(c);
   });
   const order = ['Leader','Character','Event','Stage','DON!!','Other'];
-  let html = '';
+  const totalCards = cards.reduce((s, c) => s + (c.count || 1), 0);
+
+  let html = `<div class="comp-view-bar">
+    <span class="comp-view-total">${totalCards} cards</span>
+    <div class="comp-view-tabs">
+      <button class="comp-view-btn${view==='visual'?' active':''}" onclick="_setCompView('${entryId}','visual')">⊞ Visual</button>
+      <button class="comp-view-btn${view==='list'?' active':''}" onclick="_setCompView('${entryId}','list')">≡ List</button>
+    </div>
+  </div>`;
+
+  if (view === 'visual') {
+    order.forEach(sec => {
+      if (!sections[sec] || !sections[sec].length) return;
+      const total = sections[sec].reduce((s, c) => s + (c.count || 1), 0);
+      html += `<div class="comp-inline-section">${sec} <span style="font-weight:400;opacity:0.6">(${total})</span></div>`;
+      html += `<div class="comp-visual-grid">`;
+      sections[sec].forEach(c => {
+        const cid = c.card_id || '';
+        html += `<div class="comp-visual-card" title="${c.card_name || cid} · ${cid}">
+          <img src="${cardImg(cid)}" loading="lazy" alt="${c.card_name||cid}"
+            onerror="this.parentElement.classList.add('comp-visual-card--err')">
+          ${c.count > 1 ? `<span class="comp-visual-count">×${c.count}</span>` : ''}
+        </div>`;
+      });
+      html += `</div>`;
+    });
+  } else {
+    // List view
+    order.forEach(sec => {
+      if (!sections[sec] || !sections[sec].length) return;
+      const total = sections[sec].reduce((s, c) => s + (c.count || 1), 0);
+      html += `<div class="comp-inline-section">${sec} <span style="font-weight:400;opacity:0.6">(${total})</span></div>`;
+      html += `<div class="comp-inline-cards">`;
+      sections[sec].forEach(c => {
+        const cid = c.card_id || '';
+        html += `<div class="comp-inline-card">
+          <span class="comp-inline-count">${c.count}×</span>
+          <span class="comp-card-name">${c.card_name || cid}</span>
+          <span class="comp-card-id">${cid}</span>
+        </div>`;
+      });
+      html += `</div>`;
+    });
+  }
+
+  wrap.innerHTML = html || '<div style="font-size:0.62rem;color:var(--gl-text-muted)">No cards found</div>';
+}
+
+function _setCompView(entryId, view) {
+  const wrap = document.getElementById('comp-cards-' + entryId);
+  if (!wrap || !wrap._cards) return;
+  _renderCompView(entryId, wrap._cards, view);
+}
+
+// ── Archetype tab ─────────────────────────────────────────────
+function _renderArchetypeList() {
+  const el = document.getElementById('comp-arch-list');
+  const detailEl = document.getElementById('comp-arch-detail');
+  if (!el) return;
+  detailEl.style.display = 'none';
+  detailEl.innerHTML = '';
+
+  if (!_compDecklists.length) {
+    el.innerHTML = '<div class="comp-empty">No data yet — check back after the first sync.</div>';
+    return;
+  }
+
+  // Aggregate leaders from cached decklists
+  const leaders = {};
+  _compDecklists.forEach(dl => {
+    const lid = dl.leader_id;
+    if (!lid) return;
+    if (!leaders[lid]) {
+      const d = DECKLISTS[dl.leader_key] || {};
+      leaders[lid] = { leader_id: lid, leader_key: dl.leader_key, name: d.leaderName || dl.leader_key || lid, count: 0 };
+    }
+    leaders[lid].count++;
+  });
+
+  const sorted = Object.values(leaders).sort((a, b) => b.count - a.count);
+
+  let html = '<div class="comp-arch-grid">';
+  sorted.forEach(l => {
+    html += `<div class="comp-arch-tile" onclick="showArchDetail('${l.leader_id}','${l.leader_key}','${l.name.replace(/'/g,"\\'")}')">
+      <img src="${cardImg(l.leader_id)}" class="comp-arch-img" onerror="this.style.opacity='0.2'" alt="${l.name}">
+      <div class="comp-arch-name">${l.name}</div>
+      <div class="comp-arch-count">${l.count} deck${l.count!==1?'s':''}</div>
+    </div>`;
+  });
+  html += '</div>';
+  el.innerHTML = html;
+}
+
+function showArchDetail(leaderId, leaderKey, leaderName) {
+  const listEl   = document.getElementById('comp-arch-list');
+  const detailEl = document.getElementById('comp-arch-detail');
+  if (!detailEl) return;
+
+  listEl.style.display   = 'none';
+  detailEl.style.display = '';
+  detailEl.innerHTML = `<div class="comp-arch-detail-hdr">
+    <button class="comp-arch-back" onclick="_archBack()">‹ Back</button>
+    <img src="${cardImg(leaderId)}" class="comp-arch-hdr-img" onerror="this.style.display='none'">
+    <span class="comp-arch-hdr-name">${leaderName}</span>
+  </div>
+  <div id="comp-arch-cards-wrap"><div class="comp-empty" style="padding:24px">Loading top cards…</div></div>`;
+
+  if (_compArchCache[leaderId]) {
+    _renderArchCards(leaderId, leaderKey, _compArchCache[leaderId]);
+    return;
+  }
+  fetch(`/api/comp-archetype?leader_id=${encodeURIComponent(leaderId)}`)
+    .then(r => r.json())
+    .then(d => {
+      _compArchCache[leaderId] = d;
+      _renderArchCards(leaderId, leaderKey, d);
+    })
+    .catch(() => {
+      const w = document.getElementById('comp-arch-cards-wrap');
+      if (w) w.innerHTML = '<div class="comp-empty">Failed to load.</div>';
+    });
+}
+
+function _archBack() {
+  document.getElementById('comp-arch-list').style.display   = '';
+  document.getElementById('comp-arch-detail').style.display = 'none';
+  document.getElementById('comp-arch-detail').innerHTML     = '';
+}
+
+function _renderArchCards(leaderId, leaderKey, data) {
+  const wrap = document.getElementById('comp-arch-cards-wrap');
+  if (!wrap) return;
+  const { totalDecks = 0, cards = [] } = data;
+  if (!cards.length) { wrap.innerHTML = '<div class="comp-empty">No card data yet.</div>'; return; }
+
+  const sections = {};
+  const order = ['Character','Event','Stage','DON!!','Other'];
+  cards.forEach(c => {
+    const sec = order.includes(c.section) ? c.section : 'Other';
+    if (!sections[sec]) sections[sec] = [];
+    sections[sec].push(c);
+  });
+
+  let html = `<div class="comp-arch-meta">${totalDecks} decks analysed (top 16 finishers)</div>`;
   order.forEach(sec => {
     if (!sections[sec] || !sections[sec].length) return;
-    const total = sections[sec].reduce((s, c) => s + (c.count || 1), 0);
-    html += `<div class="comp-inline-section">${sec} <span style="font-weight:400;opacity:0.6">(${total})</span></div>`;
-    html += `<div class="comp-inline-cards">`;
+    html += `<div class="comp-inline-section">${sec}</div><div class="comp-visual-grid">`;
     sections[sec].forEach(c => {
-      const cid = c.card_id || '';
-      const uid = entryId + '_' + cid.replace(/[^a-zA-Z0-9]/g, '_');
-      const imgSrc = cardImg(cid);
-      html += `<div class="comp-inline-card" onclick="_toggleCompCardImg('${uid}')" style="cursor:pointer">
-        <span class="comp-inline-count">${c.count}×</span>
-        <span class="comp-card-name">${c.card_name || cid}</span>
-        <span class="comp-card-id">${cid}</span>
-        <img id="comp-cimg-${uid}" src="${imgSrc}" class="comp-card-preview" style="display:none" onerror="this.style.display='none'">
+      const pct = c.inclusion_pct;
+      const pctCls = pct >= 75 ? 'arch-pct--hi' : pct >= 40 ? 'arch-pct--mid' : 'arch-pct--lo';
+      html += `<div class="comp-visual-card comp-arch-card" title="${c.card_name} · ${c.card_id}\n${pct}% of decks · avg ×${c.avg_copies}">
+        <img src="${cardImg(c.card_id)}" loading="lazy" alt="${c.card_name}"
+          onerror="this.parentElement.classList.add('comp-visual-card--err')">
+        <span class="arch-pct ${pctCls}">${pct}%</span>
       </div>`;
     });
     html += `</div>`;
   });
-  wrap.innerHTML = html || '<div style="font-size:0.62rem;color:var(--gl-text-muted)">No cards found</div>';
-}
-
-function _toggleCompCardImg(uid) {
-  const img = document.getElementById('comp-cimg-' + uid);
-  if (!img) return;
-  img.style.display = img.style.display === 'none' ? 'block' : 'none';
+  wrap.innerHTML = html;
 }
 
 function _gameXwr(game) {

@@ -593,6 +593,61 @@ if (url.startsWith('/api/fetch-bandai')) {
     return;
   }
 
+  // ── Archetype top cards: aggregate all decklists for a leader ──
+  if (url.startsWith('/api/comp-archetype')) {
+    const params   = new URL('http://x' + req.url).searchParams;
+    const leaderId = params.get('leader_id') || '';
+    const maxRank  = parseInt(params.get('maxRank') || '16', 10);
+    if (!leaderId) { res.writeHead(400); res.end(JSON.stringify({ ok: false, error: 'leader_id required' })); return; }
+    try {
+      // 1. Get all matching decklist IDs
+      const decklists = await _sbGet('decklists',
+        `select=id&source=eq.limitless-auto&placement_rank=lte.${maxRank}&leader_id=eq.${encodeURIComponent(leaderId)}`);
+      if (!Array.isArray(decklists) || !decklists.length) {
+        res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+        res.end(JSON.stringify({ ok: true, totalDecks: 0, cards: [] }));
+        return;
+      }
+      const totalDecks = decklists.length;
+      const idList = decklists.map(d => d.id).join(',');
+
+      // 2. Fetch all cards for those decklists in one query
+      const cards = await _sbGet('decklist_cards',
+        `decklist_id=in.(${idList})&select=decklist_id,card_id,card_name,count,section`);
+
+      if (!Array.isArray(cards)) {
+        res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+        res.end(JSON.stringify({ ok: true, totalDecks, cards: [] }));
+        return;
+      }
+
+      // 3. Aggregate: skip leader card itself, count decks & copies per card
+      const cardMap = {};
+      cards.forEach(c => {
+        if (c.section === 'Leader') return; // skip leader — it's the same in every deck
+        const id = c.card_id;
+        if (!cardMap[id]) cardMap[id] = { card_id: id, card_name: c.card_name || id, section: c.section || 'Other', deck_count: 0, total_copies: 0 };
+        cardMap[id].deck_count++;
+        cardMap[id].total_copies += (c.count || 1);
+      });
+
+      const result = Object.values(cardMap)
+        .map(c => ({
+          ...c,
+          inclusion_pct: Math.round((c.deck_count / totalDecks) * 100),
+          avg_copies:    +(c.total_copies / c.deck_count).toFixed(1)
+        }))
+        .sort((a, b) => b.inclusion_pct - a.inclusion_pct || b.avg_copies - a.avg_copies);
+
+      res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+      res.end(JSON.stringify({ ok: true, totalDecks, cards: result }));
+    } catch(e) {
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: false, error: e.message }));
+    }
+    return;
+  }
+
   // ── Single decklist cards ─────────────────────────────────────
   if (url.startsWith('/api/comp-decklist/')) {
     const decklistId = url.split('/api/comp-decklist/')[1].split('?')[0];
