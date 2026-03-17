@@ -980,6 +980,13 @@ async function runDailyScrape({ maxPages } = {}) {
 
     let totalSaved = state.totalSaved || 0;
 
+    if (!newIds.length) {
+      // Nothing new — still stamp lastRun so status shows scraper is active
+      await _saveScrapeState({ importedIds: [...importedIds], lastRun: new Date().toISOString(), totalSaved });
+      console.log('[scraper] No new tournaments. Done.');
+      return;
+    }
+
     for (const tournamentId of newIds) {
       console.log(`[scraper] Fetching tournament ${tournamentId}`);
       try {
@@ -989,7 +996,10 @@ async function runDailyScrape({ maxPages } = {}) {
 
         if (!players.length) {
           console.log(`[scraper] Tournament ${tournamentId}: no mapped-leader players found, skipping`);
-          importedIds.add(tournamentId); continue;
+          importedIds.add(tournamentId);
+          // Still save state so lastRun updates even for empty tournaments
+          await _saveScrapeState({ importedIds: [...importedIds], lastRun: new Date().toISOString(), totalSaved });
+          continue;
         }
 
         // ── 1. Upsert tournament row ─────────────────────────────
