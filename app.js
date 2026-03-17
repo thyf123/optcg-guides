@@ -4759,7 +4759,21 @@ try {
   const _savedLK = localStorage.getItem('optcg-current-leader');
   if (_savedLK && LEADERS[_savedLK]) currentLeaderKey = _savedLK;
 } catch(e) {}
-function getLM() { return (LEADERS[currentLeaderKey] && LEADERS[currentLeaderKey].matchups) || []; }
+function getLM() {
+  const L = LEADERS[currentLeaderKey];
+  if (!L) return [];
+  const hardcoded  = L.matchups || [];
+  const covered    = new Set(hardcoded.map(m => m.deck));
+  // Auto-append any LEADERS entry not yet in the hardcoded list
+  const auto = Object.keys(LEADERS)
+    .filter(k => !covered.has(k))
+    .map(k => ({
+      name: LEADERS[k].name, deck: k, warn: false,
+      go: '?', wr1: null, wr2: null, style: '—',
+      essential: [], tips: []
+    }));
+  return [...hardcoded, ...auto];
+}
 function getLCM() { return LEADERS[currentLeaderKey].colorMap || ROSINANTE_COLORS; }
 
 let currentMode = 'table';
