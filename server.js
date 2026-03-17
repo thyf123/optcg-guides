@@ -119,37 +119,37 @@ function _parseLimitlessTournamentHtml(res, html) {
   }
 }
 
-// Parse Limitless HTML: extract cards + tournament metadata from a /decks/list/{id} page.
-// Card count:  src="…/images/decklist/N.png"
-// Card ID:     href="/cards/OP13-002"
-// Player:      <title>Archetype by PlayerName – Limitless One Piece</title>
-// Placement:   <a href="/tournaments/NNN">1st Place Championship Finals Las Vegas</a>
+// Parse Limitless HTML: extract cards from a player decklist page.
+// Supports both:
+//   NEW format: href="https://onepiece.limitlesstcg.com/cards/CARD-ID", count in link text
+//   OLD format: src="…/images/decklist/N.png" + href="/cards/CARD-ID"
 function _parseLimitlessHtml(res, html) {
-  // ── Cards ──
-  const re = /\/images\/decklist\/(\d+)\.png[\s\S]{0,400}?href="\/cards\/([A-Z]{1,4}\d*-\d{3,4})"/gi;
-  const cards = [];
-  let m;
-  const seen = new Set();
-  while ((m = re.exec(html)) !== null) {
-    const count = parseInt(m[1]);
-    const id    = m[2].toUpperCase();
-    if (seen.has(id)) continue;
-    seen.add(id);
-    if (count >= 1 && count <= 4) cards.push({ count, id });
+  // ── Cards: try new format first ──
+  let cards = _parseNewDecklistHtml(html);
+
+  // ── Fall back to old image-based format ──
+  if (!cards.length) {
+    const re  = /\/images\/decklist\/(\d+)\.png[\s\S]{0,400}?href="\/cards\/([A-Z]{1,4}\d*-\d{3,4})"/gi;
+    const seen = new Set();
+    let m;
+    while ((m = re.exec(html)) !== null) {
+      const count = parseInt(m[1]);
+      const id    = m[2].toUpperCase();
+      if (seen.has(id)) continue;
+      seen.add(id);
+      if (count >= 1 && count <= 4) cards.push({ count, id });
+    }
   }
 
   // ── Metadata ──
-  // Title: "Red/Blue Ace by Everydayclutch – Limitless One Piece"
-  const titleM = html.match(/<title>(.+?) by ([^–—<]+?)\s*[–—]/i);
+  const titleM    = html.match(/<title>(.+?) by ([^–—<]+?)\s*[–—]/i);
   const archetype = titleM ? titleM[1].trim() : '';
   const player    = titleM ? titleM[2].trim() : '';
 
-  // Tournament link text: "1st Place Championship Finals Las Vegas"
-  const tourM = html.match(/href="\/tournaments\/\d+"[^>]*>\s*([^<]+?)\s*<\/a>/i);
+  // Placement: try both old /tournaments/N and new /tournament/ID path
+  const tourM    = html.match(/href="\/tournaments?\/[\w-]+"[^>]*>\s*([^<]+?)\s*<\/a>/i);
   const placement = tourM ? tourM[1].trim() : '';
-
-  // Short rank for label: "1st", "2nd", etc.
-  const rankM = placement.match(/^(\d+(?:st|nd|rd|th))/i);
+  const rankM    = placement.match(/^(\d+(?:st|nd|rd|th))/i);
   const shortRank = rankM ? rankM[1] : '';
 
   // Auto-label: "Everydayclutch · 1st" or fall back to archetype
@@ -662,17 +662,59 @@ if (url.startsWith('/api/fetch-bandai')) {
 // Leader card ID → deckKey (auto-generated from DECKLISTS in rosinante_spa.html)
 // Add new leaders here when new sets are released.
 const LEADER_MAP = {
-  "OP01-002":"op01_law",   "OP07-019":"op7bonney",  "OP08-021":"op8carrot",
-  "OP08-058":"op8sabo",    "OP09-001":"op9shanks",  "OP09-022":"op9lim",
-  "OP09-062":"op9robin",   "OP09-081":"op9teach",   "OP11-001":"op11koby",
-  "OP11-022":"op11shirahoshi","OP11-040":"op11luffy","OP11-041":"op11nami",
-  "OP12-001":"op12rayleigh","OP12-040":"op12kuzan", "OP12-041":"op12sanji",
-  "OP12-061":"op12mirror", "OP13-001":"op13luffy",  "OP13-002":"op13ace",
-  "OP13-003":"op13roger",  "OP13-004":"op13sabo",   "OP13-079":"op13imu",
-  "OP13-100":"op13bonney", "OP14-020":"op14mihawk", "OP14-040":"op14jinbe",
-  "OP14-041":"op14boa",    "OP14-060":"op14doffy",  "OP14-079":"op14crocodile",
-  "OP14-080":"op14moria",  "EB02-010":"eb2luffy",   "EB03-001":"eb3vivi",
-  "ST13-003":"st13luffy",  "ST29-001":"st29luffy",  "P-117":"p117nami",
+  // OP01
+  "OP01-001":"op01zoro",    "OP01-002":"op01_law",    "OP01-003":"op01nami",
+  "OP01-060":"op01luffy",
+  // OP02
+  "OP02-001":"op02luffy",   "OP02-026":"op02ace",     "OP02-049":"op02crocodile",
+  "OP02-072":"op02katakuri",
+  // OP03
+  "OP03-001":"op03doffy",   "OP03-022":"op03cavendish","OP03-040":"op03sabo",
+  "OP03-077":"op03diamond",
+  // OP04
+  "OP04-001":"op04luffy",   "OP04-020":"op04kizaru",  "OP04-039":"op04robin",
+  "OP04-058":"op04nami",    "OP04-099":"op04smoker",
+  // OP05
+  "OP05-001":"op05luffy",   "OP05-020":"op05sanji",   "OP05-041":"op05black",
+  "OP05-060":"op05magellan","OP05-098":"op05benn",
+  // OP06
+  "OP06-001":"op06luffy",   "OP06-020":"op06zoro",    "OP06-042":"op06yamato",
+  "OP06-080":"op06perona",  "OP06-099":"op06katakuri",
+  // OP07
+  "OP07-001":"op07luffy",   "OP07-019":"op7bonney",   "OP07-040":"op07robin",
+  "OP07-061":"op07akainu",  "OP07-079":"op07kuma",
+  // OP08
+  "OP08-001":"op08luffy",   "OP08-021":"op8carrot",   "OP08-039":"op08borsalino",
+  "OP08-058":"op8sabo",     "OP08-079":"op08doflamingo",
+  // OP09
+  "OP09-001":"op9shanks",   "OP09-022":"op9lim",      "OP09-062":"op9robin",
+  "OP09-081":"op9teach",
+  // OP10
+  "OP10-001":"op10luffy",   "OP10-020":"op10nami",    "OP10-040":"op10zoro",
+  "OP10-060":"op10sanji",   "OP10-099":"op10law",
+  // OP11
+  "OP11-001":"op11koby",    "OP11-022":"op11shirahoshi","OP11-040":"op11luffy",
+  "OP11-041":"op11nami",
+  // OP12
+  "OP12-001":"op12rayleigh","OP12-020":"op12zoro",    "OP12-040":"op12kuzan",
+  "OP12-041":"op12sanji",   "OP12-061":"op12mirror",
+  // OP13
+  "OP13-001":"op13luffy",   "OP13-002":"op13ace",     "OP13-003":"op13roger",
+  "OP13-004":"op13sabo",    "OP13-079":"op13imu",     "OP13-100":"op13bonney",
+  // OP14
+  "OP14-001":"op14luffy",   "OP14-020":"op14mihawk",  "OP14-040":"op14jinbe",
+  "OP14-041":"op14boa",     "OP14-060":"op14doffy",   "OP14-079":"op14crocodile",
+  "OP14-080":"op14moria",
+  // EB sets
+  "EB01-001":"eb1luffy",    "EB02-010":"eb2luffy",    "EB03-001":"eb3vivi",
+  "EB04-001":"eb4luffy",
+  // ST (starter deck leaders)
+  "ST01-001":"st1luffy",    "ST02-001":"st2zoro",     "ST03-001":"st3sabo",
+  "ST04-001":"st4luffy",    "ST07-001":"st7nami",     "ST08-001":"st8yamato",
+  "ST09-001":"st9zoro",     "ST10-001":"st10luffy",   "ST12-001":"st12zorosanji",
+  "ST13-003":"st13luffy",   "ST29-001":"st29luffy",
+  // Promo
+  "P-117":"p117nami",
 };
 
 // ── HTTP helpers ──────────────────────────────────────────────
@@ -771,11 +813,82 @@ function _placementRank(placement) {
   return 999;
 }
 
+// ── Convert numeric placement to ordinal string ───────────────
+function _rankToOrdinal(n) {
+  if (n === 1) return '1st';  if (n === 2) return '2nd';
+  if (n === 3) return '3rd';  if (n === 4) return '4th';
+  if (n <= 8)  return 'Top 8';
+  if (n <= 16) return 'Top 16';
+  if (n <= 32) return 'Top 32';
+  if (n <= 64) return 'Top 64';
+  return `${n}th`;
+}
+
+// ── Parse player decklist from new Limitless format ───────────
+// New format: href="https://onepiece.limitlesstcg.com/cards/CARD-ID"
+// Link text:  "4 Card Name (CARD-ID)"  →  count=4
+//             "Card Name (CARD-ID)"    →  count=1 (leader)
+function _parseNewDecklistHtml(html) {
+  const cardRe = /href="https?:\/\/[^"]*\/cards\/([A-Z]{1,5}\d*-\d{3,4})"[^>]*>([\s\S]*?)<\/a>/gi;
+  const cards = [];
+  const seen  = new Set();
+  let m;
+  while ((m = cardRe.exec(html)) !== null) {
+    const cardId    = m[1].toUpperCase();
+    const linkText  = m[2].replace(/<[^>]*>/g, '').trim(); // strip any nested tags
+    if (seen.has(cardId)) continue;
+    seen.add(cardId);
+    const countM = linkText.match(/^(\d+)\s+/);
+    const count  = countM ? parseInt(countM[1]) : 1;
+    if (count >= 1 && count <= 4) cards.push({ count, id: cardId });
+  }
+  return cards;
+}
+
+// ── Fetch standings page and extract top-N players ────────────
+// Returns { players: [{placement, username, leaderId, leaderKey}], meta: {name,date}, html }
+async function _scraperFetchStandingsPlayers(tournamentId, maxPlayers) {
+  const url  = `https://play.limitlesstcg.com/tournament/${tournamentId}/standings`;
+  const html = await _scraperGet(url);
+  const meta = _parseTournamentMeta(html, tournamentId);
+
+  const players       = [];
+  const seenUsernames = new Set();
+
+  // Each row:  <td>N</td> ... /player/USERNAME ... /metagame/CARD-ID ... /player/USERNAME/decklist
+  const rowRe = /<tr[\s\S]*?<\/tr>/gi;
+  let rowM;
+  while ((rowM = rowRe.exec(html)) !== null && players.length < maxPlayers) {
+    const row = rowM[0];
+
+    // Placement: first <td> whose sole content is a number
+    const placeM = row.match(/<td[^>]*>\s*(\d+)\s*<\/td>/);
+    if (!placeM) continue;
+    const placement = parseInt(placeM[1]);
+
+    // Player username from /player/USERNAME link
+    const playerM = row.match(/href="\/tournament\/[\w-]+\/player\/([\w.%-]+?)(?:\/|")/);
+    if (!playerM) continue;
+    const username = playerM[1];
+    if (seenUsernames.has(username)) continue;
+    seenUsernames.add(username);
+
+    // Leader card ID from /metagame/CARD-ID link
+    const leaderM = row.match(/href="\/tournament\/[\w-]+\/metagame\/([A-Z0-9-]+)"/);
+    const leaderId = leaderM ? leaderM[1] : null;
+    if (!leaderId || !LEADER_MAP[leaderId]) continue; // skip unmapped leaders
+
+    players.push({ placement, username, leaderId, leaderKey: LEADER_MAP[leaderId] });
+  }
+
+  return { players, meta, html };
+}
+
 // ── Fetch tournament IDs from Limitless listing pages ─────────
 async function _scraperFetchTournamentIds(maxPages) {
   const ids = [];
   const seen = new Set();
-  const re = /href="\/tournaments\/([\w-]+)"/gi;
+  const re = /href="\/tournament\/([\w-]+)\/standings"/gi;
   for (let page = 1; page <= maxPages; page++) {
     const url = `https://play.limitlesstcg.com/tournaments/completed?game=OP&page=${page}`;
     try {
@@ -837,45 +950,47 @@ async function runDailyScrape({ maxPages } = {}) {
     for (const tournamentId of newIds) {
       console.log(`[scraper] Fetching tournament ${tournamentId}`);
       try {
-        const html  = await _scraperGet(`https://play.limitlesstcg.com/tournaments/${tournamentId}/decklists`);
-        const decks = _extractTournamentDecks(html);
+        // ── Fetch standings to get player list + tournament meta ──
+        const { players, meta: { name: tName, date: tDate } } =
+          await _scraperFetchStandingsPlayers(tournamentId, 16);
 
-        if (!decks.length) { importedIds.add(tournamentId); continue; }
+        if (!players.length) {
+          console.log(`[scraper] Tournament ${tournamentId}: no mapped-leader players found, skipping`);
+          importedIds.add(tournamentId); continue;
+        }
 
         // ── 1. Upsert tournament row ─────────────────────────────
-        const { name: tName, date: tDate } = _parseTournamentMeta(html, tournamentId);
         await _sbUpsert('tournaments', [{
           id:     tournamentId,
           name:   tName,
           date:   tDate,
           format: 'OP',
           source: 'limitless',
-          url:    `https://play.limitlesstcg.com/tournaments/${tournamentId}/decklists`
+          url:    `https://play.limitlesstcg.com/tournament/${tournamentId}/standings`
         }], 'id');
 
-        // ── 2. Insert each decklist + its cards ──────────────────
+        // ── 2. Fetch each player's decklist + insert ─────────────
         let saved = 0;
-        for (const deck of decks) {
-          const leaderCard = deck.cards.find(c => LEADER_MAP[c.id]);
-          if (!leaderCard) continue;
-          const deckKey = LEADER_MAP[leaderCard.id];
+        for (const player of players) {
+          const decklistUrl = `https://play.limitlesstcg.com/tournament/${tournamentId}/player/${player.username}/decklist`;
+          const deckHtml    = await _scraperGet(decklistUrl);
+          const cards       = _parseNewDecklistHtml(deckHtml);
+
+          if (!cards.length) { await new Promise(r => setTimeout(r, 300)); continue; }
 
           // Fetch card names for all cards in this deck
-          const allCardIds = deck.cards.map(c => c.id);
-          const metaMap = await _getCardMeta(allCardIds);
-
-          // Derive colors from leader metadata
-          const leaderMeta = metaMap[leaderCard.id] || {};
+          const metaMap = await _getCardMeta(cards.map(c => c.id));
 
           // Insert decklist row, get back its generated id
+          const placementStr = _rankToOrdinal(player.placement);
           const dlRes = await _sbInsert('decklists', [{
             tournament_id:   tournamentId,
-            player:          deck.player   || null,
-            placement:       deck.placement || null,
-            placement_rank:  _placementRank(deck.placement),
-            leader_id:       leaderCard.id,
-            leader_key:      deckKey,
-            archetype:       deck.archetype || null,
+            player:          player.username || null,
+            placement:       placementStr    || null,
+            placement_rank:  player.placement,
+            leader_id:       player.leaderId,
+            leader_key:      player.leaderKey,
+            archetype:       null,
             source:          'limitless-auto'
           }]);
 
@@ -884,9 +999,9 @@ async function runDailyScrape({ maxPages } = {}) {
           if (!decklistId) continue;
 
           // Insert all cards for this decklist
-          const cardRows = deck.cards.map(c => {
-            const meta = metaMap[c.id] || {};
-            const isLeader = c.id === leaderCard.id;
+          const cardRows = cards.map(c => {
+            const meta     = metaMap[c.id] || {};
+            const isLeader = c.id === player.leaderId;
             return {
               decklist_id: decklistId,
               card_id:     c.id,
@@ -898,10 +1013,10 @@ async function runDailyScrape({ maxPages } = {}) {
 
           const cardsRes = await _sbInsert('decklist_cards', cardRows);
           if (cardsRes && cardsRes.status < 300) { saved++; totalSaved++; }
-          await new Promise(r => setTimeout(r, 200));
+          await new Promise(r => setTimeout(r, 300));
         }
 
-        console.log(`[scraper] Tournament ${tournamentId}: ${saved}/${decks.length} saved`);
+        console.log(`[scraper] Tournament ${tournamentId}: ${saved}/${players.length} saved`);
         importedIds.add(tournamentId);
 
         await _saveScrapeState({
