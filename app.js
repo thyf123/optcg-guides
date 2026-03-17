@@ -2266,6 +2266,14 @@ let LEADERS = {
     matchups: [],
     colorMap: null
   },
+  op08pudding: {
+    cardId: "OP08-058",
+    name: "Charlotte Pudding",
+    title: "OP08-058 Charlotte Pudding",
+    sub: "Matchup data coming soon",
+    matchups: [],
+    colorMap: null
+  },
   op08kalgara: {
     cardId: "OP08-098",
     name: "Kalgara",
@@ -2366,6 +2374,14 @@ let LEADERS = {
     cardId: "OP12-081",
     name: "Koala",
     title: "OP12-081 Koala",
+    sub: "Matchup data coming soon",
+    matchups: [],
+    colorMap: null
+  },
+  op12rosinante: {
+    cardId: "OP12-061",
+    name: "Donquixote Rosinante",
+    title: "OP12-061 Donquixote Rosinante",
     sub: "Matchup data coming soon",
     matchups: [],
     colorMap: null
@@ -2558,6 +2574,30 @@ let LEADERS = {
     cardId: "PRB01-001",
     name: "Sanji",
     title: "PRB01-001 Sanji",
+    sub: "Matchup data coming soon",
+    matchups: [],
+    colorMap: null
+  },
+  p011uta: {
+    cardId: "P-011",
+    name: "Uta",
+    title: "P-011 Uta",
+    sub: "Matchup data coming soon",
+    matchups: [],
+    colorMap: null
+  },
+  p047luffy: {
+    cardId: "P-047",
+    name: "Monkey D. Luffy",
+    title: "P-047 Monkey D. Luffy",
+    sub: "Matchup data coming soon",
+    matchups: [],
+    colorMap: null
+  },
+  p076sakazuki: {
+    cardId: "P-076",
+    name: "Sakazuki",
+    title: "P-076 Sakazuki",
     sub: "Matchup data coming soon",
     matchups: [],
     colorMap: null
