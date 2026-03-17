@@ -1,3 +1,4 @@
+// v2026-03-17c — fix RLS INSERT policies added to tournaments/decklists/decklist_cards
 const http   = require('http');
 const https  = require('https');
 const fs     = require('fs');
