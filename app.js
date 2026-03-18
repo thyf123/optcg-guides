@@ -5773,7 +5773,7 @@ function rebuildMatchupGrid() {
           : `<div class="mg-img-placeholder">⚔</div>`}
         ${m.warn ? `<span class="mg-warn-pill">⚠</span>` : ''}
       </div>
-      <div class="mg-name" title="${displayName}">${displayName}</div>
+      <div class="mg-name" title="${displayName}">${displayName}${colorDots(m.name)}</div>
       ${hasData
         ? `<div class="mg-stats">
              <span class="mg-rec">${rec.w}W·${rec.l}L</span>
