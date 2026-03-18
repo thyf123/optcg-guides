@@ -4460,7 +4460,7 @@ function _buildMergedEssHtml(builtInList, deckKey) {
     const isHidden = c.source === 'builtin' && hidden.includes(c.label);
     const safeLabel = c.label.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
     const imgHtml = c.id
-      ? `<img class="ess-card-img" src="${cardImg(c.id)}" alt="${c.name}" onload="this.classList.add('loaded')" onerror="this.style.opacity='0.1'">`
+      ? `<img class="ess-card-img" src="${compCardImg(c.id)}" alt="${c.name}" onload="this.classList.add('loaded')" onerror="this.onerror=null;this.src='${cardImg(c.id)}'">`
       : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:0.55rem;color:var(--gl-text-faint);text-align:center;padding:4px">${c.name}</div>`;
     let actionBtn = '';
     if (_essEditMode) {
@@ -5023,7 +5023,7 @@ function _showAcDropdown(cards, ta) {
   ac.style.cssText = `position:fixed;left:${rect.left}px;top:${top}px;width:${Math.max(rect.width,260)}px;z-index:9999;background:#141720;border:1px solid rgba(201,168,76,0.25);border-radius:8px;overflow:hidden;max-height:280px;overflow-y:auto;box-shadow:0 8px 28px rgba(0,0,0,0.6)`;
   ac.innerHTML = cards.map((c, i) =>
     `<div class="card-ac-item" data-idx="${i}" onclick="_pickAcItem(this)">
-      <img class="card-ac-img" src="${cardImg(c.id)}" alt="">
+      <img class="card-ac-img" src="${compCardImg(c.id)}" onerror="this.onerror=null;this.src='${cardImg(c.id)}'" alt="">
       <div class="card-ac-info">
         <div class="card-ac-name">${c.name}</div>
         <div class="card-ac-meta">${c.id}<span class="card-ac-label">${c.label}</span></div>
@@ -8199,9 +8199,9 @@ function _essCardGrid(essential, deckKey) {
     // In non-edit mode, skip hidden cards entirely
     if (isHidden && !_essEditMode) return '';
     const imgHtml = id
-      ? `<img class="ess-card-img" src="${cardImg(id)}" alt="${label}"
+      ? `<img class="ess-card-img" src="${compCardImg(id)}" alt="${label}"
            onload="this.classList.add('loaded')"
-           onerror="this.style.opacity='0.15'">`
+           onerror="this.onerror=null;this.src='${cardImg(id)}'">`
       : `<div class="ess-card-placeholder">${label}</div>`;
     const safeLabel = label.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
     const actionBtn = _essEditMode && deckKey
