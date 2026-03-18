@@ -4702,7 +4702,6 @@ function saveLog() {
   _refreshYouCells();
   if (document.getElementById('screen-deck').classList.contains('active')) {
     _refreshMySection(_logDeck, true);
-    _refreshMiniGames(_logDeck);
   }
   _showLogToast();
 }
@@ -8482,12 +8481,10 @@ function renderDeck(d, matchup, deckKey) {
         <button class="my-log-btn" onclick="openLogModal('${deckKey}','${_mName}',event)">+ Log Game</button>
       </div>
     </div>
-    <div id="mi-games-wrap" style="margin-bottom:6px"></div>
     <div id="my-hist-inner"></div>
   </div>`;
   document.getElementById('deck-content').innerHTML = html;
   _refreshMySection(deckKey);
-  _refreshMiniGames(deckKey);
   // Lazy-load tournament results for this leader
   _deckCompLeaderId = d.leader;
   _deckCompCardCache = {};
