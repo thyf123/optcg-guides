@@ -289,7 +289,8 @@ function cardImg(id){
 function compCardImg(id){
   if(!id) return '';
   const cleanId = id.replace(/[_-][RP]\d+$/i, '');
-  const m = cleanId.match(/^([A-Z]{1,4}\d{2})-(\d+)$/);
+  // \d{0,2} lets pure-letter set codes like P (promos) match alongside OP12, ST01, EB04, etc.
+  const m = cleanId.match(/^([A-Z]{1,4}\d{0,2})-(\d+)$/);
   if(m) return `https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/${m[1]}/${cleanId}_EN.webp`;
   return cardImg(id);
 }
@@ -297,7 +298,7 @@ function compCardImg(id){
 // Call as: onerror="cardImgFallback(this,'CARD-ID')"
 function cardImgFallback(el, id) {
   const cleanId = (id||'').replace(/[_-][RP]\d+$/i, '');
-  const m = cleanId.match(/^([A-Z]{1,4}\d{2})-(\d+)$/);
+  const m = cleanId.match(/^([A-Z]{1,4}\d{0,2})-(\d+)$/);
   const jpnUrl = m ? `https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/${m[1]}/${cleanId}_JPN.webp` : null;
   if (jpnUrl && el.src !== jpnUrl) {
     el.onerror = () => { el.onerror = null; el.src = cardImg(id); };
@@ -6531,8 +6532,8 @@ function _renderArchCards(leaderId, leaderKey, data) {
       const pct = c.inclusion_pct;
       const pctCls = pct >= 75 ? 'arch-pct--hi' : pct >= 40 ? 'arch-pct--mid' : 'arch-pct--lo';
       html += `<div class="comp-visual-card comp-arch-card" title="${c.card_name} · ${c.card_id}\n${pct}% of decks · avg ×${c.avg_copies}">
-        <img src="${cardImg(c.card_id)}" loading="lazy" alt="${c.card_name}"
-          onerror="this.parentElement.classList.add('comp-visual-card--err')">
+        <img src="${compCardImg(c.card_id)}" loading="lazy" alt="${c.card_name}"
+          onerror="cardImgFallback(this,'${c.card_id}')">
         <span class="arch-pct ${pctCls}">${pct}%</span>
       </div>`;
     });
@@ -8668,14 +8669,31 @@ function _renderDeckTopCards(wrap, archData) {
     if (!sections[sec]) sections[sec] = [];
     sections[sec].push(c);
   });
+
+  // Sort Character cards: 100% inclusion first, then by cost asc, then by pct desc
+  if (sections['Character']) {
+    sections['Character'] = sections['Character'].slice().sort((a, b) => {
+      const aIs100 = a.inclusion_pct >= 100 ? 0 : 1;
+      const bIs100 = b.inclusion_pct >= 100 ? 0 : 1;
+      if (aIs100 !== bIs100) return aIs100 - bIs100;
+      const aCost = _mydCardCostCache[_normId(a.card_id)] ?? 99;
+      const bCost = _mydCardCostCache[_normId(b.card_id)] ?? 99;
+      if (aCost !== bCost) return aCost - bCost;
+      return b.inclusion_pct - a.inclusion_pct;
+    });
+  }
+
   let html = `<div class="deck-comp-col-meta" style="font-size:0.58rem;margin-bottom:6px">${totalDecks} deck${totalDecks!==1?'s':''}</div>`;
   order.forEach(sec => {
     if (!sections[sec] || !sections[sec].length) return;
-    html += `<div class="comp-inline-section">${sec}</div><div class="comp-visual-grid deck-comp-grid">`;
+    const gridCls = sec === 'Character' ? 'comp-visual-grid deck-comp-char-grid' : 'comp-visual-grid deck-comp-grid';
+    html += `<div class="comp-inline-section">${sec}</div><div class="${gridCls}">`;
     sections[sec].forEach(c => {
       const pct = c.inclusion_pct;
       const pctCls = pct >= 75 ? 'arch-pct--hi' : pct >= 40 ? 'arch-pct--mid' : 'arch-pct--lo';
-      html += `<div class="comp-visual-card comp-arch-card" title="${c.card_name} · ${c.card_id} — ${pct}% of decks, avg ×${c.avg_copies}">
+      const cost = _mydCardCostCache[_normId(c.card_id)];
+      const costLabel = cost != null ? ` · cost ${cost}` : '';
+      html += `<div class="comp-visual-card comp-arch-card" title="${c.card_name} · ${c.card_id}${costLabel} — ${pct}% of decks, avg ×${c.avg_copies}">
         <img src="${compCardImg(c.card_id)}" loading="lazy" alt="${c.card_name}" style="cursor:pointer"
           onclick="openModal(this.src,'${c.card_id} · ${c.card_name.replace(/'/g,'&#39;')}',event)"
           onerror="cardImgFallback(this,'${c.card_id}')">
@@ -8685,6 +8703,15 @@ function _renderDeckTopCards(wrap, archData) {
     html += `</div>`;
   });
   wrap.innerHTML = html;
+
+  // If any Character card costs are unknown, fetch them and re-render once
+  const charCards = sections['Character'] || [];
+  const missingCostIds = charCards.map(c => _normId(c.card_id)).filter(id => _mydCardCostCache[id] == null);
+  if (missingCostIds.length) {
+    _mydLoadDeckMeta(missingCostIds).then(() => {
+      _renderDeckTopCards(wrap, archData);
+    });
+  }
 }
 
 async function _loadDeckCompSection() {

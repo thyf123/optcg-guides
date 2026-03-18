@@ -1173,6 +1173,15 @@ th.sort-active { color: var(--gl-gold-h); }
 .deck-comp-grid { gap: 3px; }
 .deck-comp-grid .comp-visual-card { width: 56px; }
 
+/* Character section: 8-per-row grid, slightly larger cards */
+.deck-comp-char-grid {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 4px;
+  margin-bottom: 10px;
+}
+.deck-comp-char-grid .comp-visual-card { width: auto; }
+
 /* Filter bar: labeled groups */
 .deck-comp-fgrp-labeled { display: flex; flex-direction: column; gap: 3px; }
 .deck-comp-flabel { font-size: 0.5rem; font-weight: 700; text-transform: uppercase;
