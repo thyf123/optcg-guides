@@ -39,6 +39,49 @@ function serve(res, filePath, mime, transform) {
   res.end(content);
 }
 
+// ── OnePieceTopDecks page parser ─────────────────────────────
+// Extracts all deckgen?... hrefs from a deck-list page.
+// Each href encodes: dn, date, cn, au, pl, tn, hs, dg (card list), cs
+// Card list format: "4nOP12-071a4nOP09-069a..." (n=count, a=separator)
+function _parseTopDecksPageHtml(res, html) {
+  const decks = [];
+  const re = /href="deckgen\?([^"]+)"/gi;
+  const seen = new Set();
+  let m;
+  while ((m = re.exec(html)) !== null) {
+    const params     = new URLSearchParams(m[1]);
+    const dg         = params.get('dg') || '';
+    const cs         = params.get('cs') || '';
+    const key        = dg + cs;
+    if (seen.has(key)) continue;
+    seen.add(key);
+
+    const player     = params.get('au')   || '';
+    const placement  = params.get('pl')   || '';
+    const date       = params.get('date') || '';
+    const deckName   = params.get('dn')   || '';
+    const tournament = params.get('tn')   || '';
+    const country    = params.get('cn')   || '';
+
+    if (!dg) continue;
+    const cards = [];
+    for (const part of dg.split('a')) {
+      const cm = part.match(/^(\d+)n([A-Z0-9-]+)$/i);
+      if (cm) cards.push({ count: parseInt(cm[1]), id: cm[2].toUpperCase() });
+    }
+    if (!cards.length) continue;
+
+    const autoLabel = [player, placement].filter(Boolean).join(' · ') || deckName || 'TopDecks build';
+    decks.push({ player, placement, date, archetype: deckName, tournament, country, autoLabel, cards });
+  }
+  res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+  if (!decks.length) {
+    res.end(JSON.stringify({ ok: false, error: 'No decklists found — make sure the URL is a deck-list page on onepiecetopdecks.com' }));
+  } else {
+    res.end(JSON.stringify({ ok: true, decks }));
+  }
+}
+
 // ── GumGum.gg deck parser ─────────────────────────────────────
 // Individual deck page: https://gumgum.gg/decklists/deck/[region]/[format]/[uuid]
 // Deck data in deckbuilder link: /deckbuilder?deck=4xOP10-065;4xOP09-069;...
@@ -407,6 +450,38 @@ if (url.startsWith('/api/fetch-bandai')) {
       }
       let html = ''; proxyRes.on('data', c => html += c);
       proxyRes.on('end', () => _parseGumgumHtml(res, html));
+    }).on('error', e => { res.writeHead(502); res.end(JSON.stringify({ ok: false, error: e.message })); });
+    return;
+  }
+
+  // ── OnePieceTopDecks.com bulk page proxy ─────────────────────
+  // Fetches a deck-list page and extracts all deckgen?... hrefs.
+  // Each href encodes full deck metadata + cards in its query params.
+  if (url.startsWith('/api/fetch-topdecks-page')) {
+    const targetUrl = new URL('http://x' + req.url).searchParams.get('url') || '';
+    if (!targetUrl.match(/^https?:\/\/(www\.)?onepiecetopdecks\.com\//)) {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: false, error: 'Only onepiecetopdecks.com URLs are allowed' }));
+      return;
+    }
+    const parsedUrl = new URL(targetUrl);
+    const opts = {
+      hostname: parsedUrl.hostname, path: parsedUrl.pathname + parsedUrl.search,
+      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; OPTCG-Guide-Bot/1.0)', 'Accept': 'text/html,application/xhtml+xml' }
+    };
+    https.get(opts, proxyRes => {
+      // Follow one redirect if needed
+      if (proxyRes.statusCode >= 301 && proxyRes.statusCode <= 302 && proxyRes.headers.location) {
+        const redir = new URL(proxyRes.headers.location, targetUrl);
+        const rOpts = { hostname: redir.hostname, path: redir.pathname + redir.search, headers: opts.headers };
+        https.get(rOpts, r2 => {
+          let html = ''; r2.on('data', c => html += c);
+          r2.on('end', () => _parseTopDecksPageHtml(res, html));
+        }).on('error', e => { res.writeHead(502); res.end(JSON.stringify({ ok: false, error: e.message })); });
+        return;
+      }
+      let html = ''; proxyRes.on('data', c => html += c);
+      proxyRes.on('end', () => _parseTopDecksPageHtml(res, html));
     }).on('error', e => { res.writeHead(502); res.end(JSON.stringify({ ok: false, error: e.message })); });
     return;
   }

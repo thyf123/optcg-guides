@@ -8306,6 +8306,7 @@ function renderDeck(d, matchup, deckKey) {
         <button id="admin-topdecks-toggle-btn" class="variant-tab" style="font-size:0.62rem" onclick="adminToggleTopDecks('${deckKey}')">🏆 Import from TopDecks</button>
         <button id="admin-gumgum-toggle-btn" class="variant-tab" style="font-size:0.62rem" onclick="adminToggleGumgum('${deckKey}')">🔵 Import from GumGum</button>
         <button id="admin-tournament-toggle-btn" class="variant-tab" style="font-size:0.62rem" onclick="adminToggleTournament('${deckKey}')">🏟 Bulk Tournament</button>
+        <button id="admin-topdecks-page-toggle-btn" class="variant-tab" style="font-size:0.62rem" onclick="adminToggleTopDecksPage('${deckKey}')">🏆 Bulk TopDecks</button>
       </div>
       <div id="admin-topdecks-area" style="display:none;margin-bottom:8px">
         <div style="font-size:0.6rem;color:var(--gl-text-muted);margin-bottom:4px">
@@ -8351,6 +8352,20 @@ function renderDeck(d, matchup, deckKey) {
         </div>
         <span id="admin-tournament-preview" style="font-size:0.65rem;color:var(--gl-text-muted);display:block;margin-top:2px"></span>
         <div id="admin-tournament-list" style="margin-top:6px;max-height:200px;overflow-y:auto"></div>
+      </div>
+      <div id="admin-topdecks-page-area" style="display:none;margin-bottom:8px">
+        <div style="font-size:0.6rem;color:var(--gl-text-muted);margin-bottom:4px">
+          Paste an <strong>onepiecetopdecks.com/deck-list/…</strong> page URL — imports every decklist on the page at once
+        </div>
+        <div style="display:flex;gap:6px;align-items:center;margin-bottom:4px">
+          <input type="text" id="admin-topdecks-page-url" class="variant-label-input"
+            placeholder="https://onepiecetopdecks.com/deck-list/english-eb-03-deck-list-…">
+          <button class="variant-save-btn"
+            style="background:var(--gl-card);color:var(--gl-text);border:1px solid var(--gl-divider);white-space:nowrap"
+            onclick="adminFetchTopDecksPage('${deckKey}')">Fetch →</button>
+        </div>
+        <span id="admin-topdecks-page-preview" style="font-size:0.65rem;color:var(--gl-text-muted);display:block;margin-top:2px"></span>
+        <div id="admin-topdecks-page-list" style="margin-top:6px;max-height:200px;overflow-y:auto"></div>
       </div>
       <div id="admin-bandai-area" style="display:none;margin-bottom:8px">
         <div style="font-size:0.6rem;color:var(--gl-text-muted);margin-bottom:4px">
@@ -9065,6 +9080,128 @@ async function adminImportAllTournamentDecks(deckKey) {
       label: deck.autoLabel || deck.player || `Import ${i+1}`,
       sections,
       meta: { player: deck.player||'', placement: deck.placement||'', archetype: deck.archetype||'', date: compDate, source: 'limitless', url: '' }
+    });
+    imported++;
+  }
+
+  if (!imported) { if (preview) preview.textContent = 'No decks could be imported.'; return; }
+  _activeVariantIdx[deckKey] = d.variants.length - 1;
+  await saveDeckDataToSupabase();
+  if (preview) preview.textContent = `✅ Imported ${imported} decks as variants!`;
+  setTimeout(() => renderDeck(d, _currentDeckMatchup, deckKey), 1200);
+}
+
+// ── ADMIN: BULK TOPDECKS PAGE IMPORT ─────────────────────────
+let _topDecksPageDecks = {};  // keyed by deckKey
+
+function adminToggleTopDecksPage(deckKey) {
+  const area = document.getElementById('admin-topdecks-page-area');
+  const btn  = document.getElementById('admin-topdecks-page-toggle-btn');
+  if (!area) return;
+  const open = area.style.display === 'none';
+  area.style.display = open ? 'block' : 'none';
+  if (btn) btn.textContent = open ? '▲ Hide' : '🏆 Bulk TopDecks';
+  if (open) {
+    _topDecksPageDecks[deckKey] = null;
+    const prev = document.getElementById('admin-topdecks-page-preview');
+    const list = document.getElementById('admin-topdecks-page-list');
+    if (prev) prev.textContent = '';
+    if (list) list.innerHTML = '';
+  }
+}
+
+async function adminFetchTopDecksPage(deckKey) {
+  const urlEl   = document.getElementById('admin-topdecks-page-url');
+  const preview = document.getElementById('admin-topdecks-page-preview');
+  const listEl  = document.getElementById('admin-topdecks-page-list');
+  if (!urlEl || !preview || !listEl) return;
+  const targetUrl = urlEl.value.trim();
+  if (!targetUrl || !targetUrl.includes('onepiecetopdecks.com')) {
+    preview.textContent = 'Enter an onepiecetopdecks.com/deck-list/… URL';
+    return;
+  }
+  preview.textContent = 'Fetching decklists…';
+  listEl.innerHTML = '';
+  try {
+    const res  = await fetch('/api/fetch-topdecks-page?url=' + encodeURIComponent(targetUrl));
+    const data = await res.json();
+    if (!data.ok) { preview.textContent = 'Error: ' + (data.error || res.status); return; }
+
+    _topDecksPageDecks[deckKey] = data.decks;
+    preview.textContent = `Found ${data.decks.length} decks — click + to add one, or import all ↓`;
+
+    listEl.innerHTML = data.decks.map((deck, i) => `
+      <div style="display:flex;gap:6px;align-items:center;padding:3px 0;border-bottom:1px solid var(--gl-divider);font-size:0.65rem">
+        <span style="color:var(--gl-text-muted);min-width:32px;font-size:0.6rem">${deck.placement || i+1}</span>
+        <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${deck.player}">${deck.player || '—'}</span>
+        <span style="color:var(--gl-text-muted);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:0.6rem">${deck.archetype || deck.tournament || ''}</span>
+        <span style="color:var(--gl-text-muted);font-size:0.58rem;white-space:nowrap">${deck.date || ''}</span>
+        <button class="variant-save-btn" style="font-size:0.58rem;padding:2px 6px;flex-shrink:0;background:var(--gl-card);color:var(--gl-text);border:1px solid var(--gl-divider)"
+          onclick="adminImportTopDecksDeck('${deckKey}',${i})">+</button>
+      </div>`).join('') +
+      `<button class="variant-save-btn" style="width:100%;margin-top:8px"
+        onclick="adminImportAllTopDecks('${deckKey}')">⬇ Import All ${data.decks.length} as variants</button>`;
+  } catch(e) {
+    preview.textContent = 'Error: ' + e.message;
+  }
+}
+
+async function adminImportTopDecksDeck(deckKey, idx) {
+  const deck = _topDecksPageDecks[deckKey]?.[idx];
+  if (!deck) return;
+  const preview = document.getElementById('admin-topdecks-page-preview');
+  if (preview) preview.textContent = `Importing ${deck.player || deck.autoLabel}…`;
+  await _processRawCards(deckKey, deck.cards, preview, 0);
+  if (_pendingVariantSections[deckKey]) {
+    _pendingVariantSections[deckKey]._meta = {
+      player: deck.player, placement: deck.placement, archetype: deck.archetype,
+      date: deck.date || '', source: 'topdecks', url: deck.tournament || ''
+    };
+  }
+  const labelEl = document.getElementById('variant-label-input');
+  if (labelEl) labelEl.value = deck.autoLabel || deck.player || 'Imported';
+}
+
+async function adminImportAllTopDecks(deckKey) {
+  const decks = _topDecksPageDecks[deckKey];
+  if (!decks?.length) return;
+  const preview = document.getElementById('admin-topdecks-page-preview');
+  const d = DECKLISTS[deckKey];
+  if (!d) return;
+
+  if (!d.variants || d.variants.length === 0) {
+    const existing = d.sections ? JSON.parse(JSON.stringify(d.sections)) : [];
+    d.variants = existing.length ? [{ label: 'Main Build', sections: existing }] : [];
+  }
+
+  let imported = 0;
+  for (let i = 0; i < decks.length; i++) {
+    const deck = decks[i];
+    if (preview) preview.textContent = `Importing ${i+1}/${decks.length}: ${deck.player || deck.autoLabel}…`;
+    const allIds = deck.cards.map(c => c.id);
+    try { await _mydLoadDeckMeta(allIds); } catch(e) {}
+
+    const chars = [], events = [], stages = [], other = [];
+    deck.cards.forEach(c => {
+      const type = _mydCardTypeCache[c.id];
+      if (type === 'Leader') return;
+      const entry = { id: c.id, name: _mydCardNameCache[c.id] || c.id, count: c.count };
+      if      (type === 'Character') chars.push(entry);
+      else if (type === 'Event')     events.push(entry);
+      else if (type === 'Stage')     stages.push(entry);
+      else                           other.push(entry);
+    });
+    const sections = [];
+    if (chars.length)  sections.push({ title: 'Character', cards: chars });
+    if (events.length) sections.push({ title: 'Event',     cards: events });
+    if (stages.length) sections.push({ title: 'Stage',     cards: stages });
+    if (other.length)  sections.push({ title: 'Other',     cards: other });
+    if (!sections.length) continue;
+
+    d.variants.push({
+      label: deck.autoLabel || deck.player || `Import ${i+1}`,
+      sections,
+      meta: { player: deck.player||'', placement: deck.placement||'', archetype: deck.archetype||'', date: deck.date||'', source: 'topdecks', url: deck.tournament||'' }
     });
     imported++;
   }
