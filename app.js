@@ -72,6 +72,21 @@ function adminLogout() {
   _updateAdminLockBtn();
   _refreshAdminButtons();
 }
+async function adminImportBandaiReference() {
+  const msg = document.getElementById('admin-panel-msg');
+  if (msg) msg.textContent = '⏳ Starting Bandai reference import (90 decks, ~2 min)…';
+  try {
+    const r = await fetch(`/api/import-bandai-reference?token=${encodeURIComponent(_adminToken)}`);
+    const d = await r.json();
+    if (d.ok) {
+      if (msg) msg.textContent = `✅ ${d.message} (${d.totalDecks} decks queued). Monitor server logs.`;
+    } else {
+      if (msg) msg.textContent = `❌ ${d.error || 'Failed'}`;
+    }
+  } catch(e) {
+    if (msg) msg.textContent = `❌ ${e.message}`;
+  }
+}
 async function adminRunBackfill(pages) {
   const msg = document.getElementById('admin-panel-msg');
   if (msg) msg.textContent = `⏳ Starting backfill for ${pages} pages…`;
@@ -8657,7 +8672,7 @@ async function _loadDeckTopCards() {
 }
 
 function _renderDeckTopCards(wrap, archData) {
-  const { totalDecks = 0, cards = [] } = archData.ok ? archData : {};
+  const { totalDecks = 0, cards = [], isBandaiRef = false } = archData.ok ? archData : {};
   if (!cards.length) {
     wrap.innerHTML = '<div style="font-size:0.62rem;color:var(--gl-text-muted)">No card data for this filter.</div>';
     return;
@@ -8670,20 +8685,17 @@ function _renderDeckTopCards(wrap, archData) {
     sections[sec].push(c);
   });
 
-  // Sort Character cards: 100% inclusion first, then by cost asc, then by pct desc
-  if (sections['Character']) {
-    sections['Character'] = sections['Character'].slice().sort((a, b) => {
-      const aIs100 = a.inclusion_pct >= 100 ? 0 : 1;
-      const bIs100 = b.inclusion_pct >= 100 ? 0 : 1;
-      if (aIs100 !== bIs100) return aIs100 - bIs100;
-      const aCost = _mydCardCostCache[_normId(a.card_id)] ?? 99;
-      const bCost = _mydCardCostCache[_normId(b.card_id)] ?? 99;
-      if (aCost !== bCost) return aCost - bCost;
-      return b.inclusion_pct - a.inclusion_pct;
-    });
-  }
+  // Sort all sections: highest % first; ties broken by cost asc (unknown cost sorts last)
+  const _sortCards = arr => arr.slice().sort((a, b) => {
+    if (b.inclusion_pct !== a.inclusion_pct) return b.inclusion_pct - a.inclusion_pct;
+    const aCost = _mydCardCostCache[_normId(a.card_id)] ?? 99;
+    const bCost = _mydCardCostCache[_normId(b.card_id)] ?? 99;
+    return aCost - bCost;
+  });
+  order.forEach(sec => { if (sections[sec]) sections[sec] = _sortCards(sections[sec]); });
 
-  let html = `<div class="deck-comp-col-meta" style="font-size:0.58rem;margin-bottom:6px">${totalDecks} deck${totalDecks!==1?'s':''}</div>`;
+  const refBadge = isBandaiRef ? ` <span style="font-size:0.55rem;background:#c8860a;color:#000;padding:1px 5px;border-radius:3px;font-weight:700;margin-left:4px">Bandai Ref</span>` : '';
+  let html = `<div class="deck-comp-col-meta" style="font-size:0.58rem;margin-bottom:6px">${totalDecks} deck${totalDecks!==1?'s':''}${refBadge}</div>`;
   order.forEach(sec => {
     if (!sections[sec] || !sections[sec].length) return;
     const gridCls = sec === 'Character' ? 'comp-visual-grid deck-comp-char-grid' : 'comp-visual-grid deck-comp-grid';
@@ -8704,9 +8716,9 @@ function _renderDeckTopCards(wrap, archData) {
   });
   wrap.innerHTML = html;
 
-  // If any Character card costs are unknown, fetch them and re-render once
-  const charCards = sections['Character'] || [];
-  const missingCostIds = charCards.map(c => _normId(c.card_id)).filter(id => _mydCardCostCache[id] == null);
+  // If any card costs are unknown, fetch them and re-render once (applies to all sections)
+  const allCardIds = cards.map(c => _normId(c.card_id));
+  const missingCostIds = allCardIds.filter(id => _mydCardCostCache[id] == null);
   if (missingCostIds.length) {
     _mydLoadDeckMeta(missingCostIds).then(() => {
       _renderDeckTopCards(wrap, archData);
@@ -8738,19 +8750,22 @@ function _renderDeckCompSection(wrap, feedData) {
   }
 
   // ── Build decklist rows HTML (left column) ───────────────────
-  let listHtml = `<div class="deck-comp-col-hdr">Results <span class="deck-comp-col-meta">${decklists.length}</span></div>`;
+  const compCount = decklists.filter(d => d.source !== 'bandai-official').length;
+  let listHtml = `<div class="deck-comp-col-hdr">Results <span class="deck-comp-col-meta">${compCount}</span></div>`;
   decklists.slice(0, 30).forEach(dl => {
+    const isBandaiOfficial = dl.source === 'bandai-official';
     const t = dl.tournaments || {};
     const rank = dl.placement_rank || 999;
-    const medal = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : dl.placement || `#${rank}`;
+    const medal = isBandaiOfficial ? '📋' : rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : dl.placement || `#${rank}`;
     const dateStr = t.date ? new Date(t.date + 'T00:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : '';
     const rawName = (t.name || '').replace(/^Standings:\s*/i, '').replace(/^#\d+\s*/,'');
-    const tName = /^[0-9a-f-]{20,}$/i.test(rawName) ? 'Online Tournament' : rawName;
-    listHtml += `<div class="deck-comp-entry" id="dce-${dl.id}" onclick="_toggleDeckCompEntry(${dl.id})">
+    const tName = isBandaiOfficial ? 'Bandai Official Reference' : (/^[0-9a-f-]{20,}$/i.test(rawName) ? 'Online Tournament' : rawName);
+    const refStyle = isBandaiOfficial ? ' style="opacity:0.7;border-top:1px dashed var(--gl-surface2)"' : '';
+    listHtml += `<div class="deck-comp-entry" id="dce-${dl.id}" onclick="_toggleDeckCompEntry(${dl.id})"${refStyle}>
       <div class="deck-comp-entry-row">
         <span class="deck-comp-rank">${medal}</span>
         <div class="deck-comp-info">
-          <span class="deck-comp-player">${dl.player || '—'}</span>
+          <span class="deck-comp-player">${isBandaiOfficial ? 'Bandai' : (dl.player || '—')}</span>
           <span class="deck-comp-event">${tName}${dateStr ? ' · ' + dateStr : ''}</span>
         </div>
         <span class="deck-comp-chevron">›</span>

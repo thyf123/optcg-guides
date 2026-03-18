@@ -670,8 +670,19 @@ if (url.startsWith('/api/fetch-bandai')) {
 
       dlQuery += `&order=tournaments(date).desc,placement_rank.asc&limit=${limit}&offset=${offset}`;
       const decklists = await _sbGet('decklists', dlQuery);
+      const compList = Array.isArray(decklists) ? decklists : [];
+
+      // Always append Bandai official reference deck(s) for this leader
+      let refList = [];
+      if (leader) {
+        let refQ = `select=id,tournament_id,player,placement,placement_rank,leader_id,leader_key,archetype,source,tournaments(id,name,date,url)`;
+        refQ += `&source=eq.bandai-official&leader_id=eq.${encodeURIComponent(leader)}&order=id.asc`;
+        const refRows = await _sbGet('decklists', refQ);
+        refList = Array.isArray(refRows) ? refRows : [];
+      }
+
       res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
-      res.end(JSON.stringify({ ok: true, decklists: Array.isArray(decklists) ? decklists : [] }));
+      res.end(JSON.stringify({ ok: true, decklists: [...compList, ...refList] }));
     } catch(e) {
       res.writeHead(500, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ ok: false, error: e.message }));
@@ -701,7 +712,14 @@ if (url.startsWith('/api/fetch-bandai')) {
         }
         dlQuery += `&tournament_id=in.(${tIds.join(',')})`;
       }
-      const decklists = await _sbGet('decklists', dlQuery);
+      let decklists = await _sbGet('decklists', dlQuery);
+      let isBandaiRef = false;
+      // If no competition decks, fall back to Bandai official reference
+      if (!Array.isArray(decklists) || !decklists.length) {
+        const refQ = `select=id&source=eq.bandai-official&leader_id=eq.${encodeURIComponent(leaderId)}`;
+        decklists = await _sbGet('decklists', refQ);
+        isBandaiRef = true;
+      }
       if (!Array.isArray(decklists) || !decklists.length) {
         res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
         res.end(JSON.stringify({ ok: true, totalDecks: 0, cards: [] }));
@@ -739,7 +757,7 @@ if (url.startsWith('/api/fetch-bandai')) {
         .sort((a, b) => b.inclusion_pct - a.inclusion_pct || b.avg_copies - a.avg_copies);
 
       res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
-      res.end(JSON.stringify({ ok: true, totalDecks, cards: result }));
+      res.end(JSON.stringify({ ok: true, totalDecks, cards: result, isBandaiRef: isBandaiRef || false }));
     } catch(e) {
       res.writeHead(500, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ ok: false, error: e.message }));
@@ -770,6 +788,23 @@ if (url.startsWith('/api/fetch-bandai')) {
   }
 
   // ── Manual scrape trigger (admin only) ──────────────────────
+  // ── Bandai reference import trigger (admin only) ─────────────
+  if (url.startsWith('/api/import-bandai-reference')) {
+    const token = new URL('http://x' + req.url).searchParams.get('token') || '';
+    if (!ADMIN_TOKEN || token !== ADMIN_TOKEN) {
+      res.writeHead(401, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: false, error: 'Unauthorized' }));
+      return;
+    }
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    const statusMsg = _bandaiImportRunning ? 'Already running' : 'Import started in background';
+    res.end(JSON.stringify({ ok: true, message: statusMsg, totalDecks: BANDAI_DECK_URLS.length }));
+    if (!_bandaiImportRunning) {
+      _importBandaiReference().catch(e => console.error('[bandai-import] Unhandled:', e.message));
+    }
+    return;
+  }
+
   if (url.startsWith('/api/trigger-scrape')) {
     const token = new URL('http://x' + req.url).searchParams.get('token') || '';
     if (!ADMIN_TOKEN || token !== ADMIN_TOKEN) {
@@ -872,6 +907,148 @@ const LEADER_MAP = {
   // Promo
   "P-117":"p117nami",
 };
+
+// ── Bandai official reference deck constants ──────────────────
+// Accurate cardId → leaderKey mapping (derived from LEADERS in app.js)
+const BANDAI_LEADER_MAP = {
+  "OP01-001":"op01zoro",    "OP01-002":"op01_law",    "OP01-003":"op01luffy",
+  "OP01-031":"op01oden",    "OP01-060":"op01doffy",   "OP01-061":"op01kaido",
+  "OP01-062":"op01crocodile","OP01-091":"op01king",
+  "OP02-001":"op02whitebeard","OP02-002":"op02garp",  "OP02-025":"op02kinemon",
+  "OP02-026":"op02sanji",   "OP02-049":"op02ivankov", "OP02-071":"op02magellan",
+  "OP02-072":"op02zephyr",  "OP02-093":"op02smoker",
+  "OP03-001":"op03ace",     "OP03-021":"op03kuro",    "OP03-022":"op03arlong",
+  "OP03-040":"op03nami",    "OP03-058":"op03iceburg", "OP03-076":"op03lucci",
+  "OP03-077":"op03linlin",  "OP03-099":"op03katakuri",
+  "OP04-001":"op04vivi",    "OP04-019":"op04doffy",   "OP04-020":"op04issho",
+  "OP04-039":"op04rebecca", "OP04-040":"op04queen",   "OP04-058":"op04crocodile",
+  "OP05-001":"op05sabo",    "OP05-002":"op05belobetty","OP05-022":"op05rosinante",
+  "OP05-041":"op05sakazuki","OP05-060":"op05luffy",   "OP05-098":"op05enel",
+  "OP06-001":"op06uta",     "OP06-020":"op06hodyjones","OP06-021":"op06perona",
+  "OP06-022":"op06yamato",  "OP06-042":"op06reiju",   "OP06-080":"op06moria",
+  "OP07-001":"op07dragon",  "OP07-019":"op7bonney",   "OP07-038":"op07boa",
+  "OP07-059":"op07foxy",    "OP07-079":"op07lucci",   "OP07-097":"op07vegapunk",
+  "OP08-001":"op08chopper", "OP08-002":"op08marco",   "OP08-021":"op8carrot",
+  "OP08-057":"op08king",    "OP08-058":"op8sabo",     "OP08-098":"op08kalgara",
+  "OP09-001":"op9shanks",   "OP09-022":"op9lim",      "OP09-042":"op09buggy",
+  "OP09-061":"op09luffy",   "OP09-062":"op9robin",    "OP09-081":"op9teach",
+  "OP10-001":"op10smoker",  "OP10-002":"op10caesar",  "OP10-003":"op10sugar",
+  "OP10-022":"op10law",     "OP10-042":"op10usopp",   "OP10-099":"op10kid",
+  "OP11-001":"op11koby",    "OP11-021":"op11jinbe",   "OP11-022":"op11shirahoshi",
+  "OP11-040":"op11luffy",   "OP11-041":"op11nami",    "OP11-062":"op11katakuri",
+  "OP12-001":"op12rayleigh2","OP12-020":"op12zoro",   "OP12-040":"op12kuzan",
+  "OP12-041":"op12sanji",   "OP12-061":"rosinante",   "OP12-081":"op12koala",
+  "OP13-001":"op13luffy",   "OP13-002":"op13ace",     "OP13-003":"op13roger",
+  "OP13-004":"op13sabo",    "OP13-079":"op13imu",     "OP13-100":"op13bonney",
+  "OP14-001":"op14law",     "OP14-020":"op14mihawk",  "OP14-040":"op14jinbe",
+  "OP14-041":"op14boa",     "OP14-060":"op14doffy",   "OP14-079":"op14crocodile",
+  "OP14-080":"op14moria",
+  "EB01-001":"eb01oden",    "EB01-021":"eb01hannyabal","EB01-040":"eb01kyros",
+  "EB02-010":"eb2luffy",    "EB03-001":"eb3vivi",
+  "ST01-001":"st01luffy",   "ST02-001":"st02kid",     "ST03-001":"st03crocodile",
+  "ST04-001":"st04kaido",   "ST05-001":"st05shanks",  "ST06-001":"st06sakazuki",
+  "ST07-001":"st07linlin",  "ST08-001":"st08luffy",   "ST09-001":"st09yamato",
+  "ST10-001":"st10law",     "ST10-002":"st10luffy",   "ST10-003":"st10kid",
+  "ST11-001":"st11uta",     "ST12-001":"st12zorosanji","ST13-001":"st13sabo",
+  "ST13-002":"st13ace",     "ST13-003":"st13luffy",   "ST14-001":"st14luffy",
+  "ST21-001":"st21luffy",   "ST22-001":"st22acenewgate","ST29-001":"st29luffy",
+  "PRB01-001":"prb01sanji", "P-011":"p011uta",        "P-047":"p047luffy",
+  "P-076":"p076sakazuki",   "P-117":"p117nami",
+};
+
+// All 90 Bandai official recommended deck URLs (some numbers are missing from their site)
+const BANDAI_DECK_URLS = [
+  'https://en.onepiece-cardgame.com/feature/deck/deck_001.php',
+  'https://en.onepiece-cardgame.com/feature/deck/deck_002.php',
+  'https://en.onepiece-cardgame.com/feature/deck/deck_003.php',
+  'https://en.onepiece-cardgame.com/feature/deck/deck_004.php',
+  'https://en.onepiece-cardgame.com/feature/deck/deck_006.php',
+  'https://en.onepiece-cardgame.com/feature/deck/deck_007.php',
+  'https://en.onepiece-cardgame.com/feature/deck/deck_009.php',
+  'https://en.onepiece-cardgame.com/feature/deck/deck_010.php',
+  'https://en.onepiece-cardgame.com/feature/deck/deck_011.php',
+  'https://en.onepiece-cardgame.com/feature/deck/deck_012.php',
+  'https://en.onepiece-cardgame.com/feature/deck/deck_014.php',
+  'https://en.onepiece-cardgame.com/feature/deck/deck_015.php',
+  'https://en.onepiece-cardgame.com/feature/deck/deck_016.php',
+  'https://en.onepiece-cardgame.com/feature/deck/deck_017.php',
+  'https://en.onepiece-cardgame.com/feature/deck/deck_018.php',
+  'https://en.onepiece-cardgame.com/feature/deck/deck_019.php',
+  'https://en.onepiece-cardgame.com/feature/deck/deck_020.php',
+  'https://en.onepiece-cardgame.com/feature/deck/deck_021.php',
+  'https://en.onepiece-cardgame.com/feature/deck/deck_022.php',
+  'https://en.onepiece-cardgame.com/feature/deck/deck_023.php',
+  'https://en.onepiece-cardgame.com/feature/deck/deck_024.php',
+  'https://en.onepiece-cardgame.com/feature/deck/deck_025.php',
+  'https://en.onepiece-cardgame.com/feature/deck/deck_027.php',
+  'https://en.onepiece-cardgame.com/feature/deck/deck_028.php',
+  'https://en.onepiece-cardgame.com/feature/deck/deck_029.php',
+  'https://en.onepiece-cardgame.com/feature/deck/deck_030.php',
+  'https://en.onepiece-cardgame.com/feature/deck/deck_031.php',
+  'https://en.onepiece-cardgame.com/feature/deck/deck_032.php',
+  'https://en.onepiece-cardgame.com/feature/deck/deck_033.php',
+  'https://en.onepiece-cardgame.com/feature/deck/deck_034.php',
+  'https://en.onepiece-cardgame.com/feature/deck/deck_035.php',
+  'https://en.onepiece-cardgame.com/feature/deck/deck_036.php',
+  'https://en.onepiece-cardgame.com/feature/deck/deck_037.php',
+  'https://en.onepiece-cardgame.com/feature/deck/deck_038.php',
+  'https://en.onepiece-cardgame.com/feature/deck/deck_039.php',
+  'https://en.onepiece-cardgame.com/feature/deck/deck_040.php',
+  'https://en.onepiece-cardgame.com/feature/deck/deck_041.php',
+  'https://en.onepiece-cardgame.com/feature/deck/deck_042.php',
+  'https://en.onepiece-cardgame.com/feature/deck/deck_043.php',
+  'https://en.onepiece-cardgame.com/feature/deck/deck_044.php',
+  'https://en.onepiece-cardgame.com/feature/deck/deck_045.php',
+  'https://en.onepiece-cardgame.com/feature/deck/deck_046.php',
+  'https://en.onepiece-cardgame.com/feature/deck/deck_047.php',
+  'https://en.onepiece-cardgame.com/feature/deck/deck_048.php',
+  'https://en.onepiece-cardgame.com/feature/deck/deck_049.php',
+  'https://en.onepiece-cardgame.com/feature/deck/deck_050.php',
+  'https://en.onepiece-cardgame.com/feature/deck/deck_051.php',
+  'https://en.onepiece-cardgame.com/feature/deck/deck_052.php',
+  'https://en.onepiece-cardgame.com/feature/deck/deck_053.php',
+  'https://en.onepiece-cardgame.com/feature/deck/deck_054.php',
+  'https://en.onepiece-cardgame.com/feature/deck/deck_055.php',
+  'https://en.onepiece-cardgame.com/feature/deck/deck_056.php',
+  'https://en.onepiece-cardgame.com/feature/deck/deck_057.php',
+  'https://en.onepiece-cardgame.com/feature/deck/deck_058.php',
+  'https://en.onepiece-cardgame.com/feature/deck/deck_059.php',
+  'https://en.onepiece-cardgame.com/feature/deck/deck_060.php',
+  'https://en.onepiece-cardgame.com/feature/deck/deck_061.php',
+  'https://en.onepiece-cardgame.com/feature/deck/deck_062.php',
+  'https://en.onepiece-cardgame.com/feature/deck/deck_063.php',
+  'https://en.onepiece-cardgame.com/feature/deck/deck_064.php',
+  'https://en.onepiece-cardgame.com/feature/deck/deck_065.php',
+  'https://en.onepiece-cardgame.com/feature/deck/deck_066.php',
+  'https://en.onepiece-cardgame.com/feature/deck/deck_067.php',
+  'https://en.onepiece-cardgame.com/feature/deck/deck_068.php',
+  'https://en.onepiece-cardgame.com/feature/deck/deck_069.php',
+  'https://en.onepiece-cardgame.com/feature/deck/deck_070.php',
+  'https://en.onepiece-cardgame.com/feature/deck/deck_071.php',
+  'https://en.onepiece-cardgame.com/feature/deck/deck_072.php',
+  'https://en.onepiece-cardgame.com/feature/deck/deck_073.php',
+  'https://en.onepiece-cardgame.com/feature/deck/deck_074.php',
+  'https://en.onepiece-cardgame.com/feature/deck/deck_075.php',
+  'https://en.onepiece-cardgame.com/feature/deck/deck_076.php',
+  'https://en.onepiece-cardgame.com/feature/deck/deck_077.php',
+  'https://en.onepiece-cardgame.com/feature/deck/deck_078.php',
+  'https://en.onepiece-cardgame.com/feature/deck/deck_079.php',
+  'https://en.onepiece-cardgame.com/feature/deck/deck_080.php',
+  'https://en.onepiece-cardgame.com/feature/deck/deck_081.php',
+  'https://en.onepiece-cardgame.com/feature/deck/deck_082.php',
+  'https://en.onepiece-cardgame.com/feature/deck/deck_083.php',
+  'https://en.onepiece-cardgame.com/feature/deck/deck_084.php',
+  'https://en.onepiece-cardgame.com/feature/deck/deck_085.php',
+  'https://en.onepiece-cardgame.com/feature/deck/deck_086.php',
+  'https://en.onepiece-cardgame.com/feature/deck/deck_087.php',
+  'https://en.onepiece-cardgame.com/feature/deck/deck_088.php',
+  'https://en.onepiece-cardgame.com/feature/deck/deck_089.php',
+  'https://en.onepiece-cardgame.com/feature/deck/deck_090.php',
+  'https://en.onepiece-cardgame.com/feature/deck/deck_091.php',
+  'https://en.onepiece-cardgame.com/feature/deck/deck_092.php',
+  'https://en.onepiece-cardgame.com/feature/deck/deck_093.php',
+  'https://en.onepiece-cardgame.com/feature/deck/deck_094.php',
+];
 
 // ── HTTP helpers ──────────────────────────────────────────────
 
@@ -978,6 +1155,98 @@ async function _getCardMeta(ids) {
   const map = {};
   if (Array.isArray(rows)) rows.forEach(r => { map[r.id] = { type: r.card_type, name: r.card_name }; });
   return map;
+}
+
+// ── Bandai reference deck import ──────────────────────────────
+// Parses ALL card IDs from a Bandai deck page (including the leader which has no "xN" count)
+function _parseBandaiHtmlFull(html) {
+  // All card IDs present anywhere on the page
+  const allIds = [];
+  const allRe = /\/cardlist\/card\/([A-Z0-9]{2,8}-\d{3,4})\.png/gi;
+  let m;
+  while ((m = allRe.exec(html)) !== null) {
+    const id = m[1].toUpperCase();
+    if (!allIds.includes(id)) allIds.push(id);
+  }
+  // Deck cards with counts (×4 / x4 formats)
+  const cards = [];
+  const seen = new Set();
+  const countRe = /\/cardlist\/card\/([A-Z0-9]{2,8}-\d{3,4})\.png[^>]*>[\s\S]{0,400}?[×x](\d+)/gi;
+  while ((m = countRe.exec(html)) !== null) {
+    const id = m[1].toUpperCase(); const count = parseInt(m[2]);
+    if (seen.has(id)) continue; seen.add(id);
+    if (count >= 1 && count <= 4) cards.push({ id, count });
+  }
+  const titleM = html.match(/<title>([^|<]+)/i);
+  const deckName = (titleM ? titleM[1].trim() : '') || 'Bandai Recommended';
+  return { allIds, cards, deckName };
+}
+
+let _bandaiImportRunning = false;
+async function _importBandaiReference() {
+  if (_bandaiImportRunning) { console.log('[bandai-import] Already running, skipping'); return; }
+  _bandaiImportRunning = true;
+  try {
+    // Ensure synthetic tournament row exists
+    await _sbUpsert('tournaments', [{
+      id: 'bandai-reference', name: 'Bandai Official Recommended',
+      date: '2020-01-01', url: 'https://en.onepiece-cardgame.com/feature/deck/'
+    }], 'id');
+
+    // Fetch already-imported deck URLs to skip duplicates
+    const existing = await _sbGet('decklists', 'source=eq.bandai-official&select=archetype');
+    const existingUrls = new Set((existing || []).map(d => d.archetype));
+
+    let imported = 0, skipped = 0;
+    for (const deckUrl of BANDAI_DECK_URLS) {
+      if (existingUrls.has(deckUrl)) { skipped++; continue; }
+      try {
+        const html = await _scraperGet(deckUrl, 15000);
+        const { allIds, cards, deckName } = _parseBandaiHtmlFull(html);
+
+        // Identify leader: first card ID on page that matches BANDAI_LEADER_MAP
+        const leaderId = allIds.find(id => BANDAI_LEADER_MAP[id]);
+        if (!leaderId || !cards.length) { skipped++; continue; }
+        const leaderKey = BANDAI_LEADER_MAP[leaderId];
+
+        const dlRes = await _sbInsert('decklists', [{
+          tournament_id: 'bandai-reference', player: 'Bandai Official',
+          placement: null, placement_rank: 9999,
+          leader_id: leaderId, leader_key: leaderKey,
+          archetype: deckUrl, source: 'bandai-official'
+        }]);
+        const decklistId = dlRes?.data?.[0]?.id;
+        if (!decklistId) { skipped++; continue; }
+
+        // Fetch card metadata
+        const allCardIds = [leaderId, ...cards.map(c => c.id)];
+        const metaMap = await _getCardMeta(allCardIds);
+
+        // Build card rows (leader first, then deck cards)
+        const leaderMeta = metaMap[leaderId] || {};
+        const cardRows = [{ decklist_id: decklistId, card_id: leaderId,
+          card_name: leaderMeta.name || leaderId, count: 1, section: 'Leader' }];
+        cards.forEach(c => {
+          const meta = metaMap[c.id] || {};
+          cardRows.push({ decklist_id: decklistId, card_id: c.id,
+            card_name: meta.name || c.id, count: c.count,
+            section: meta.type || 'Other' });
+        });
+
+        await _sbInsert('decklist_cards', cardRows);
+        imported++;
+        console.log(`[bandai-import] ${deckUrl} → ${leaderId} (${leaderKey}) — ${cards.length} cards`);
+        await new Promise(r => setTimeout(r, 600));
+      } catch(e) {
+        console.error(`[bandai-import] ${deckUrl}: ${e.message}`);
+        skipped++;
+        await new Promise(r => setTimeout(r, 300));
+      }
+    }
+    console.log(`[bandai-import] Done. Imported: ${imported}, Skipped: ${skipped}`);
+  } finally {
+    _bandaiImportRunning = false;
+  }
 }
 
 // ── Derive placement rank (for sorting) ───────────────────────
