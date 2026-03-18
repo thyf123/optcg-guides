@@ -5760,8 +5760,8 @@ function rebuildMatchupGrid() {
       return `<span class="mg-dot ${games[k].result === 'W' ? 'mg-dot-w' : 'mg-dot-l'}"></span>`;
     }).join('');
 
-    // Display name: strip card-id prefix if present (e.g. "OP01-003 Monkey D. Luffy" → "Monkey D. Luffy")
-    const displayName = m.name.replace(/^[A-Z0-9]+-\d+\s+/, '');
+    // Display name: collapse "OP14-001 Trafalgar Law" → "OP14 Trafalgar Law"; leave "OP14 Mihawk" unchanged
+    const displayName = m.name.replace(/^([A-Z0-9]+)-\d+\s+/, '$1 ');
 
     const card = document.createElement('div');
     card.className = 'mg-card' + (hasData ? ' mg-has-data' : '');
@@ -5771,7 +5771,6 @@ function rebuildMatchupGrid() {
         ${imgSrc
           ? `<img class="mg-img" src="${imgSrc}" loading="lazy" onerror="this.parentNode.innerHTML='<div class=mg-img-placeholder>⚔</div>'">`
           : `<div class="mg-img-placeholder">⚔</div>`}
-        <span class="mg-set-pill">${setLbl}</span>
         ${m.warn ? `<span class="mg-warn-pill">⚠</span>` : ''}
       </div>
       <div class="mg-name" title="${displayName}">${displayName}</div>
@@ -5820,7 +5819,7 @@ function rebuildMatchupTable() {
   tr.dataset.idx = i;
   tr.innerHTML = `
     ${starCell}
-    <td><span class="mname">${m.name.replace(/^[A-Z0-9]+-\d+\s+/, '')}</span><span class="set-badge">${_deckSetLabel(m.name)}</span>${colorDots(m.name)}${m.warn?`<span class="warn" title="Fewer than 50 games in dataset — treat with caution">⚠</span>`:''}${notePip}</td>
+    <td><span class="mname">${m.name.replace(/^([A-Z0-9]+)-\d+\s+/, '$1 ')}</span>${colorDots(m.name)}${m.warn?`<span class="warn" title="Fewer than 50 games in dataset — treat with caution">⚠</span>`:''}${notePip}</td>
     <td><span class="go ${m.go==='1st'?'go1':'go2'}">${m.go}</span></td>
     <td><span class="wr ${wrCls(m.wr1)}">${wrLbl(m.wr1)}</span></td>
     <td><span class="wr ${wrCls(m.wr2)}">${wrLbl(m.wr2)}</span></td>
