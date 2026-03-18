@@ -8472,22 +8472,10 @@ function renderDeck(d, matchup, deckKey) {
     </div>
   </div>`;
 
-  // ── My Notes + My Record (merged section) ──
+  // ── My Record ──
   html += `
   <div class="my-section">
-    <div class="my-sec-hdr" onclick="_toggleSection('my-notes-body','mn-chev',event)" style="margin-bottom:6px">
-      <div class="my-section-title" style="margin-bottom:0">📝 My Notes</div>
-      <span class="sec-toggle-chev" id="mn-chev">▾</span>
-    </div>
-    <div id="my-notes-body">
-      <textarea id="my-notes-ta" class="my-notes-area" placeholder="Your observations, what to remember next time…"></textarea>
-      <div class="my-note-actions">
-        <button class="my-note-save" onclick="saveNoteDeck('${_lk}', '${deckKey}')">Save</button>
-        <button class="my-note-clear" onclick="clearNote('${_lk}', '${deckKey}')">Clear</button>
-        <span class="my-note-saved" id="note-saved-flash">Saved ✓</span>
-      </div>
-    </div>
-    <div style="display:flex;justify-content:space-between;align-items:center;margin:14px 0 4px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin:4px 0 4px">
       <div class="my-section-title" style="margin-bottom:0">📊 My Record</div>
       <div style="display:flex;gap:6px">
         <button class="my-note-clear" id="log-edit-btn" onclick="toggleLogEditMode('${deckKey}')">Edit</button>
@@ -8498,9 +8486,6 @@ function renderDeck(d, matchup, deckKey) {
     <div id="my-hist-inner"></div>
   </div>`;
   document.getElementById('deck-content').innerHTML = html;
-  // set textarea value after innerHTML (avoids HTML-encoding issues)
-  const ta = document.getElementById('my-notes-ta');
-  if (ta) { ta.value = existingNote; _setupAtMention(ta, deckKey, matchup); }
   _refreshMySection(deckKey);
   _refreshMiniGames(deckKey);
   // Lazy-load tournament results for this leader
