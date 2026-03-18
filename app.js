@@ -5238,9 +5238,17 @@ async function syncFromSupabase() {
         const gdRows = await gdRes.json();
         const ldr = gdRows.find(r => r.id === 'leaders-data');
         if (ldr && ldr.payload && typeof ldr.payload === 'object' && !Array.isArray(ldr.payload)) {
-          // Merge: hardcoded LEADERS is the base (preserves new entries added in code),
-          // Supabase overrides specific entries that have been admin-published (e.g. colorMap, matchups).
-          LEADERS = { ...LEADERS, ...ldr.payload };
+          // Merge: hardcoded LEADERS is the base (preserves new entries added in code).
+          // Supabase may override fields like colorMap/sub, but NEVER the matchups array —
+          // hardcoded matchups are authoritative so stale Supabase data can't overwrite them.
+          for (const [lk, lv] of Object.entries(ldr.payload)) {
+            if (!LEADERS[lk]) {
+              LEADERS[lk] = lv; // new leader only in Supabase — take it wholesale
+            } else {
+              const { matchups: _sbMatchups, ...sbRest } = lv;
+              LEADERS[lk] = { ...LEADERS[lk], ...sbRest }; // overlay non-matchup fields only
+            }
+          }
         }
         const dlr = gdRows.find(r => r.id === 'decklists-data');
         if (dlr && dlr.payload && typeof dlr.payload === 'object' && !Array.isArray(dlr.payload)) {
