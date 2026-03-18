@@ -5613,15 +5613,28 @@ function getLM() {
   const hardcoded  = L.matchups || [];
   const covered    = new Set(hardcoded.map(m => m.deck));
   // Auto-append any LEADERS entry not yet in the hardcoded list
+  // Deduplicate by cardId so Supabase-merged duplicate keys don't show twice
+  const seenCardId = new Set();
   const auto = Object.keys(LEADERS)
     .filter(k => !covered.has(k))
-    .map(k => ({
-      // Use title (e.g. "OP01-003 Monkey D. Luffy") so set-badge extraction works
-      name: LEADERS[k].title || LEADERS[k].name, deck: k, warn: false,
-      go: '?', wr1: null, wr2: null, style: '—',
-      essential: [], tips: [],
-      cardColor: CARD_COLORS[LEADERS[k].cardId] || null
-    }));
+    .filter(k => {
+      const cid = LEADERS[k].cardId;
+      if (!cid || seenCardId.has(cid)) return false;
+      seenCardId.add(cid);
+      return true;
+    })
+    .map(k => {
+      const entry = LEADERS[k];
+      // Always build a prefixed name so _deckSetLabel works (fallback: cardId + name)
+      const name = entry.title
+        || (entry.cardId && entry.name ? `${entry.cardId} ${entry.name}` : entry.name || k);
+      return {
+        name, deck: k, warn: false,
+        go: '?', wr1: null, wr2: null, style: '—',
+        essential: [], tips: [],
+        cardColor: CARD_COLORS[entry.cardId] || null
+      };
+    });
   return [...hardcoded, ...auto];
 }
 function getLCM() { return LEADERS[currentLeaderKey].colorMap || ROSINANTE_COLORS; }
@@ -5807,7 +5820,7 @@ function rebuildMatchupTable() {
   tr.dataset.idx = i;
   tr.innerHTML = `
     ${starCell}
-    <td><span class="mname">${m.name}</span><span class="set-badge">${_deckSetLabel(m.name)}</span>${colorDots(m.name)}${m.warn?`<span class="warn" title="Fewer than 50 games in dataset — treat with caution">⚠</span>`:''}${notePip}</td>
+    <td><span class="mname">${m.name.replace(/^[A-Z0-9]+-\d+\s+/, '')}</span><span class="set-badge">${_deckSetLabel(m.name)}</span>${colorDots(m.name)}${m.warn?`<span class="warn" title="Fewer than 50 games in dataset — treat with caution">⚠</span>`:''}${notePip}</td>
     <td><span class="go ${m.go==='1st'?'go1':'go2'}">${m.go}</span></td>
     <td><span class="wr ${wrCls(m.wr1)}">${wrLbl(m.wr1)}</span></td>
     <td><span class="wr ${wrCls(m.wr2)}">${wrLbl(m.wr2)}</span></td>
