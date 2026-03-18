@@ -1176,11 +1176,11 @@ th.sort-active { color: var(--gl-gold-h); }
 /* Character section: 8-per-row grid, slightly larger cards */
 .deck-comp-char-grid {
   display: grid;
-  grid-template-columns: repeat(8, 1fr);
+  grid-template-columns: repeat(8, 72px);
   gap: 4px;
   margin-bottom: 10px;
 }
-.deck-comp-char-grid .comp-visual-card { width: auto; }
+.deck-comp-char-grid .comp-visual-card { width: 72px; }
 
 /* Filter bar: labeled groups */
 .deck-comp-fgrp-labeled { display: flex; flex-direction: column; gap: 3px; }
