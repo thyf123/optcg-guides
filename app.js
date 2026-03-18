@@ -5643,8 +5643,10 @@ let currentMode = 'grid';   // default: grid view
 let currentColor = 'all';
 
 const COLOR_HEX = {red:'#e05858',green:'#50c070',blue:'#5090e0',purple:'#9060d0',yellow:'#d0b030',black:'#888'};
-function colorDots(name) {
-  return (getLCM()[name]||[]).map(c=>`<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${COLOR_HEX[c]||'#888'};margin-left:3px;vertical-align:middle"></span>`).join('');
+function colorDots(name, fallback) {
+  // colorMap covers hardcoded matchups; fallback (m.cardColor) covers auto-generated LEADERS entries
+  const cols = getLCM()[name] || (fallback ? [fallback] : []);
+  return cols.map(c=>`<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${COLOR_HEX[c]||'#888'};margin-left:3px;vertical-align:middle"></span>`).join('');
 }
 
 function setMode(mode) { /* quick ref removed */ }
@@ -5773,7 +5775,7 @@ function rebuildMatchupGrid() {
           : `<div class="mg-img-placeholder">⚔</div>`}
         ${m.warn ? `<span class="mg-warn-pill">⚠</span>` : ''}
       </div>
-      <div class="mg-name" title="${displayName}">${displayName}${colorDots(m.name)}</div>
+      <div class="mg-name" title="${displayName}">${displayName}${colorDots(m.name, m.cardColor)}</div>
       ${hasData
         ? `<div class="mg-stats">
              <span class="mg-rec">${rec.w}W·${rec.l}L</span>
@@ -5819,7 +5821,7 @@ function rebuildMatchupTable() {
   tr.dataset.idx = i;
   tr.innerHTML = `
     ${starCell}
-    <td><span class="mname">${m.name.replace(/^([A-Z0-9]+)-\d+\s+/, '$1 ')}</span>${colorDots(m.name)}${m.warn?`<span class="warn" title="Fewer than 50 games in dataset — treat with caution">⚠</span>`:''}${notePip}</td>
+    <td><span class="mname">${m.name.replace(/^([A-Z0-9]+)-\d+\s+/, '$1 ')}</span>${colorDots(m.name, m.cardColor)}${m.warn?`<span class="warn" title="Fewer than 50 games in dataset — treat with caution">⚠</span>`:''}${notePip}</td>
     <td><span class="go ${m.go==='1st'?'go1':'go2'}">${m.go}</span></td>
     <td><span class="wr ${wrCls(m.wr1)}">${wrLbl(m.wr1)}</span></td>
     <td><span class="wr ${wrCls(m.wr2)}">${wrLbl(m.wr2)}</span></td>
