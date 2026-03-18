@@ -293,6 +293,20 @@ function compCardImg(id){
   if(m) return `https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/${m[1]}/${cleanId}_EN.webp`;
   return cardImg(id);
 }
+// Fallback chain: EN webp → JPN webp → Bandai official (which may show SAMPLE)
+// Call as: onerror="cardImgFallback(this,'CARD-ID')"
+function cardImgFallback(el, id) {
+  const cleanId = (id||'').replace(/[_-][RP]\d+$/i, '');
+  const m = cleanId.match(/^([A-Z]{1,4}\d{2})-(\d+)$/);
+  const jpnUrl = m ? `https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/${m[1]}/${cleanId}_JPN.webp` : null;
+  if (jpnUrl && el.src !== jpnUrl) {
+    el.onerror = () => { el.onerror = null; el.src = cardImg(id); };
+    el.src = jpnUrl;
+  } else {
+    el.onerror = null;
+    el.src = cardImg(id);
+  }
+}
 
 
 
@@ -4512,7 +4526,7 @@ function _buildMergedEssHtml(builtInList, deckKey) {
     const isHidden = c.source === 'builtin' && hidden.includes(c.label);
     const safeLabel = c.label.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
     const imgHtml = c.id
-      ? `<img class="ess-card-img" src="${compCardImg(c.id)}" alt="${c.name}" onload="this.classList.add('loaded')" onerror="this.onerror=null;this.src='${cardImg(c.id)}'">`
+      ? `<img class="ess-card-img" src="${compCardImg(c.id)}" alt="${c.name}" onload="this.classList.add('loaded')" onerror="cardImgFallback(this,'${c.id}')">`
       : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:0.55rem;color:var(--gl-text-faint);text-align:center;padding:4px">${c.name}</div>`;
     let actionBtn = '';
     if (_essEditMode) {
@@ -5075,7 +5089,7 @@ function _showAcDropdown(cards, ta) {
   ac.style.cssText = `position:fixed;left:${rect.left}px;top:${top}px;width:${Math.max(rect.width,260)}px;z-index:9999;background:#141720;border:1px solid rgba(201,168,76,0.25);border-radius:8px;overflow:hidden;max-height:280px;overflow-y:auto;box-shadow:0 8px 28px rgba(0,0,0,0.6)`;
   ac.innerHTML = cards.map((c, i) =>
     `<div class="card-ac-item" data-idx="${i}" onclick="_pickAcItem(this)">
-      <img class="card-ac-img" src="${compCardImg(c.id)}" onerror="this.onerror=null;this.src='${cardImg(c.id)}'" alt="">
+      <img class="card-ac-img" src="${compCardImg(c.id)}" onerror="cardImgFallback(this,'${c.id}')" alt="">
       <div class="card-ac-info">
         <div class="card-ac-name">${c.name}</div>
         <div class="card-ac-meta">${c.id}<span class="card-ac-label">${c.label}</span></div>
@@ -5583,29 +5597,32 @@ function toggleCardZoom(e, el, cardId) {
   }
 }
 
-function openModal(src, lbl) {
+function openModal(src, lbl, event) {
   if (!src) return;
-  const modal = document.getElementById('modal');
-  const img = document.getElementById('modal-img');
-  const lbl_el = document.getElementById('modal-lbl');
-  const spinner = document.getElementById('modal-spinner');
-  img.style.opacity = '0';
-  img.src = '';
-  lbl_el.textContent = lbl;
-  spinner.style.display = 'block';
-  modal.classList.add('open');
-  if(imgCache.has(src)){
-    img.src = src;
-    img.style.opacity = '1';
-    spinner.style.display = 'none';
-  } else {
-    img.onload = () => { img.style.opacity = '1'; spinner.style.display = 'none'; imgCache.set(src, true); };
-    img.onerror = () => { img.style.opacity = '0.3'; spinner.style.display = 'none'; };
-    img.src = src;
-  }
+  // Show as a near-click popup rather than a full-screen overlay
+  const popup = document.getElementById('myd-card-popup');
+  const img   = document.getElementById('myd-popup-img');
+  const lblEl = document.getElementById('myd-popup-id');
+  if (!popup) return;
+  if (event) event.stopPropagation();
+  img.src = src;
+  if (lblEl) lblEl.textContent = lbl || '';
+  popup.style.display = 'flex';
+  // Position near click, keeping within viewport
+  const px = event ? event.clientX : window.innerWidth / 2;
+  const py = event ? event.clientY : window.innerHeight / 2;
+  const vw = window.innerWidth, vh = window.innerHeight;
+  const pw = 276, ph = 380;
+  let left = px + 14, top = py - 40;
+  if (left + pw > vw - 8) left = px - pw - 14;
+  if (top + ph > vh - 8) top = vh - ph - 8;
+  if (top < 8) top = 8;
+  if (left < 8) left = 8;
+  popup.style.left = left + 'px';
+  popup.style.top  = top + 'px';
 }
 function closeModal() {
-  document.getElementById('modal').classList.remove('open');
+  _mydHideCardPopup();
 }
 
 // ── WR HELPERS ────────────────────────────────────────────────
@@ -8284,7 +8301,7 @@ function _essCardGrid(essential, deckKey) {
     const imgHtml = id
       ? `<img class="ess-card-img" src="${compCardImg(id)}" alt="${label}"
            onload="this.classList.add('loaded')"
-           onerror="this.onerror=null;this.src='${cardImg(id)}'">`
+           onerror="cardImgFallback(this,'${id}')">`
       : `<div class="ess-card-placeholder">${label}</div>`;
     const safeLabel = label.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
     const actionBtn = _essEditMode && deckKey
@@ -8355,8 +8372,8 @@ function renderDeck(d, matchup, deckKey) {
       <img class="leader-img" id="leader-card"
         src="${compCardImg(d.leader) || cardImg(d.leader)}"
         onload="this.style.opacity='1'"
-        onerror="this.onerror=null; this.src='${cardImg(d.leader)}';"
-        onclick="openModal(this.src,'${d.leader} - ${d.leaderName}')"
+        onerror="cardImgFallback(this,'${d.leader}')"
+        onclick="openModal(this.src,'${d.leader} - ${d.leaderName}',event)"
         alt="${d.leader}">
       <div class="linfo">
         <div class="lid">${d.leader}${colorPips ? ' · ' + colorPips : ''}${d.leaderStats ? ' · ' + d.leaderStats : ''}</div>
@@ -8660,8 +8677,8 @@ function _renderDeckTopCards(wrap, archData) {
       const pctCls = pct >= 75 ? 'arch-pct--hi' : pct >= 40 ? 'arch-pct--mid' : 'arch-pct--lo';
       html += `<div class="comp-visual-card comp-arch-card" title="${c.card_name} · ${c.card_id} — ${pct}% of decks, avg ×${c.avg_copies}">
         <img src="${compCardImg(c.card_id)}" loading="lazy" alt="${c.card_name}" style="cursor:pointer"
-          onclick="openModal(this.src,'${c.card_id} · ${c.card_name.replace(/'/g,'&#39;')}')"
-          onerror="this.onerror=null;this.src='${cardImg(c.card_id)}'">
+          onclick="openModal(this.src,'${c.card_id} · ${c.card_name.replace(/'/g,'&#39;')}',event)"
+          onerror="cardImgFallback(this,'${c.card_id}')">
         <span class="arch-pct ${pctCls}">${pct}%</span>
       </div>`;
     });
