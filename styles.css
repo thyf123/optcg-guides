@@ -1309,9 +1309,9 @@ th.sort-active { color: var(--gl-gold-h); }
    MODALS
    ════════════════════════════════════════════ */
 /* Card image modal */
-.modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.94); z-index: 999; justify-content: center; align-items: center; flex-direction: column; gap: var(--sp-3); }
+.modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.65); z-index: 999; justify-content: center; align-items: center; flex-direction: column; gap: var(--sp-3); }
 .modal.open { display: flex; }
-.modal img { max-width: 90vw; max-height: 78vh; border-radius: var(--r-lg); box-shadow: 0 0 40px rgba(0,0,0,0.95); transition: opacity var(--t); opacity: 0; }
+.modal img { width: min(260px, 70vw); max-height: min(380px, 65vh); object-fit: contain; border-radius: var(--r-lg); box-shadow: 0 8px 40px rgba(0,0,0,0.9); transition: opacity var(--t); opacity: 0; }
 .modal-lbl { background: rgba(0,0,0,0.9); color: var(--gl-gold-h); padding: 5px 18px; border-radius: var(--r-full); font-size: 0.73rem; font-weight: 700; text-align: center; max-width: 80vw; }
 .modal-spinner { width: 36px; height: 36px; border: 3px solid var(--gl-border-2); border-top: 3px solid var(--gl-gold); border-radius: 50%; animation: spin 0.8s linear infinite; position: absolute; }
 @keyframes spin { to { transform: rotate(360deg); } }
