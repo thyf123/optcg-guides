@@ -513,7 +513,38 @@ let LEADERS = {
   { name:"ST11 Uta", warn:false, go:"?", wr1:67, wr2:50, style:"—", deck:"st11uta", essential:[], tips:[] },
   { name:"ST12 Zoro&Sanji", warn:false, go:"?", wr1:75, wr2:null, style:"—", deck:"st12zorosanji", essential:[], tips:[] },
   { name:"ST13 Sabo", warn:false, go:"?", wr1:67, wr2:null, style:"—", deck:"st13sabo", essential:[], tips:[] },
-  { name:"ST21 Luffy", warn:false, go:"?", wr1:null, wr2:56, style:"—", deck:"st21luffy", essential:[], tips:[] }
+  { name:"ST21 Luffy", warn:false, go:"?", wr1:null, wr2:56, style:"—", deck:"st21luffy", essential:[], tips:[] },
+  { name:"OP01 Zoro", warn:false, go:"?", wr1:80, wr2:100, style:"—", deck:"op01zoro", essential:[], tips:[] },
+  { name:"OP01 Doflamingo", warn:false, go:"?", wr1:50, wr2:80, style:"—", deck:"op01doffy", essential:[], tips:[] },
+  { name:"OP01 Kaido", warn:false, go:"?", wr1:null, wr2:100, style:"—", deck:"op01kaido", essential:[], tips:[] },
+  { name:"OP01 Crocodile", warn:false, go:"?", wr1:100, wr2:null, style:"—", deck:"op01crocodile", essential:[], tips:[] },
+  { name:"OP02 Whitebeard", warn:false, go:"?", wr1:0, wr2:100, style:"—", deck:"op02whitebeard", essential:[], tips:[] },
+  { name:"OP02 Kin'emon", warn:false, go:"?", wr1:null, wr2:100, style:"—", deck:"op02kinemon", essential:[], tips:[] },
+  { name:"OP03 Arlong", warn:false, go:"?", wr1:null, wr2:100, style:"—", deck:"op03arlong", essential:[], tips:[] },
+  { name:"OP03 Katakuri", warn:false, go:"?", wr1:67, wr2:100, style:"—", deck:"op03katakuri", essential:[], tips:[] },
+  { name:"OP04 Doflamingo", warn:false, go:"?", wr1:null, wr2:100, style:"—", deck:"op04doffy", essential:[], tips:[] },
+  { name:"OP04 Crocodile", warn:false, go:"?", wr1:100, wr2:50, style:"—", deck:"op04crocodile", essential:[], tips:[] },
+  { name:"OP05 Rosinante", warn:false, go:"?", wr1:100, wr2:0, style:"—", deck:"op05rosinante", essential:[], tips:[] },
+  { name:"OP06 Uta", warn:false, go:"?", wr1:100, wr2:0, style:"—", deck:"op06uta", essential:[], tips:[] },
+  { name:"OP06 Perona", warn:false, go:"?", wr1:50, wr2:null, style:"—", deck:"op06perona", essential:[], tips:[] },
+  { name:"OP06 Reiju", warn:true, go:"?", wr1:0, wr2:0, style:"—", deck:"op06reiju", essential:[], tips:[] },
+  { name:"OP07 Hancock", warn:false, go:"?", wr1:75, wr2:0, style:"—", deck:"op07boa", essential:[], tips:[] },
+  { name:"OP07 Lucci", warn:false, go:"?", wr1:80, wr2:null, style:"—", deck:"op07lucci", essential:[], tips:[] },
+  { name:"OP07 Vegapunk", warn:false, go:"?", wr1:67, wr2:100, style:"—", deck:"op07vegapunk", essential:[], tips:[] },
+  { name:"OP08 Chopper", warn:false, go:"?", wr1:null, wr2:100, style:"—", deck:"op08chopper", essential:[], tips:[] },
+  { name:"OP08 Marco", warn:false, go:"?", wr1:100, wr2:null, style:"—", deck:"op08marco", essential:[], tips:[] },
+  { name:"OP08 King", warn:false, go:"?", wr1:100, wr2:100, style:"—", deck:"op08king", essential:[], tips:[] },
+  { name:"OP08 Kalgara", warn:false, go:"?", wr1:100, wr2:100, style:"—", deck:"op08kalgara", essential:[], tips:[] },
+  { name:"OP10 Usopp", warn:false, go:"?", wr1:100, wr2:100, style:"—", deck:"op10usopp", essential:[], tips:[] },
+  { name:"ST01 Luffy", warn:false, go:"?", wr1:100, wr2:0, style:"—", deck:"st01luffy", essential:[], tips:[] },
+  { name:"ST07 Linlin", warn:false, go:"?", wr1:100, wr2:null, style:"—", deck:"st07linlin", essential:[], tips:[] },
+  { name:"ST10 Law", warn:false, go:"?", wr1:0, wr2:null, style:"—", deck:"st10law", essential:[], tips:[] },
+  { name:"ST10 Luffy", warn:false, go:"?", wr1:100, wr2:100, style:"—", deck:"st10luffy", essential:[], tips:[] },
+  { name:"ST10 Kid", warn:false, go:"?", wr1:100, wr2:100, style:"—", deck:"st10kid", essential:[], tips:[] },
+  { name:"ST13 Ace", warn:false, go:"?", wr1:100, wr2:100, style:"—", deck:"st13ace", essential:[], tips:[] },
+  { name:"ST22 Ace & Newgate", warn:false, go:"?", wr1:0, wr2:null, style:"—", deck:"st22acenewgate", essential:[], tips:[] },
+  { name:"PRB01 Sanji", warn:false, go:"?", wr1:0, wr2:100, style:"—", deck:"prb01sanji", essential:[], tips:[] },
+  { name:"P-011 Uta", warn:false, go:"?", wr1:50, wr2:50, style:"—", deck:"p011uta", essential:[], tips:[] }
     ],
     colorMap: null
   },
@@ -5775,6 +5806,7 @@ function rebuildMatchupGrid() {
     // Leader card image — use the LEADERS entry to get the cardId
     const leaderEntry = m.deck ? LEADERS[m.deck] : null;
     const imgSrc   = leaderEntry ? cardImg(leaderEntry.cardId) : '';
+    const ckCardId = leaderEntry?.cardId || null;
 
     // Spark: last 5 games
     const games  = hasData ? _gamesFor(currentLeaderKey, m.deck || '').slice(-5).reverse() : [];
@@ -5796,7 +5828,7 @@ function rebuildMatchupGrid() {
           : `<div class="mg-img-placeholder">⚔</div>`}
         ${m.warn ? `<span class="mg-warn-pill">⚠</span>` : ''}
       </div>
-      <div class="mg-name" title="${displayName}">${displayName}${colorDots(m.name, m.cardColor)}</div>
+      <div class="mg-name" title="${displayName}">${displayName}${colorDots(m.name, m.cardColor)}${ckCardId?`<a class="mg-ck-icon" href="https://www.cardkaizoku.com/matchhistory/stats/${ckCardId}" target="_blank" rel="noopener" onclick="event.stopPropagation()" title="Card Kaizoku stats">↗</a>`:''}</div>
       ${hasData
         ? `<div class="mg-stats">
              <span class="mg-rec">${rec.w}W·${rec.l}L</span>
@@ -5850,9 +5882,14 @@ function rebuildMatchupTable() {
     ${youCell}`;
   tbody.appendChild(tr);
 
+  const ckCardId = m.deck ? LEADERS[m.deck]?.cardId : null;
+  const ckHtml = ckCardId
+    ? `<div class="ck-link-row"><a href="https://www.cardkaizoku.com/matchhistory/stats/${ckCardId}" target="_blank" rel="noopener" class="ck-link-btn">📊 View stats on Card Kaizoku ↗</a></div>`
+    : '';
+
   const dr = document.createElement('tr');
   dr.className = 'detail-row';
-  dr.innerHTML = `<td colspan="7"><div class="detail-panel" id="panel-${i}">${essHtml}${tipsHtml}</div></td>`;
+  dr.innerHTML = `<td colspan="7"><div class="detail-panel" id="panel-${i}">${essHtml}${tipsHtml}${ckHtml}</div></td>`;
   tbody.appendChild(dr);
 });
   // show/hide the empty state message
