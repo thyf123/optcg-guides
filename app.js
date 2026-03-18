@@ -347,7 +347,7 @@ let LEADERS = {
     essential:[{card:"Sugar",reason:"Going wide is the only way to outpace a one-rest-per-turn ceiling."},{card:"Uso-Hachi",reason:"Resting her Minks characters shuts off the leader effect entirely."}],
     tips:["Kill Wanda and cheap Minks searchers early","Her rest hits cost-5 or less only — EB04-038 and 7-cost Law are immune","Go wide so she can't lock your whole board","Watch for 10-cost Doflamingo — hold counters going into her peak Don turns"]
   },
-  { name:"OP08 Sabo", warn:false, go:"1st", wr1:null, wr2:null, style:"Aggressive",
+  { name:"OP08 Sabo", warn:false, go:"1st", wr1:100, wr2:38, style:"Aggressive",
     deck:"op8sabo", essential:[],
     tips:["Force early counters with 5k–6k swings","Don't drive life to 0 — Roger threat at 0 life"]
   },
@@ -492,7 +492,28 @@ let LEADERS = {
   { name:"OP12 Zoro", warn:false, go:"1st", wr1:57, wr2:35, style:"Aggressive · Tall",
     deck:"op12zoro", essential:[],
     tips:["Go first — significant advantage going 1st","Apply early pressure before his board establishes","Attack tall with buffed Laws"]
-  }
+  },
+  { name:"OP05 Belo Betty", warn:false, go:"?", wr1:78, wr2:77, style:"—", deck:"op05belobetty", essential:[], tips:[] },
+  { name:"OP05 Sakazuki", warn:false, go:"?", wr1:63, wr2:33, style:"—", deck:"op05sakazuki", essential:[], tips:[] },
+  { name:"OP05 Luffy", warn:false, go:"?", wr1:80, wr2:50, style:"—", deck:"op05luffy", essential:[], tips:[] },
+  { name:"OP05 Enel", warn:false, go:"?", wr1:69, wr2:50, style:"—", deck:"op05enel", essential:[], tips:[] },
+  { name:"OP06 Yamato", warn:false, go:"1st", wr1:80, wr2:67, style:"—", deck:"op06yamato", essential:[], tips:[] },
+  { name:"OP07 Foxy", warn:false, go:"1st", wr1:68, wr2:32, style:"—", deck:"op07foxy", essential:[], tips:[] },
+  { name:"OP09 Buggy", warn:false, go:"?", wr1:75, wr2:43, style:"—", deck:"op09buggy", essential:[], tips:[] },
+  { name:"OP09 Luffy", warn:false, go:"?", wr1:86, wr2:38, style:"—", deck:"op09luffy", essential:[], tips:[] },
+  { name:"OP10 Smoker", warn:false, go:"?", wr1:67, wr2:63, style:"—", deck:"op10smoker", essential:[], tips:[] },
+  { name:"OP10 Sugar", warn:false, go:"?", wr1:67, wr2:53, style:"—", deck:"op10sugar", essential:[], tips:[] },
+  { name:"OP10 Law", warn:false, go:"?", wr1:78, wr2:null, style:"—", deck:"op10law", essential:[], tips:[] },
+  { name:"OP10 Kid", warn:true, go:"?", wr1:54, wr2:null, style:"—", deck:"op10kid", essential:[], tips:[] },
+  { name:"OP11 Katakuri", warn:true, go:"?", wr1:45, wr2:42, style:"—", deck:"op11katakuri", essential:[], tips:[] },
+  { name:"OP12 Koala", warn:false, go:"1st", wr1:76, wr2:60, style:"—", deck:"op12koala", essential:[], tips:[] },
+  { name:"OP14 Law", warn:false, go:"1st", wr1:70, wr2:60, style:"—", deck:"op14law", essential:[], tips:[] },
+  { name:"EB01 Oden", warn:false, go:"?", wr1:69, wr2:null, style:"—", deck:"eb01oden", essential:[], tips:[] },
+  { name:"ST04 Kaido", warn:false, go:"?", wr1:90, wr2:80, style:"—", deck:"st04kaido", essential:[], tips:[] },
+  { name:"ST11 Uta", warn:false, go:"?", wr1:67, wr2:50, style:"—", deck:"st11uta", essential:[], tips:[] },
+  { name:"ST12 Zoro&Sanji", warn:false, go:"?", wr1:75, wr2:null, style:"—", deck:"st12zorosanji", essential:[], tips:[] },
+  { name:"ST13 Sabo", warn:false, go:"?", wr1:67, wr2:null, style:"—", deck:"st13sabo", essential:[], tips:[] },
+  { name:"ST21 Luffy", warn:false, go:"?", wr1:null, wr2:56, style:"—", deck:"st21luffy", essential:[], tips:[] }
     ],
     colorMap: null
   },
