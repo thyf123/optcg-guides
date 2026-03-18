@@ -5069,7 +5069,7 @@ function _renderMentions(text) {
     const cleanId     = id.replace(/[_-][RP]\d+$/i, '');
     const escapedId   = cleanId.replace(/&/g,'&amp;').replace(/"/g,'&quot;');
     const escapedName = name.replace(/&/g,'&amp;').replace(/"/g,'&quot;');
-    const escapedImg  = cardImg(id).replace(/&/g,'&amp;').replace(/"/g,'&quot;');
+    const escapedImg  = (compCardImg(id) || cardImg(id)).replace(/&/g,'&amp;').replace(/"/g,'&quot;');
     return `<span class="card-mention" data-card-img="${escapedImg}" data-card-label="${escapedId} · ${escapedName}">${name} <span style="font-size:0.75em;opacity:0.65">${cleanId}</span></span>`;
   });
 }
@@ -8576,8 +8576,9 @@ function _renderDeckTopCards(wrap, archData) {
       const pct = c.inclusion_pct;
       const pctCls = pct >= 75 ? 'arch-pct--hi' : pct >= 40 ? 'arch-pct--mid' : 'arch-pct--lo';
       html += `<div class="comp-visual-card comp-arch-card" title="${c.card_name} · ${c.card_id} — ${pct}% of decks, avg ×${c.avg_copies}">
-        <img src="${compCardImg(c.card_id)}" loading="lazy" alt="${c.card_name}"
-          onerror="this.parentElement.classList.add('comp-visual-card--err')">
+        <img src="${compCardImg(c.card_id)}" loading="lazy" alt="${c.card_name}" style="cursor:pointer"
+          onclick="openModal(this.src,'${c.card_id} · ${c.card_name.replace(/'/g,'&#39;')}')"
+          onerror="this.onerror=null;this.src='${cardImg(c.card_id)}'">
         <span class="arch-pct ${pctCls}">${pct}%</span>
       </div>`;
     });
