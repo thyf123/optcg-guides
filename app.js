@@ -332,17 +332,17 @@ let LEADERS = {
     title: "OP12-061 Donquixote Rosinante",
     sub: "53.2% WR · LW",
     matchups: [
-  { name:"OP01 Law", warn:false, go:"1st", wr1:60, wr2:58, style:"Attrition · Tall",
+  { name:"OP01 Law", warn:false, go:"2nd", wr1:55, wr2:58, style:"Attrition · Tall",
     deck:"op01_law",
     essential:[],
     tips:["Establish your Law engine before he sets up","Leader effect keeps your Laws alive through his removal; keep one on board at all times","4-cost Law (P-088) hand-trash to narrow his counter options late"]
   },
-  { name:"OP07 Bonney", warn:true, go:"1st", wr1:53, wr2:45, style:"Aggressive · Wide",
+  { name:"OP07 Bonney", warn:true, go:"1st", wr1:51, wr2:41, style:"Aggressive · Wide",
     deck:"op7bonney",
     essential:[{card:"Gamma Knife",reason:"Only clean answer to 8-cost Kid before the fortress completes; without it the blocker wall becomes nearly unbreakable."},{card:"Sugar",reason:"Need multiple search activations to build the wide board required to overwhelm her one-rest-per-turn ceiling."}],
     tips:["Go wide with Sugar searches — one rest per turn can't lock down multiple simultaneous attackers","Attack cheapest unit first to bait the rest, then swing key units through clean","Gamma Knife 8-cost Kid immediately — Kid + Rosinante blocker fortress is nearly unbreakable once up","At 9+ Don expect 10-cost Doflamingo — hold counters specifically for that turn","Kill Baby 5 and 1-cost Bonney searcher on sight","7-cost Law board buff makes your units too expensive to profitably rest one-by-one"]
   },
-  { name:"OP08 Carrot", warn:false, go:"1st", wr1:64, wr2:52, style:"Aggressive · Wide",
+  { name:"OP08 Carrot", warn:false, go:"1st", wr1:64, wr2:54, style:"Aggressive · Wide",
     deck:"op8carrot",
     essential:[{card:"Sugar",reason:"Going wide is the only way to outpace a one-rest-per-turn ceiling."},{card:"Uso-Hachi",reason:"Resting her Minks characters shuts off the leader effect entirely."}],
     tips:["Kill Wanda and cheap Minks searchers early","Her rest hits cost-5 or less only — EB04-038 and 7-cost Law are immune","Go wide so she can't lock your whole board","Watch for 10-cost Doflamingo — hold counters going into her peak Don turns"]
@@ -351,29 +351,29 @@ let LEADERS = {
     deck:"op8sabo", essential:[],
     tips:["Force early counters with 5k–6k swings","Don't drive life to 0 — Roger threat at 0 life"]
   },
-  { name:"OP09 Shanks", warn:true, go:"1st", wr1:83, wr2:65, style:"Attrition · Tall",
+  { name:"OP09 Shanks", warn:true, go:"1st", wr1:78, wr2:50, style:"Attrition · Tall",
     deck:"op9shanks", essential:[],
     tips:["Bepo neutralises his power-minus effect","Stay at 1 life and counter out","7-cost Law is sticky and threatens Jozu (7k)"]
   },
-  { name:"OP09 Teach", warn:false, go:"1st", wr1:77, wr2:77, style:"Aggressive · Wide",
+  { name:"OP09 Teach", warn:false, go:"1st", wr1:84, wr2:84, style:"Aggressive · Wide",
     deck:"op9teach", essential:[],
     tips:["His leader stops On Play effects — Sugar's Activate:Main still works","Go wide with multiple moderate attackers","Gamma Knife handles threats he cheats out"]
   },
-  { name:"OP09 Lim", warn:false, go:"1st", wr1:83, wr2:47, style:"Attrition · Tall",
+  { name:"OP09 Lim", warn:false, go:"1st", wr1:78, wr2:50, style:"Attrition · Tall",
     deck:"op9lim",
     essential:[{card:"Vergo (via Sugar)",reason:"She runs bounce removal that bypasses combat; Vergo survives the bounce engine."},{card:"Uso-Hachi",reason:"Tech against her bottom-deck manipulation tools."}],
     tips:["Vergo is essential — sticky body that resists bounce/removal effects","Use Uso-Hachi to rest key attackers","Build tall with high-cost Laws"]
   },
-  { name:"OP09 Robin", warn:false, go:"1st", wr1:72, wr2:71, style:"Aggressive · Tall",
+  { name:"OP09 Robin", warn:false, go:"2nd", wr1:76, wr2:80, style:"Aggressive · Tall",
     deck:"op9robin", essential:[],
     tips:["Highly favourable — push hard early before her draw engine establishes","Tall Law units apply consistent pressure","4-cost Law (P-088) hand-trash when she builds a large hand"]
   },
-  { name:"OP11 GP Luffy", warn:true, go:"1st", wr1:57, wr2:43, style:"Aggressive · Wide",
+  { name:"OP11 GP Luffy", warn:true, go:"1st", wr1:58, wr2:43, style:"Aggressive · Wide",
     deck:"op11luffy",
     essential:[{card:"Uso-Hachi (via Purple Law)",reason:"Resting his searchers (Koushirou, Tashigi, Kuina) cuts his consistency engine."},{card:"7-cost Law (OP12-073)",reason:"+1,000 board-wide buff pushes all your units above the power threshold his restand events need."}],
     tips:["Don't overload Don onto single characters — restand triggers at 3+ Don attached","Prioritise killing Koushirou, Tashigi, and Kuina","Watch for 3 open Don — likely a restand event","Dead Man's Game rests two of your Don — plan defensive turns around this"]
   },
-  { name:"OP11 Nami", warn:true, go:"1st", wr1:52, wr2:36, style:"Attrition · Wide",
+  { name:"OP11 Nami", warn:true, go:"1st", wr1:54, wr2:35, style:"Attrition · Wide",
     deck:"op11nami",
     essential:[{card:"Gamma Knife",reason:"Kuma generates up to 2 extra life cards; Gamma Knife before the +2 cost modifier is often the only clean answer."},{card:"Vergo (via Sugar)",reason:"Protects from Red Rock and Gravity Blade — her primary board control tools."},{card:"8-cost Law (EB03-062)",reason:"Her entire gameplan is life attrition; the heal loop is the single most important card."}],
     tips:["Stay healthy early — outlast her; 8-cost Law heal loop is your backbone","Gamma Knife Kuma before he generates double life value (must draw)","Go wide with Sugar searches to overload her blocker count late","Don't kill Thriller Bark Robin carelessly — free character on KO"]
@@ -382,114 +382,114 @@ let LEADERS = {
     deck:"st13luffy", essential:[],
     tips:["4-cost Law hand-trash aggressively at 7+ cards","Kill Bon Clay and Nami (Don accelerators)","Be ahead on board before 9 Don"]
   },
-  { name:"OP11 Shirahoshi", warn:false, go:"1st", wr1:54, wr2:36, style:"Attrition · Tall",
+  { name:"OP11 Shirahoshi", warn:false, go:"1st", wr1:53, wr2:27, style:"Attrition · Tall",
     deck:"op11shirahoshi", essential:[],
     tips:["Coin flip matchup — don't overcommit","Establish a tall protected Law board and trade efficiently"]
   },
-  { name:"OP11 Koby", warn:false, go:"2nd", wr1:65, wr2:71, style:"Attrition · Tall",
+  { name:"OP11 Koby", warn:true, go:"2nd", wr1:69, wr2:81, style:"Attrition · Tall",
     deck:"op11koby", essential:[],
     tips:["Rare case where going second is clearly correct","Build tall with protected Laws — leader effect answers his KO effects","Extra Don going 2nd lets your Law engine outpace his removal curve"]
   },
-  { name:"OP12 Rayleigh", warn:true, go:"1st", wr1:null, wr2:null, style:"Attrition · Tall",
+  { name:"OP12 Rayleigh", warn:false, go:"1st", wr1:75, wr2:50, style:"Attrition · Tall",
     deck:"op12rayleigh2",
     essential:[{card:"EB04-038 (6-cost Rosi & Law)",reason:"The blocker package forces him to over-commit attackers."},{card:"7-cost Law (OP12-073)",reason:"Board-wide +1,000 buff pushes all your units above his boosted 4k characters."}],
     tips:["Don't race him — build a tall blocker wall","Establish EB04-038 blocker before his closing rush window (Don 7+)","'To Never Doubt!' is unblockable — stack multiple tall defenders"]
   },
-  { name:"OP12 Sanji", warn:true, go:"1st", wr1:49, wr2:37, style:"Aggressive · Tall",
+  { name:"OP12 Sanji", warn:true, go:"1st", wr1:43, wr2:32, style:"Aggressive · Tall",
     deck:"op12sanji",
     essential:[{card:"Vergo (via Sugar)",reason:"Red Rock and Gravity Blade will pick off your Laws without Vergo's protection."}],
     tips:["Always go first — strongly negative going 2nd","Attack tall and early before his Don engine ramps","Poke for 5,000 — awkward number to counter","Watch for 9-cost Sanji combo at 9+ Don"]
   },
-  { name:"OP12 Mirror", warn:false, go:"1st", wr1:60, wr2:40, style:"Attrition · Tall",
+  { name:"OP12 Mirror", warn:false, go:"1st", wr1:61, wr2:39, style:"Attrition · Tall",
     deck:"op12mirror",
     essential:[{card:"Sugar",reason:"Resource war is decided by who gets more searches; extra Sugar activation = extra Law body."},{card:"Gamma Knife",reason:"Opponent's Laws are your primary threat; Gamma Knife is the only efficient answer."}],
     tips:["First EB04-038 blocker down dictates pace — the taller wall wins","Kill opponent's Sugar immediately — player who gets more searches wins","Vergo and Gamma Knife are MVPs"]
   },
-  { name:"OP12 Kuzan", warn:false, go:"1st", wr1:59, wr2:47, style:"Attrition · Tall",
+  { name:"OP12 Kuzan", warn:false, go:"1st", wr1:54, wr2:47, style:"Attrition · Tall",
     deck:"op12kuzan", essential:[],
     tips:["Establish a tall Law board before his bounce/removal disrupts","Vergo (fetch with Sugar) protects from bounce","Gamma Knife handles high-cost threats"]
   },
-  { name:"OP13 Ace", warn:true, go:"2nd", wr1:41, wr2:42, style:"Aggressive · Tall",
+  { name:"OP13 Ace", warn:true, go:"2nd", wr1:38, wr2:40, style:"Aggressive · Tall",
     deck:"op13ace",
     essential:[{card:"7-cost Law (OP12-073)",reason:"Jozu bounce is his primary tool; 7-cost Law is sticky and threatens to KO Jozu (7k) in combat."}],
     tips:["Worst matchup — don't play attrition; apply constant pressure","7-cost Law threatens to KO Jozu (7k)","Drain his hand; punish with 8,000+ pokes late"]
   },
-  { name:"OP13 Imu", warn:true, go:"2nd", wr1:59, wr2:74, style:"Aggressive · Wide",
+  { name:"OP13 Imu", warn:true, go:"2nd", wr1:58, wr2:73, style:"Aggressive · Wide",
     deck:"op13imu",
     essential:[{card:"Vergo (via Sugar)",reason:"Her effect-based removal cannot cleanly remove Vergo, giving you a persistent body through her sweeps."},{card:"Sugar",reason:"Going wide requires volume of bodies to make her board wipes cost-inefficient."}],
     tips:["+27% swing — strongly correct to go 2nd","Go wide — spread threat so no single wipe ends your turn","Leader effect converts Law KOs into life-to-hand, countering her win condition","Hold counters for her Five Elders swing turn"]
   },
-  { name:"OP13 BP Luffy", warn:true, go:"1st", wr1:54, wr2:43, style:"Aggressive · Tall",
+  { name:"OP13 BP Luffy", warn:true, go:"1st", wr1:54, wr2:40, style:"Aggressive · Tall",
     deck:"op13luffy",
     essential:[{card:"4-cost Law (P-088)",reason:"His combo turn requires a large hand; hand-trash must be used proactively at 7+ cards before his 9-cost Sanji turn."}],
     tips:["Attack tall and early; deplete his hand before the 9-cost Sanji combo turn","4-cost Law hand-trash aggressively at 7+ cards","Kill Don accelerators (Bon Clay, Nami) with rested attacks"]
   },
-  { name:"OP13 Sabo", warn:false, go:"2nd", wr1:53, wr2:68, style:"Attrition · Tall",
+  { name:"OP13 Sabo", warn:false, go:"2nd", wr1:60, wr2:75, style:"Attrition · Tall",
     deck:"op13sabo", essential:[],
     tips:["Favourable either way; 2nd slightly better","Build tall with protected Laws","Don't drive life to 0 unless you can close — Roger is a threat at 0 life"]
   },
-  { name:"OP13 Roger", warn:false, go:"1st", wr1:63, wr2:41, style:"Aggressive · Tall",
+  { name:"OP13 Roger", warn:false, go:"1st", wr1:67, wr2:48, style:"Aggressive · Tall",
     deck:"op13roger", essential:[],
     tips:["Apply aggressive early pressure — don't let him set up","Don't drive life to 0 unless you can close — Roger effect is the real threat"]
   },
-  { name:"OP13 Bonney", warn:false, go:"1st", wr1:66, wr2:56, style:"Attrition · Tall",
+  { name:"OP13 Bonney", warn:true, go:"2nd", wr1:69, wr2:78, style:"Attrition · Tall",
     deck:"op13bonney",
     essential:[{card:"8-cost Law (EB03-062)",reason:"Her entire gameplan revolves around life manipulation; the heal loop directly counters."},{card:"Gamma Knife",reason:"Kuma appears in most builds; Gamma Knife him before the +2 cost modifier resolves."}],
     tips:["Highly favourable — 8-cost Law heal loop outlasts her life manipulation","No board removal — a buffed Law board simply stalls her","4-cost Law hand-trash to break her counter cycle"]
   },
-  { name:"OP14 Mihawk", warn:false, go:"1st", wr1:67, wr2:44, style:"Aggressive · Wide",
+  { name:"OP14 Mihawk", warn:false, go:"1st", wr1:70, wr2:43, style:"Aggressive · Wide",
     deck:"op14mihawk",
     essential:[{card:"Sugar",reason:"Going wide is the gameplan; Sugar generates the bodies needed to spread his removal thin."},{card:"Gamma Knife",reason:"His high-cost boss units are sticky; Gamma Knife is the cleanest removal answer."}],
     tips:["Kill Perona on sight — losing her degrades his consistency","Go wide to spread his removal thin","Build wide before 9-cost Mihawk arrives"]
   },
-  { name:"OP14 Jinbe", warn:false, go:"1st", wr1:54, wr2:48, style:"Attrition · Tall",
+  { name:"OP14 Jinbe", warn:false, go:"1st", wr1:61, wr2:47, style:"Attrition · Tall",
     deck:"op14jinbe", essential:[],
     tips:["8-cost Law heal loop as primary win condition","Attack at 7,000 consistently"]
   },
-  { name:"OP14 Hancock", warn:true, go:"1st", wr1:64, wr2:51, style:"Aggressive · Tall",
+  { name:"OP14 Hancock", warn:true, go:"1st", wr1:66, wr2:51, style:"Aggressive · Tall",
     deck:"op14boa",
     essential:[{card:"Gamma Knife",reason:"Kuma gains +2 cost after on-play; Gamma Knife before modifier resolves is often your only window."},{card:"Vergo (via Sugar)",reason:"Protects your Laws from her On Play removal tools."},{card:"4-cost Law (P-088)",reason:"Her defensive cycle relies on a large hand; stripping counters converts board states into wins."}],
     tips:["Be aggressive early before her healing loops establish","Gamma Knife Kuma before his +2 cost modifier (must draw)","Rayleigh (OP14 builds) draws 4 — time hand-trash around this"]
   },
-  { name:"OP14 Doflamingo", warn:false, go:"1st", wr1:67, wr2:53, style:"Attrition · Tall",
+  { name:"OP14 Doflamingo", warn:false, go:"1st", wr1:70, wr2:57, style:"Attrition · Tall",
     deck:"op14doffy",
     essential:[{card:"Vergo (via Sugar)",reason:"His cost-based removal is the primary threat; Vergo's protection means he survives effects that would otherwise clear your Laws."}],
     tips:["Play Vergo ASAP (fetch with Sugar)","Build tall with protected Laws","Gamma Knife handles his blocker units cleanly"]
   },
-  { name:"OP14 Crocodile", warn:false, go:"1st", wr1:76, wr2:66, style:"—",
+  { name:"OP14 Crocodile", warn:false, go:"1st", wr1:75, wr2:74, style:"—",
     deck:"op14crocodile", essential:[],
     tips:["Favourable both ways — strong matchup overall"]
   },
-  { name:"OP14 Moria", warn:false, go:"2nd", wr1:69, wr2:74, style:"Attrition · Tall",
+  { name:"OP14 Moria", warn:false, go:"1st", wr1:75, wr2:73, style:"Attrition · Tall",
     deck:"op14moria", essential:[],
     tips:["Don't aggro to 0 life; target face-up life cards aggressively","Gamma Knife Kuzan immediately","Blocker wall + 7-cost Law board buff prevents clean trades"]
   },
-  { name:"EB02 Life Luffy", warn:false, go:"1st", wr1:54, wr2:51, style:"Attrition · Wide→Tall",
+  { name:"EB02 Life Luffy", warn:false, go:"1st", wr1:58, wr2:51, style:"Attrition · Wide→Tall",
     deck:"eb2luffy",
     essential:[{card:"Gamma Knife",reason:"Kuzan reduces costs enabling cheap KOs on your Laws; Gamma Knife is the only reliable way to remove him."},{card:"7-cost Law (OP12-073)",reason:"Board-wide +1,000 buff prevents his adult brothers from cleanly trading through your units."}],
     tips:["Start wide turns 1–3, then consolidate into a tall buffed Law board","Do NOT aggro to 0 life — keep him at 1–2 and attack the board","Kill Kuzan on sight — Gamma Knife immediately"]
   },
-  { name:"EB03 Vivi", warn:false, go:"1st", wr1:64, wr2:50, style:"Aggressive · Tall",
+  { name:"EB03 Vivi", warn:false, go:"1st", wr1:65, wr2:53, style:"Aggressive · Tall",
     deck:"eb3vivi",
     essential:[{card:"Vergo (via Sugar)",reason:"Her leader grants Rush each activation; Vergo's protection keeps your key blocker alive."},{card:"Gamma Knife",reason:"She runs Shanks who KOs characters at 10k or less on play."}],
     tips:["She only has 4 life — attack tall and early","Kill OP13-012 Vivi searcher and EB03-006 Nami on sight","Don't over-invest in a single large unit — Shanks KOs ≤10k on play"]
   },
-  { name:"EB04 Sanji", warn:false, go:"1st", wr1:null, wr2:null, style:"Aggressive · Tall",
+  { name:"EB04 Sanji", warn:false, go:"1st", wr1:43, wr2:32, style:"Aggressive · Tall",
     deck:"eb04sanji",
     essential:[{card:"Vergo (via Sugar)",reason:"Red Rock/Gravity Blade pick off Laws without Vergo's Once Per Turn protection."}],
     tips:["Vergo ASAP","Poke for 5,000 — awkward number to counter","Watch for 9-cost Sanji combo at 9+ Don"]
   },
-  { name:"ST29 Luffy", warn:false, go:"1st", wr1:64, wr2:53, style:"Attrition · Tall",
+  { name:"ST29 Luffy", warn:false, go:"1st", wr1:67, wr2:59, style:"Attrition · Tall",
     deck:"st29luffy",
     essential:[{card:"8-cost Law (EB03-062)",reason:"Their only win condition is volume attrition; the heal loop is a direct hard counter."},{card:"Gamma Knife",reason:"Kuma appears in most ST29 builds; allowing him to generate extra life turns a win into a grind."}],
     tips:["No removal, no combo — out-tall him and let the heal loop do the work","Attack at 7,000 consistently","Don't push to ≤2 life unless you can close","Watch for ST29-016 Kizaru (Unblockable) at 0 life"]
   },
-  { name:"P-117 Nami", warn:true, go:"2nd", wr1:77, wr2:88, style:"Attrition · Wide",
+  { name:"P-117 Nami", warn:true, go:"2nd", wr1:80, wr2:83, style:"Attrition · Wide",
     deck:"p117nami",
     essential:[{card:"Gamma Knife",reason:"Same as OP11 Nami — Kuma must be removed before his +2 cost modifier resolves."},{card:"Vergo (via Sugar)",reason:"Protects from Red Rock and Gravity Blade."}],
     tips:["Treat as OP11 Nami — equally difficult","Gamma Knife Kuma immediately (must draw)","8-cost Law heal loop as backbone","Go wide with Sugar to brute-force through multiple blockers late"]
   },
-  { name:"OP12 Zoro", warn:false, go:"1st", wr1:57, wr2:40, style:"Aggressive · Tall",
+  { name:"OP12 Zoro", warn:false, go:"1st", wr1:57, wr2:35, style:"Aggressive · Tall",
     deck:"op12zoro", essential:[],
     tips:["Go first — significant advantage going 1st","Apply early pressure before his board establishes","Attack tall with buffed Laws"]
   }
