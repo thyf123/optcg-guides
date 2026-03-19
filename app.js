@@ -8689,11 +8689,17 @@ function _renderDeckTopCards(wrap, archData) {
     sections[sec].push(c);
   });
 
-  // Sort all sections: highest % first; ties broken by cost asc (unknown cost sorts last)
+  // Sort all sections:
+  //   Tier 0 (≥70%): shown first, sorted by cost asc
+  //   Tier 1 (<70%): shown after, sorted by pct desc then cost asc
   const _sortCards = arr => arr.slice().sort((a, b) => {
-    if (b.inclusion_pct !== a.inclusion_pct) return b.inclusion_pct - a.inclusion_pct;
+    const aTier = a.inclusion_pct >= 70 ? 0 : 1;
+    const bTier = b.inclusion_pct >= 70 ? 0 : 1;
+    if (aTier !== bTier) return aTier - bTier;
     const aCost = _mydCardCostCache[_normId(a.card_id)] ?? 99;
     const bCost = _mydCardCostCache[_normId(b.card_id)] ?? 99;
+    if (aTier === 0) return aCost - bCost;
+    if (b.inclusion_pct !== a.inclusion_pct) return b.inclusion_pct - a.inclusion_pct;
     return aCost - bCost;
   });
   order.forEach(sec => { if (sections[sec]) sections[sec] = _sortCards(sections[sec]); });
@@ -8829,8 +8835,11 @@ function _renderDeckCompEntryCards(el, cards) {
     html += `<div class="comp-inline-section" style="font-size:0.52rem">${sec}</div>`;
     html += `<div class="comp-visual-grid deck-comp-entry-grid">`;
     sections[sec].forEach(c => {
+      const safeName = (c.card_name||c.card_id).replace(/'/g,'&#39;');
       html += `<div class="comp-visual-card" title="${c.card_name||c.card_id}">
-        <img src="${compCardImg(c.card_id)}" loading="lazy" onerror="this.parentElement.classList.add('comp-visual-card--err')">
+        <img src="${compCardImg(c.card_id)}" loading="lazy" style="cursor:pointer"
+          onclick="openModal(this.src,'${c.card_id} · ${safeName}',event)"
+          onerror="this.parentElement.classList.add('comp-visual-card--err')">
         ${c.count > 1 ? `<span class="comp-visual-count">×${c.count}</span>` : ''}
       </div>`;
     });

@@ -1995,6 +1995,10 @@ th.sort-active { color: var(--gl-gold-h); }
 }
 #comp-arch-cards-wrap { padding: 0 16px 16px; }
 
+/* Force all card types (Character, Event, Stage) to the same display size */
+#comp-arch-cards-wrap .comp-visual-card { height: 98px; }
+#comp-arch-cards-wrap .comp-visual-card img { width: 100%; height: 100%; object-fit: contain; border-radius: 5px; }
+
 /* ── Archetype card inclusion % badge ────────────────────── */
 .comp-arch-card { cursor: default; }
 .arch-pct {
