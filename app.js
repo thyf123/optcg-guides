@@ -8708,7 +8708,7 @@ function _renderDeckTopCards(wrap, archData) {
   let html = `<div class="deck-comp-col-meta" style="font-size:0.58rem;margin-bottom:6px">${totalDecks} deck${totalDecks!==1?'s':''}${refBadge}</div>`;
   order.forEach(sec => {
     if (!sections[sec] || !sections[sec].length) return;
-    const gridCls = sec === 'Character' ? 'comp-visual-grid deck-comp-char-grid' : 'comp-visual-grid deck-comp-grid';
+    const gridCls = 'comp-visual-grid deck-comp-char-grid';
     html += `<div class="comp-inline-section">${sec}</div><div class="${gridCls}">`;
     sections[sec].forEach(c => {
       const pct = c.inclusion_pct;
