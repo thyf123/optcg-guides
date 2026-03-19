@@ -8833,7 +8833,7 @@ function _renderDeckCompEntryCards(el, cards) {
   order.forEach(sec => {
     if (!sections[sec] || !sections[sec].length) return;
     html += `<div class="comp-inline-section" style="font-size:0.52rem">${sec}</div>`;
-    html += `<div class="comp-visual-grid deck-comp-entry-grid">`;
+    html += `<div class="comp-visual-grid deck-comp-char-grid">`;
     sections[sec].forEach(c => {
       const safeName = (c.card_name||c.card_id).replace(/'/g,'&#39;');
       html += `<div class="comp-visual-card" title="${c.card_name||c.card_id}">
