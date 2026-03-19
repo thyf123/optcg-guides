@@ -3961,9 +3961,9 @@ function renderFavs() {
     const mi = getLM().findIndex(m => m.deck === key);
     const mName = mi >= 0 ? getLM()[mi].name : d.leaderName;
     html += `<div class="fav-card" onclick="showDeck('${key}',${mi})">
-      <img src="${cardImg(d.leader)}"
+      <img src="${compCardImg(d.leader)}"
         onload="this.classList.add('loaded')"
-        onerror="this.onerror=null;"
+        onerror="cardImgFallback(this,'${d.leader}')"
         alt="${d.leaderName}">
       <div class="fav-label">${mName}</div>
       <button class="fav-rm" onclick="event.stopPropagation();toggleFav('${key}')" title="Remove">×</button>
@@ -4206,10 +4206,10 @@ function _almRenderGrid(leaders) {
   const items = leaders.map(l => {
     const id   = l.card_set_id;
     const name = l.card_name.replace(/\s*\(\d+\)\s*$/, ''); // strip trailing (001) etc
-    const img  = cardImg(id);
+    const img  = compCardImg(id);
     const already = addedIds.has(id);
     return `<div class="alm-card${already ? ' added' : ''}" onclick="_almPickLeader('${id}','${name.replace(/'/g,"\\'")}','${l.card_color}')">
-      <img src="${img}" alt="${name}" loading="lazy" onerror="this.style.opacity='0.2'">
+      <img src="${img}" alt="${name}" loading="lazy" onerror="cardImgFallback(this,'${id}')">
       <div class="alm-card-overlay">
         <div class="alm-card-name">${name}</div>
         <div class="alm-card-id">${id}</div>
@@ -4625,7 +4625,7 @@ function _buildCustomEssentialsHtml(deckKey) {
   let rows = '';
   slots.forEach((e, i) => {
     const imgHtml = e.id
-      ? `<img class="ess-card-img" src="${cardImg(e.id)}" alt="${e.name}" onload="this.classList.add('loaded')" onerror="this.style.opacity='0.15'">`
+      ? `<img class="ess-card-img" src="${compCardImg(e.id)}" alt="${e.name}" onload="this.classList.add('loaded')" onerror="cardImgFallback(this,'${e.id}')">`
       : `<div class="ess-card-placeholder">${e.name||'?'}</div>`;
     rows += `<div class="ess-card-item" onclick="toggleCardZoom(event,this,'${e.id||''}')">
       ${imgHtml}
@@ -5849,7 +5849,7 @@ function rebuildMatchupGrid() {
 
     // Leader card image — use the LEADERS entry to get the cardId
     const leaderEntry = m.deck ? LEADERS[m.deck] : null;
-    const imgSrc   = leaderEntry ? cardImg(leaderEntry.cardId) : '';
+    const imgSrc   = leaderEntry ? compCardImg(leaderEntry.cardId) : '';
     const ckCardId = leaderEntry?.cardId || null;
 
     // Spark: last 5 games
@@ -5868,7 +5868,7 @@ function rebuildMatchupGrid() {
     card.innerHTML = `
       <div class="mg-img-wrap">
         ${imgSrc
-          ? `<img class="mg-img" src="${imgSrc}" loading="lazy" onerror="this.parentNode.innerHTML='<div class=mg-img-placeholder>⚔</div>'">`
+          ? `<img class="mg-img" src="${imgSrc}" loading="lazy" onerror="cardImgFallback(this,'${ckCardId}')">`
           : `<div class="mg-img-placeholder">⚔</div>`}
         ${m.warn ? `<span class="mg-warn-pill">⚠</span>` : ''}
       </div>
@@ -6022,9 +6022,9 @@ function renderLeaderGrid() {
     card.onclick = _homeEditMode ? () => toggleHideLeader(key) : () => selectLeader(key);
 
     const img = document.createElement('img');
-    img.src = 'https://en.onepiece-cardgame.com/images/cardlist/card/' + L.cardId + '.png';
+    img.src = compCardImg(L.cardId);
     img.alt = L.name;
-    img.onerror = function(){ this.style.display='none'; };
+    img.onerror = function(){ cardImgFallback(this, L.cardId); };
 
     const nameDiv = document.createElement('div');
     nameDiv.className = 'lc-name';
@@ -6086,7 +6086,7 @@ function openNewDeckPicker() {
     const cardCount = _getSections(dk).reduce((s, sec) =>
       s + (sec.cards || []).reduce((ss, c) => ss + c.count, 0), 0);
     return `<div class="nd-item" onclick="openNewDeckFromRef('${dk}','${d.leader}')">
-      <img class="nd-img" src="${cardImg(d.leader)}" alt="${d.leaderName || d.leader}" loading="lazy" onerror="this.style.opacity='0.3'">
+      <img class="nd-img" src="${compCardImg(d.leader)}" alt="${d.leaderName || d.leader}" loading="lazy" onerror="cardImgFallback(this,'${d.leader}')">
       <div class="nd-info">
         <div class="nd-name">${d.leaderName || d.leader}</div>
         ${meta ? `<div class="nd-meta">${meta}</div>` : ''}
@@ -6129,9 +6129,10 @@ function openNewDeckFromRef(deckKey, leaderCardId) {
     const mdbBar = document.getElementById('my-deck-bar');
     const mdbImg = document.getElementById('mdb-img');
     if (mdbBar && mdbImg && L.cardId) {
-      mdbImg.src = cardImg(L.cardId);
+      mdbImg.src = compCardImg(L.cardId);
       mdbImg.classList.remove('loaded');
       mdbImg.onload = () => mdbImg.classList.add('loaded');
+      mdbImg.onerror = () => cardImgFallback(mdbImg, L.cardId);
       mdbBar.onclick = () => showMyDeckViewer(L.cardId);
       mdbBar.style.display = '';
     }
@@ -6329,8 +6330,8 @@ function _renderCompContent() {
       html += `<div class="comp-flat-entry" id="comp-entry-${entryId}">
         <div class="comp-flat-row" onclick="toggleCompEntry('${entryId}', ${dl.id})">
           <span class="comp-rank ${rankCls}">${medal}</span>
-          <img class="comp-leader-img" src="${cardImg(dl.leader_id)}"
-            onerror="this.style.display='none'" alt="${d.leaderName || lk}">
+          <img class="comp-leader-img" src="${compCardImg(dl.leader_id)}"
+            onerror="cardImgFallback(this,'${dl.leader_id}')" alt="${d.leaderName || lk}">
           <div class="comp-info">
             <div class="comp-player">${dl.player || '—'}</div>
             <div class="comp-arch">${colorDots} ${dl.archetype || d.leaderName || lk}</div>
@@ -6415,8 +6416,8 @@ function _renderCompView(entryId, cards, view) {
       sections[sec].forEach(c => {
         const cid = c.card_id || '';
         html += `<div class="comp-visual-card" title="${c.card_name || cid} · ${cid}">
-          <img src="${cardImg(cid)}" loading="lazy" alt="${c.card_name||cid}"
-            onerror="this.parentElement.classList.add('comp-visual-card--err')">
+          <img src="${compCardImg(cid)}" loading="lazy" alt="${c.card_name||cid}"
+            onerror="cardImgFallback(this,'${cid}')">
           ${c.count > 1 ? `<span class="comp-visual-count">×${c.count}</span>` : ''}
         </div>`;
       });
@@ -6480,7 +6481,7 @@ function _renderArchetypeList() {
   let html = '<div class="comp-arch-grid">';
   sorted.forEach(l => {
     html += `<div class="comp-arch-tile" onclick="showArchDetail('${l.leader_id}','${l.leader_key}','${l.name.replace(/'/g,"\\'")}')">
-      <img src="${cardImg(l.leader_id)}" class="comp-arch-img" onerror="this.style.opacity='0.2'" alt="${l.name}">
+      <img src="${compCardImg(l.leader_id)}" class="comp-arch-img" onerror="cardImgFallback(this,'${l.leader_id}')" alt="${l.name}">
       <div class="comp-arch-name">${l.name}</div>
       <div class="comp-arch-count">${l.count} deck${l.count!==1?'s':''}</div>
     </div>`;
@@ -6498,7 +6499,7 @@ function showArchDetail(leaderId, leaderKey, leaderName) {
   detailEl.style.display = '';
   detailEl.innerHTML = `<div class="comp-arch-detail-hdr">
     <button class="comp-arch-back" onclick="_archBack()">‹ Back</button>
-    <img src="${cardImg(leaderId)}" class="comp-arch-hdr-img" onerror="this.style.display='none'">
+    <img src="${compCardImg(leaderId)}" class="comp-arch-hdr-img" onerror="cardImgFallback(this,'${leaderId}')">
     <span class="comp-arch-hdr-name">${leaderName}</span>
   </div>
   <div id="comp-arch-cards-wrap"><div class="comp-empty" style="padding:24px">Loading top cards…</div></div>`;
@@ -6893,8 +6894,8 @@ function showMatchupHistory(leaderKey, deckKey, matchupName) {
     if (leaderId) {
       const totalCards = sections.reduce((s, sec) => s + sec.cards.reduce((a, c) => a + c.count, 0), 0);
       deckHtml += `<div class="mhist-deck-header">
-        <img class="mhist-leader-img" src="${cardImg(leaderId)}" alt="${matchupName}"
-          onerror="this.style.opacity='0.2'" loading="lazy">
+        <img class="mhist-leader-img" src="${compCardImg(leaderId)}" alt="${matchupName}"
+          onerror="cardImgFallback(this,'${leaderId}')" loading="lazy">
         <div class="mhist-deck-meta">
           <div class="mhist-deck-name">${dl.leaderName || matchupName}</div>
           ${leaderColors ? `<div class="mhist-deck-colors">${leaderColors}</div>` : ''}
@@ -6913,8 +6914,8 @@ function showMatchupHistory(leaderKey, deckKey, matchupName) {
         <div class="mhist-card-grid">`;
       sec.cards.forEach(card => {
         deckHtml += `<div class="mhist-card-item" onclick="toggleCardZoom(event,this,'${card.id}')">
-          <img src="${cardImg(card.id)}" alt="${card.name}"
-            onload="this.classList.add('loaded')" onerror="this.style.opacity='0.15'">
+          <img src="${compCardImg(card.id)}" alt="${card.name}"
+            onload="this.classList.add('loaded')" onerror="cardImgFallback(this,'${card.id}')">
           <div class="mhist-card-count">×${card.count}</div>
         </div>`;
       });
@@ -7288,7 +7289,7 @@ function openLeaderSwitcher() {
     const L = LEADERS[key];
     const isCurrent = key === currentLeaderKey;
     return `<div class="lsw-card${isCurrent ? ' current' : ''}" onclick="switchToLeader('${key}')">
-      <img src="${cardImg(L.cardId)}" loading="lazy" onerror="this.style.opacity='0.3'">
+      <img src="${compCardImg(L.cardId)}" loading="lazy" onerror="cardImgFallback(this,'${L.cardId}')">
       <div class="lsw-card-name">${L.title || L.name || key}</div>
       ${isCurrent ? '<div class="lsw-current-badge">Active</div>' : ''}
     </div>`;
@@ -7327,9 +7328,10 @@ function selectLeader(key) {
   if (mdbBar) {
     if (myLeaderCardId) {
       // Always route My Deck bar to the deck viewer/editor (works for both empty and imported decks)
-      mdbImg.src = cardImg(myLeaderCardId);
+      mdbImg.src = compCardImg(myLeaderCardId);
       mdbImg.classList.remove('loaded');
       mdbImg.onload = () => mdbImg.classList.add('loaded');
+      mdbImg.onerror = () => cardImgFallback(mdbImg, myLeaderCardId);
       mdbBar.onclick = () => showMyDeckViewer(myLeaderCardId);
       mdbBar.style.display = '';
     } else {
@@ -7380,7 +7382,8 @@ function openDeckImport(leaderCardId, leaderName) {
   const lid   = document.getElementById('dim-leader-id');
   const ta    = document.getElementById('dim-ta');
   const hint  = document.getElementById('dim-parse-hint');
-  img.src  = cardImg(leaderCardId);
+  img.src  = compCardImg(leaderCardId);
+  img.onerror = () => cardImgFallback(img, leaderCardId);
   name.textContent = leaderName || leaderCardId;
   lid.textContent  = leaderCardId;
   // Pre-fill with existing deck if any
@@ -7460,8 +7463,9 @@ function _refreshMyDeckBar() {
   const imported = allMyDecks[L.cardId];
   if (imported) {
     const total = imported.cards.reduce((s,c)=>s+c.count,0);
-    mdbImg.src = cardImg(L.cardId);
+    mdbImg.src = compCardImg(L.cardId);
     mdbImg.onload = () => mdbImg.classList.add('loaded');
+    mdbImg.onerror = () => cardImgFallback(mdbImg, L.cardId);
     mdbName.textContent = L.title || L.leaderName || L.cardId;
     mdbBar.onclick = () => showMyDeckViewer(L.cardId);
     mdbBar.style.display = '';
@@ -7556,8 +7560,8 @@ function _mydRenderCards() {
   function renderCard(c) {
     return `<div class="myd-stack" data-id="${c.id}">
       <div class="myd-stack-inner"
-           onclick="_mydShowCardPopup('${c.id}','${cardImg(c.id)}',event)">
-        <img class="myd-card-img" src="${cardImg(c.id)}" alt="${c.id}" loading="eager">
+           onclick="_mydShowCardPopup('${c.id}','${compCardImg(c.id)}',event)">
+        <img class="myd-card-img" src="${compCardImg(c.id)}" alt="${c.id}" loading="eager" onerror="cardImgFallback(this,'${c.id}')">
       </div>
       <div class="myd-card-controls">
         <button class="myd-ctrl-btn myd-ctrl-del" title="Remove"
@@ -7580,9 +7584,9 @@ function _mydRenderCards() {
   })();
   const leaderHtml = `
     <div class="myd-leader-row">
-      <img class="myd-leader-img" src="${cardImg(_mydCurrentCardId)}" alt="Leader"
-        onclick="_mydShowCardPopup('${_mydCurrentCardId}','${cardImg(_mydCurrentCardId)}',event)"
-        onload="this.style.opacity='1'">
+      <img class="myd-leader-img" src="${compCardImg(_mydCurrentCardId)}" alt="Leader"
+        onclick="_mydShowCardPopup('${_mydCurrentCardId}','${compCardImg(_mydCurrentCardId)}',event)"
+        onload="this.style.opacity='1'" onerror="cardImgFallback(this,'${_mydCurrentCardId}')">
       <div class="myd-leader-info">
         <span class="myd-leader-badge">Leader</span>
         <div class="myd-leader-name">${leaderName}</div>
@@ -7922,7 +7926,7 @@ function _mydUpdatePreview() {
   const typeBadge = ptype ? `<span style="font-size:0.6rem;color:var(--gl-text-muted);font-weight:600">${ptype}</span>` : '';
   wrap.innerHTML = `<div class="myd-preview-card">
     <button class="myd-preview-close" onclick="event.stopPropagation();_mydClearPreview()" title="Close">×</button>
-    <img src="${cardImg(pid)}" alt="${pid}" onerror="this.style.opacity='0.3'">
+    <img src="${compCardImg(pid)}" alt="${pid}" onerror="cardImgFallback(this,'${pid}')">
     <div class="myd-preview-info">
       ${typeBadge}${costBadge}${ctrBadge}
       <span class="myd-preview-id">${pid}</span>
@@ -7990,7 +7994,7 @@ function _mydRenderChips() {
       <div class="myd-chip-cost-circle" style="border-color:${borderColor};${bgColor?`background:rgba(0,0,0,0.5);`:''}">
         <span style="${costStyle}">${costLabel}</span>
       </div>
-      <img class="myd-chip-img" src="${cardImg(c.id)}" alt="${c.id}" loading="lazy" onerror="this.style.opacity='0.3'">
+      <img class="myd-chip-img" src="${compCardImg(c.id)}" alt="${c.id}" loading="lazy" onerror="cardImgFallback(this,'${c.id}')">
       <div class="myd-chip-info">
         <div class="myd-chip-name">${name}</div>
         ${meta ? `<div class="myd-chip-meta">${meta}</div>` : ''}
@@ -8188,7 +8192,7 @@ function _mydRenderSearchResults(dd, all, label) {
       const type = r.card_type || '';
       const safe = name.replace(/'/g,"\\'");
       return `<div class="myd-search-item" onclick="event.stopPropagation();_mydAddCard('${id}','${safe}')">
-        <img src="${cardImg(id)}" onerror="this.style.opacity='0.3'" loading="lazy">
+        <img src="${compCardImg(id)}" onerror="cardImgFallback(this,'${id}')" loading="lazy">
         <div style="flex:1;min-width:0">
           <div class="myd-search-item-name">${name}</div>
           <div class="myd-search-item-id">${id}${color?' · '+color:''}${type?' · '+type:''}</div>
@@ -8207,7 +8211,7 @@ function _mydRenderSearchResults(dd, all, label) {
       const isAdded = !!_mydSearchAdded[id];
       return `<div class="myd-search-card${isAdded?' added':''}" id="srch-${id}"
           onclick="event.stopPropagation();_mydSearchAddCard('${id}','${safe}')">
-        <img src="${cardImg(id)}" alt="${name}" loading="lazy" onerror="this.style.opacity='0.3'">
+        <img src="${compCardImg(id)}" alt="${name}" loading="lazy" onerror="cardImgFallback(this,'${id}')">
         ${cost!=='' ? `<div class="myd-search-card-cost">${cost}</div>` : ''}
         <div class="myd-search-card-name">${name}</div>
         <div class="myd-search-card-check">✓</div>
@@ -8877,11 +8881,11 @@ function _renderConsensusSection(deckKey) {
       </div>
       <div class="card-grid">`;
     list.forEach((card, idx) => {
-      const src   = cardImg(card.id);
+      const src   = compCardImg(card.id);
       const delay = Math.min(idx * 18, 220);
       const pctCls = card.inclPct === 100 ? 'pct-100' : card.inclPct >= 60 ? 'pct-high' : 'pct-low';
       sh += `<div class="card-item" style="animation-delay:${delay}ms;position:relative" onclick="toggleCardZoom(event,this,'${card.id}')">
-        <img src="${src}" onload="this.classList.add('loaded')" onerror="this.onerror=null;" alt="${card.name}">
+        <img src="${src}" onload="this.classList.add('loaded')" onerror="cardImgFallback(this,'${card.id}')" alt="${card.name}">
         <div class="cns-avg">avg ×${card.avgCount}</div>
         <div class="b-count cns-pct ${pctCls}">${card.inclPct}%</div>
       </div>`;
